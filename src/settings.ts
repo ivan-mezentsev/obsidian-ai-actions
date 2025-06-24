@@ -111,7 +111,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		// Development options container - only visible when developmentMode is enabled
 		const devOptionsContainer = containerEl.createDiv("ai-actions-dev-options-container");
-		devOptionsContainer.style.display = this.plugin.settings.developmentMode ? "block" : "none";
+		if (!this.plugin.settings.developmentMode) {
+			devOptionsContainer.addClass("ai-actions-dev-options-hidden");
+		}
 
 		new Setting(devOptionsContainer)
 			.setName("Testing mode")

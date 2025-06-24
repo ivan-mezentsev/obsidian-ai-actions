@@ -20,8 +20,8 @@ export abstract class LLM {
 		temperature?: number,
 		maxOutputTokens?: number
 	): Promise<void> {
-		var last_tick = new Date().getTime();
-		var has_timeout = false;
+		let last_tick = new Date().getTime();
+		let has_timeout = false;
 
 		// define a wrapper function to update last_tick
 		function callback_wrapper(text: string): void {

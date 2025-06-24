@@ -82,22 +82,10 @@ export class OpenAILLM extends LLM {
 			temperature: temperature !== undefined ? temperature : 0.7,
 		};
 			
-			if (this.debugMode) {
-				console.log(`[AI Actions Debug] OpenAI Request:`, requestData);
-			}
-			
 			const response = await this.openai.chat.completions.create(requestData);
-			
-			if (this.debugMode) {
-				console.log(`[AI Actions Debug] OpenAI Response:`, response);
-			}
 			
 			return response.choices[0]?.message?.content || "";
 		} catch (error) {
-			if (this.debugMode) {
-				console.log(`[AI Actions Debug] OpenAI API error:`, error);
-			}
-			console.error("Error in autocomplete:", error);
 			throw error;
 		}
 	}
@@ -122,26 +110,15 @@ export class OpenAILLM extends LLM {
 				stream: true as const,
 			};
 			
-			if (this.debugMode) {
-				console.log(`[AI Actions Debug] OpenAI Streaming Request:`, requestData);
-			}
-			
 			const stream: any = await this.openai.chat.completions.create(requestData);
 
 			for await (const chunk of stream) {
-				if (this.debugMode) {
-					console.log(`[AI Actions Debug] OpenAI Streaming Chunk:`, chunk);
-				}
 				const content = chunk.choices[0]?.delta?.content;
 				if (content) {
 					callback(content);
 				}
 			}
 		} catch (error) {
-			if (this.debugMode) {
-				console.log(`[AI Actions Debug] OpenAI Streaming API error:`, error);
-			}
-			console.error("Error in autocompleteStreamingInner:", error);
 			throw error;
 		}
 	}

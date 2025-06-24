@@ -43,7 +43,6 @@ export class ActionHandler {
 			case Selection.CURSOR:
 				return editor.getSelection();
 			default:
-				console.log(`Selection ${sel}`);
 				throw "Selection not implemented";
 		}
 	}
@@ -98,7 +97,7 @@ export class ActionHandler {
 		editor: Editor,
 		view: MarkdownView
 	) {
-		console.log(editor.getSelection());
+
 		const text = this.getTextInput(action.sel, editor);
 		new Notice("Please wait... Querying OpenAI API...");
 
@@ -133,7 +132,6 @@ export class ActionHandler {
 				}
 			);
 		} catch (error) {
-			console.log(error);
 			new Notice(`Autocomplete error:\n${error}`);
 		}
 		spinner.remove();
