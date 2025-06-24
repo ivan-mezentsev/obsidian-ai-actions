@@ -45,12 +45,6 @@ export abstract class BaseProviderLLM extends LLM {
         const headers = this.getHeaders();
         const requestBody = JSON.stringify(body);
         
-        if (this.debugMode) {
-            console.log(`[AI Actions Debug] Request to ${url}`);
-            console.log(`[AI Actions Debug] Headers:`, headers);
-            console.log(`[AI Actions Debug] Body:`, requestBody);
-        }
-        
         try {
             const response = await fetchFn(url, {
                 method: 'POST',
@@ -58,31 +52,8 @@ export abstract class BaseProviderLLM extends LLM {
                 body: requestBody,
             });
             
-            if (this.debugMode) {
-                console.log(`[AI Actions Debug] Response status: ${response.status}`);
-                
-                // Log headers
-                const headersObj: Record<string, string> = {};
-                response.headers.forEach((value, key) => {
-                    headersObj[key] = value;
-                });
-                console.log(`[AI Actions Debug] Response headers:`, headersObj);
-                
-                // Clone response to read body without consuming it
-                const responseClone = response.clone();
-                try {
-                    const responseText = await responseClone.text();
-                    console.log(`[AI Actions Debug] Response body:`, responseText);
-                } catch (error) {
-                    console.log(`[AI Actions Debug] Could not read response body:`, error);
-                }
-            }
-            
             return response;
         } catch (error) {
-            if (this.debugMode) {
-                console.log(`[AI Actions Debug] Request failed with error:`, error);
-            }
             throw error;
         }
     }

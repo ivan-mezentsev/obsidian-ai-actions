@@ -32,15 +32,6 @@ export class OllamaLLM extends BaseProviderLLM {
         const response = await this.makeRequest('/api/generate', body);
         
         if (!response.ok) {
-            if (this.debugMode) {
-                console.log(`[AI Actions Debug] Ollama API error: ${response.status} ${response.statusText}`);
-                try {
-                    const errorText = await response.text();
-                    console.log(`[AI Actions Debug] Error response body:`, errorText);
-                } catch (e) {
-                    console.log(`[AI Actions Debug] Could not read error response body`);
-                }
-            }
             throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
         }
 

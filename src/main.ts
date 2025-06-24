@@ -49,7 +49,7 @@ export default class AIEditor extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.addCommand({
-			id: "reload-commands",
+			id: "reload",
 			name: "Reload commands",
 			callback: () => {
 				this.registerActions();

@@ -36,3 +36,7 @@
   padding-left: 16px;
   border-left: 2px solid var(--background-modifier-border);
 }
+
+.ai-actions-dev-options-hidden {
+  display: none;
+}
