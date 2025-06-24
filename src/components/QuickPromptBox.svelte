@@ -65,9 +65,8 @@
 
 	// Auto-resize textarea function
 	const autoResize = (element: HTMLTextAreaElement) => {
-		// Temporarily reset height to auto to get proper scrollHeight
-		const originalHeight = element.style.height;
-		element.style.height = 'auto';
+		// Remove any existing height classes
+		element.classList.remove('ai-actions-textarea-auto', 'ai-actions-textarea-resized');
 		
 		const lineHeight = 20; // Approximate line height
 		const padding = 16; // Top and bottom padding
@@ -75,11 +74,14 @@
 		const minHeight = 40;
 		const maxHeight = (lineHeight * maxLines) + padding;
 		
+		// Temporarily add auto class to measure scrollHeight
+		element.classList.add('ai-actions-textarea-auto');
 		const newHeight = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight);
 		
 		// Use CSS custom property for dynamic height
 		element.style.setProperty('--dynamic-height', newHeight + 'px');
-		element.style.height = 'var(--dynamic-height)';
+		element.classList.remove('ai-actions-textarea-auto');
+		element.classList.add('ai-actions-textarea-resized');
 	};
 
 	export function show(initialPrompt?: string) {
@@ -301,6 +303,15 @@
 		outline: none;
 		overflow-y: auto;
 		line-height: 20px;
+	}
+
+	/* Auto-resize textarea classes */
+	:global(.ai-actions-textarea-auto) {
+		height: auto !important;
+	}
+
+	:global(.ai-actions-textarea-resized) {
+		height: var(--dynamic-height) !important;
 	}
 
 	.prompt-input:focus {

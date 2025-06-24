@@ -287,3 +287,17 @@
   resize: none;
   overflow-y: auto;
 }
+
+/* Output modal textarea */
+.ai-actions-output-textarea {
+  width: 100%;
+  font-family: var(--font-text-override, var(--font-text));
+  font-size: var(--font-size-normal);
+  line-height: var(--line-height-normal);
+  color: var(--text-normal);
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  padding: var(--size-4-2);
+  resize: vertical;
+}

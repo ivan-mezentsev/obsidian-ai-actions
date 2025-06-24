@@ -38,8 +38,8 @@ export class OutputModal extends Modal {
 		if (this.editMode) {
 			textEl = contentEl.createEl("textarea", {
 				text: this.format(this.generated),
+				cls: "ai-actions-output-textarea",
 				attr: {
-					style: "width: 100%",
 					rows: "9",
 					oninput: "this.innerHTML = this.value",
 				},
