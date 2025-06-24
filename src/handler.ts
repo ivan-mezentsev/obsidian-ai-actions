@@ -1,9 +1,10 @@
-import { UserAction, Selection, Location } from "src/action";
 import { OutputModal } from "src/modals/output";
 import { App, Editor, MarkdownView, Notice, TFile, Vault } from "obsidian";
-import { AIEditorSettings } from "src/settings";
 import { LLMFactory } from "./llm/factory";
-import { CharacterTextSplitter } from "langchain/text_splitter";
+import type { AIEditorSettings } from "src/settings";
+import type { UserAction } from "./action";
+import { Selection, Location } from "./action";
+import { spinnerPlugin } from "./spinnerPlugin";
 
 export class ActionHandler {
 	private llmFactory: LLMFactory;
@@ -27,6 +28,16 @@ export class ActionHandler {
 		return await llm.autocompleteStreaming(userAction.prompt, input, onToken, userAction.temperature, userAction.maxOutputTokens);
 	}
 
+	async autocompleteStreamingWithUserPrompt(
+		userAction: UserAction,
+		input: string,
+		userPrompt: string,
+		onToken: (token: string) => void
+	): Promise<void> {
+		const llm = this.llmFactory.create(userAction.model);
+		return await llm.autocompleteStreamingWithUserPrompt(userAction.prompt, input, userPrompt, onToken, userAction.temperature, userAction.maxOutputTokens);
+	}
+
 	getAPIKey(settings: AIEditorSettings) {
 		const apiKey = settings.openAiApiKey;
 		if (!apiKey) {
@@ -43,6 +54,7 @@ export class ActionHandler {
 			case Selection.CURSOR:
 				return editor.getSelection();
 			default:
+				console.log(`Selection ${sel}`);
 				throw "Selection not implemented";
 		}
 	}
@@ -97,44 +109,145 @@ export class ActionHandler {
 		editor: Editor,
 		view: MarkdownView
 	) {
+		// @ts-expect-error, not typed
+		const editorView = editor.cm;
+
+		const selection = editor.getSelection();
+		let selectedText = selection || editor.getValue();
+		const cursorPositionFrom = editor.getCursor("from");
+		const cursorPositionTo = editor.getCursor("to");
 
 		const text = this.getTextInput(action.sel, editor);
-		new Notice("Please wait... Querying OpenAI API...");
+		const providerName = this.llmFactory.getProviderName(action.model);
+		new Notice(`Querying ${providerName} API...`);
 
-		const spinner = view.contentEl.createEl("div", { cls: "loader" });
+		// Get spinner plugin and show loading animation at cursor position
+		const spinner = editorView.plugin(spinnerPlugin) || undefined;
+		const hideSpinner = spinner?.show(editor.posToOffset(cursorPositionTo));
 
-		const modal = new OutputModal(
-			app,
-			action.modalTitle,
-			(text: string) => action.format.replace("{{result}}", text),
-			async (result: string) => {
-				await this.addToNote(
-					action.loc,
-					result,
-					editor,
-					view.file?.vault,
-					action.locationExtra
-				);
+		const processText = (text: string, selectedText: string) => {
+			if (!text.trim()) {
+				return "";
 			}
-		);
+			// For replace mode, return the text as is
+			if (action.loc === Location.REPLACE_CURRENT) {
+				return text.trim();
+			}
+			// For other modes, format as needed
+			return ["\n", text.trim(), "\n"].join("");
+		};
+
+		const onUpdate = (updatedString: string) => {
+			spinner?.processText(updatedString, (text: string) =>
+				processText(text, selectedText)
+			);
+		};
+
+		const shouldShowModal = action.showModalWindow ?? true;
+		let modal: OutputModal | null = null;
+
+		if (shouldShowModal) {
+			modal = new OutputModal(
+				app,
+				action.name,
+				(text: string) => action.format.replace("{{result}}", text),
+				async (result: string) => {
+					// Use saved cursor positions for replacement
+					if (action.loc === Location.REPLACE_CURRENT) {
+						editor.replaceRange(
+							result,
+							cursorPositionFrom,
+							cursorPositionTo
+						);
+					} else {
+						await this.addToNote(
+							action.loc,
+							result,
+							editor,
+							view.file?.vault,
+							action.locationExtra
+						);
+					}
+				},
+				"",
+				async (result: string, location: Location) => {
+					if (location === Location.REPLACE_CURRENT) {
+						editor.replaceRange(
+							result,
+							cursorPositionFrom,
+							cursorPositionTo
+						);
+					} else {
+						await this.addToNote(
+							location,
+							result,
+							editor,
+							view.file?.vault,
+							action.locationExtra
+						);
+					}
+				},
+				action.loc === Location.APPEND_TO_FILE && !!action.locationExtra?.fileName
+			);
+		}
+
 		let modalDisplayed = false;
+		let accumulatedText = "";
+
 		try {
 			await this.autocompleteStreaming(
 				action,
 				text,
 				(token) => {
-					if (!modalDisplayed) {
-						modalDisplayed = true;
-						modal.open();
-						spinner.remove();
+					accumulatedText += token;
+					onUpdate(accumulatedText);
+
+					if (shouldShowModal) {
+						if (!modalDisplayed) {
+							modalDisplayed = true;
+							modal!.open();
+						}
+						modal!.addToken(token);
 					}
-					modal.addToken(token);
 				}
 			);
+
+			// When streaming is complete, hide spinner and handle final result
+			hideSpinner && hideSpinner();
+
+			// If modal is not shown, directly apply the result
+			if (!shouldShowModal && accumulatedText.trim()) {
+				const finalText = action.format.replace("{{result}}", accumulatedText.trim());
+				if (action.loc === Location.REPLACE_CURRENT) {
+					editor.replaceRange(
+						finalText,
+						cursorPositionFrom,
+						cursorPositionTo
+					);
+				} else {
+					await this.addToNote(
+						action.loc,
+						finalText,
+						editor,
+						view.file?.vault,
+						action.locationExtra
+					);
+				}
+			} else if (shouldShowModal && action.loc === Location.REPLACE_CURRENT && accumulatedText.trim()) {
+				// For replace mode with modal, directly replace the text using saved positions
+				const finalText = action.format.replace("{{result}}", accumulatedText.trim());
+				editor.replaceRange(
+					finalText,
+					cursorPositionFrom,
+					cursorPositionTo
+				);
+			}
+
 		} catch (error) {
+			console.log(error);
 			new Notice(`Autocomplete error:\n${error}`);
+			hideSpinner && hideSpinner();
 		}
-		spinner.remove();
 	}
 }
 

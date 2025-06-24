@@ -1,7 +1,7 @@
-import { Model } from "./llm/models";
+import type { Model } from "./llm/models";
 import { OpenAIModel } from "./llm/openai_llm";
-import { AIModel } from "./types";
-import { AIEditorSettings } from "./settings";
+import type { AIModel } from "./types";
+import type { AIEditorSettings } from "./settings";
 
 export enum Selection {
 	ALL = "ALL",
@@ -24,10 +24,10 @@ export interface UserAction {
 	sel: Selection;
 	loc: Location;
 	format: string;
-	modalTitle: string;
 	temperature?: number; // Temperature setting for AI model
 	maxOutputTokens?: number; // Maximum output tokens for AI model
 	locationExtra?: { fileName: string };
+	showModalWindow?: boolean; // Show modal window with results
 }
 
 const SELECTION_SETTING: { [key: string]: string } = {

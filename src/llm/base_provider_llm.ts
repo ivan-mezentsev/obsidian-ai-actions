@@ -1,7 +1,7 @@
 import { LLM } from "./base";
-import { AIProvider } from "../types";
+import type { AIProvider } from "../types";
 import { nativeFetch, standardFetch } from "../utils/fetch";
-import { AIEditorSettings } from "../settings";
+import type { AIEditorSettings } from "../settings";
 
 export abstract class BaseProviderLLM extends LLM {
     protected provider: AIProvider;

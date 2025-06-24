@@ -1,4 +1,4 @@
-import { AIModel } from "../types";
+import type { AIModel } from "../types";
 import { OpenAIModel } from "./openai_llm";
 
 export type Model = OpenAIModel | AIModel | {};

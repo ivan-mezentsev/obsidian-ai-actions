@@ -122,4 +122,50 @@ export class OpenAILLM extends LLM {
 			throw error;
 		}
 	}
+
+	async autocompleteStreamingInnerWithUserPrompt(
+		systemPrompt: string,
+		content: string,
+		userPrompt: string,
+		callback: (text: string) => void,
+		temperature?: number,
+		maxOutputTokens?: number
+	): Promise<void> {
+		try {
+			
+			const requestData: any = {
+				model: this.model,
+				messages: [
+				{ role: "system" as const, content: systemPrompt },
+				{ role: "user" as const, content: userPrompt },
+				{ role: "user" as const, content: content }
+			],
+				max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
+				temperature: temperature !== undefined ? temperature : 0.7,
+				stream: true as const,
+			};
+			
+			if (this.debugMode) {
+				console.log(`[AI Actions Debug] OpenAI Streaming Request with User Prompt:`, requestData);
+			}
+			
+			const stream: any = await this.openai.chat.completions.create(requestData);
+
+			for await (const chunk of stream) {
+				if (this.debugMode) {
+					console.log(`[AI Actions Debug] OpenAI Streaming Chunk:`, chunk);
+				}
+				const content = chunk.choices[0]?.delta?.content;
+				if (content) {
+					callback(content);
+				}
+			}
+		} catch (error) {
+			if (this.debugMode) {
+				console.log(`[AI Actions Debug] OpenAI Streaming API error with User Prompt:`, error);
+			}
+			console.error("Error in autocompleteStreamingInnerWithUserPrompt:", error);
+			throw error;
+		}
+	}
 }

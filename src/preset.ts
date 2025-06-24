@@ -1,4 +1,5 @@
-import { UserAction, Selection, Location } from "./action";
+import type { UserAction } from "./action";
+import { Selection, Location } from "./action";
 
 export const SUMMARY_DOC_ACTION: UserAction = {
 	name: "Summarize document",
@@ -6,8 +7,8 @@ export const SUMMARY_DOC_ACTION: UserAction = {
 	sel: Selection.ALL,
 	loc: Location.INSERT_HEAD,
 	format: "**Summary**: {{result}}\n\n",
-	modalTitle: "Check summary",
 	model: "", // Will be set to first available model
+	showModalWindow: true,
 };
 
 export const COMPLETION_ACTION: UserAction = {
@@ -16,8 +17,8 @@ export const COMPLETION_ACTION: UserAction = {
 	sel: Selection.CURSOR,
 	loc: Location.APPEND_CURRENT,
 	format: "{{result}}",
-	modalTitle: "Check result",
 	model: "", // Will be set to first available model
+	showModalWindow: true,
 };
 
 export const REWRITE_ACTION: UserAction = {
@@ -26,8 +27,8 @@ export const REWRITE_ACTION: UserAction = {
 	sel: Selection.CURSOR,
 	loc: Location.REPLACE_CURRENT,
 	format: "{{result}}",
-	modalTitle: "Check result",
 	model: "", // Will be set to first available model
+	showModalWindow: true,
 };
 
 export const HASHTAG_ACTION: UserAction = {
@@ -36,8 +37,8 @@ export const HASHTAG_ACTION: UserAction = {
 	sel: Selection.ALL,
 	loc: Location.APPEND_BOTTOM,
 	format: "\n{{result}}",
-	modalTitle: "Check result",
 	model: "", // Will be set to first available model
+	showModalWindow: true,
 };
 
 export const APPEND_TO_TASK_LIST: UserAction = {
@@ -47,9 +48,9 @@ export const APPEND_TO_TASK_LIST: UserAction = {
 	loc: Location.APPEND_TO_FILE,
 	locationExtra: { fileName: "Tasks.md" },
 	format: "\n- [ ] {{result}}",
-	modalTitle: "Check result",
 	model: "", // Will be set to first available model
-};
+	showModalWindow: true,
+}
 
 // Default actions
 export const DEFAULT_ACTIONS: Array<UserAction> = [

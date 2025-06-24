@@ -1,5 +1,5 @@
 import { BaseProviderLLM } from "./base_provider_llm";
-import { AIProvider } from "../types";
+import type { AIProvider } from "../types";
 
 export class GeminiLLM extends BaseProviderLLM {
     constructor(provider: AIProvider, modelName: string, useNativeFetch: boolean = false, debugMode: boolean = false) {
@@ -197,11 +197,140 @@ export class GeminiLLM extends BaseProviderLLM {
                 }
             }
         } finally {
-            reader.releaseLock();
-        }
-    }
+			reader.releaseLock();
+		}
+	}
 
-    protected async makeRequest(endpoint: string, body: any): Promise<Response> {
+	async autocompleteStreamingInnerWithUserPrompt(
+		systemPrompt: string,
+		content: string,
+		userPrompt: string,
+		callback: (text: string) => void,
+		temperature?: number,
+		maxOutputTokens?: number
+	): Promise<void> {
+		const body = {
+			contents: [
+				{
+					role: 'user',
+					parts: [{
+						text: systemPrompt
+					}]
+				},
+				{
+					role: 'user',
+					parts: [{
+						text: userPrompt
+					}]
+				},
+				{
+					role: 'user',
+					parts: [{
+						text: content
+					}]
+				}
+			],
+			generationConfig: {
+				temperature: temperature !== undefined ? temperature : 0.7,
+				maxOutputTokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
+			}
+		};
+
+		const endpoint = `/models/${this.modelName}:streamGenerateContent?key=${this.provider.apiKey}`;
+		const response = await this.makeRequest(endpoint, body);
+		
+		if (!response.ok) {
+			throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+		}
+
+		const reader = response.body?.getReader();
+		if (!reader) {
+			throw new Error('No response body reader available');
+		}
+
+		const decoder = new TextDecoder();
+		let buffer = '';
+
+		try {
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
+
+				buffer += decoder.decode(value, { stream: true });
+				
+				// Try to parse the entire buffer as JSON array first
+				try {
+					const jsonData = JSON.parse(buffer);
+					if (Array.isArray(jsonData)) {
+						// Gemini returns array of response objects
+						for (const item of jsonData) {
+							if (item.candidates && item.candidates[0] && item.candidates[0].content) {
+								const text = item.candidates[0].content.parts[0].text;
+								if (text) {
+									callback(text);
+								}
+							}
+						}
+						buffer = ''; // Clear buffer after successful parse
+						continue;
+					}
+				} catch (e) {
+					// Not a complete JSON yet, continue reading
+				}
+				
+				// Fallback: try line-by-line parsing for SSE format
+				const lines = buffer.split('\n');
+				buffer = lines.pop() || '';
+
+				for (const line of lines) {
+					if (line.trim() && line.startsWith('data: ')) {
+						try {
+							const jsonStr = line.slice(6);
+							if (jsonStr.trim() === '[DONE]') break;
+							
+							const data = JSON.parse(jsonStr);
+							if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+								const text = data.candidates[0].content.parts[0].text;
+								if (text) {
+									callback(text);
+								}
+							}
+						} catch (e) {
+							// Skip invalid JSON lines
+						}
+					}
+				}
+			}
+			
+			// Process any remaining buffer content
+			if (buffer.trim()) {
+				try {
+					const jsonData = JSON.parse(buffer);
+					if (Array.isArray(jsonData)) {
+						for (const item of jsonData) {
+							if (item.candidates && item.candidates[0] && item.candidates[0].content) {
+								const text = item.candidates[0].content.parts[0].text;
+								if (text) {
+									callback(text);
+								}
+							}
+						}
+					} else if (jsonData.candidates && jsonData.candidates[0] && jsonData.candidates[0].content) {
+						const text = jsonData.candidates[0].content.parts[0].text;
+						if (text) {
+							callback(text);
+						}
+					}
+				} catch (e) {
+					// Ignore final parsing errors
+				}
+			}
+		} finally {
+			reader.releaseLock();
+		}
+	}
+
+	protected async makeRequest(endpoint: string, body: any): Promise<Response> {
         const url = `${this.getBaseUrl()}${endpoint}`;
         const fetchFn = this.getFetch();
         const headers = {

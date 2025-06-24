@@ -7,15 +7,35 @@ import { GroqLLM } from "./groq_llm";
 import { OpenRouterLLM } from "./openrouter_llm";
 import { LMStudioLLM } from "./lmstudio_llm";
 import { OpenAIModel } from "./openai_llm";
-import { AIEditorSettings } from "../settings";
-import { Model } from "./models";
-import { AIModel, AIProvider } from "../types";
+import type { AIEditorSettings } from "../settings";
+import type { Model } from "./models";
+import type { AIModel, AIProvider } from "../types";
 
 export class LLMFactory {
 	private settings: AIEditorSettings;
 
 	constructor(settings: AIEditorSettings) {
 		this.settings = settings;
+	}
+
+	getProviderName(modelId: string): string {
+		// Handle legacy OpenAI models
+		if (Object.values(OpenAIModel).includes(modelId as OpenAIModel)) {
+			return "OpenAI";
+		}
+
+		// Handle new provider-based models
+		const model = this.settings.aiProviders?.models.find(m => m.id === modelId);
+		if (!model) {
+			return "Unknown";
+		}
+
+		const provider = this.settings.aiProviders?.providers.find(p => p.id === model.providerId);
+		if (!provider) {
+			return "Unknown";
+		}
+
+		return provider.name;
 	}
 
 	create(modelId: string): LLM {

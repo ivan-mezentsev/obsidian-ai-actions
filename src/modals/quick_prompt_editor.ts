@@ -1,43 +1,34 @@
 import { App, Modal, Setting } from "obsidian";
 import {
-	selectionDictionary,
-	locationDictionary,
-	modelDictionary,
-	getAvailableModels,
-	Selection,
-	Location
+	getAvailableModels
 } from "../action";
 import type {
 	UserAction
 } from "../action";
-import type { AIModel } from "../types";
-import { DeletionModal } from "./deletion";
 import AIEditor from "src/main";
 
-export class ActionEditModal extends Modal {
+export class QuickPromptEditModal extends Modal {
 	action: UserAction;
 	plugin: AIEditor;
 	onSave: (userAction: UserAction) => void;
-	onDelete?: () => void;
 
 	constructor(
 		app: App,
 		plugin: AIEditor,
 		user_action: UserAction,
-		onSave: (userAction: UserAction) => void,
-		onDelete?: () => void
+		onSave: (userAction: UserAction) => void
 	) {
 		super(app);
 		this.plugin = plugin;
 		this.action = user_action;
 		this.onSave = onSave;
-		this.onDelete = onDelete;
 	}
+
 	onOpen() {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl("h1", { text: "Edit Action" });
+		contentEl.createEl("h1", { text: "Edit Quick Prompt" });
 
 		this.createTextSetting(
 			contentEl,
@@ -82,15 +73,6 @@ export class ActionEditModal extends Modal {
 				this.action.prompt = value;
 			}
 		);
-		this.createTextSetting(
-			contentEl,
-			"Output Format",
-			"Format your LLM output. Use {{result}} as placeholder.",
-			this.action.format,
-			async (value) => {
-				this.action.format = value;
-			}
-		);
 
 		new Setting(contentEl)
 			.setName("Temperature")
@@ -127,8 +109,8 @@ export class ActionEditModal extends Modal {
 			.setName("Max Output Tokens")
 			.setDesc("Maximum number of tokens to generate (leave empty or 0 for default)")
 			.addText((text) => {
-				text.setPlaceholder("1000")
-					.setValue(this.action.maxOutputTokens?.toString() || "1000")
+				text.setPlaceholder("10000")
+					.setValue(this.action.maxOutputTokens?.toString() || "10000")
 					.onChange((value) => {
 						const numValue = parseInt(value);
 						if (isNaN(numValue) || numValue <= 0) {
@@ -140,80 +122,10 @@ export class ActionEditModal extends Modal {
 			});
 
 		new Setting(contentEl)
-			.setName("Show Modal Window")
-			.setDesc("Display window with results")
-			.addToggle((toggle) => {
-				toggle
-					.setValue(this.action.showModalWindow ?? true)
-					.onChange((value) => {
-						this.action.showModalWindow = value;
-					});
-			});
-
-		new Setting(contentEl)
-			.setName("Input selection")
-			.setDesc("What input would be sent to LLM?")
-			.addDropdown((dropdown) => {
-				if (this.action.sel == undefined) {
-					this.action.sel = Selection.ALL;
-				}
-				dropdown
-					.addOptions(selectionDictionary())
-					.setValue(this.action.sel.toString())
-					.onChange((value) => {
-						this.action.sel = value as Selection;
-					});
-			});
-		new Setting(contentEl)
-			.setName("Output location")
-			.setDesc(
-				"Where do you to put the generated output after formatting?"
-			)
-			.addDropdown((dropdown) => {
-				if (this.action.loc == undefined) {
-					this.action.loc = Location.INSERT_HEAD;
-				}
-				dropdown
-					.addOptions(locationDictionary())
-					.setValue(this.action.loc)
-					.onChange((value) => {
-						this.action.loc = value as Location;
-						this.onOpen();
-					});
-			});
-		if (this.action.loc == Location.APPEND_TO_FILE) {
-			new Setting(contentEl)
-				.setName("File name")
-				.setDesc("File name to append to")
-				.addText((text) => {
-					text.setPlaceholder("Enter file name")
-						.setValue(this.action.locationExtra?.fileName || "")
-						.onChange(async (value) => {
-							this.action.locationExtra = {
-								fileName: value,
-							};
-						});
-				});
-		}
-
-		new Setting(contentEl)
 			.addButton((button) => {
-				if (this.onDelete) {
-					let onDelete = this.onDelete;
-					button
-						.setButtonText("Delete")
-						.setWarning()
-						.onClick(async () => {
-							new DeletionModal(this.app, () => {
-								onDelete();
-								this.close();
-							}).open();
-						});
-				} else {
-					button.setButtonText("Ignore").onClick(() => {
-						this.close();
-					});
-				}
+				button.setButtonText("Cancel").onClick(() => {
+					this.close();
+				});
 			})
 			.addButton((button) => {
 				button

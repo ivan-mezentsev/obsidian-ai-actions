@@ -26,4 +26,23 @@ export class DummyLLM extends LLM {
 			resolve();
 		});
 	}
+
+	async autocompleteStreamingInnerWithUserPrompt(
+		systemPrompt: string,
+		content: string,
+		userPrompt: string,
+		callback: (text: string) => void,
+		temperature?: number,
+		maxOutputTokens?: number
+	): Promise<void> {
+		return new Promise(async (resolve) => {
+			const responseText = `Response to system: "${systemPrompt}" and user prompt: "${userPrompt}" with content: "${content}" - ${textForTesting}`;
+			const split = responseText.split(" ");
+			for (const element of split) {
+				callback(element + " ");
+				await new Promise((r) => setTimeout(r, 20));
+			}
+			resolve();
+		});
+	}
 }

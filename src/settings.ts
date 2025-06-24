@@ -1,15 +1,18 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import {
+	modelDictionary,
 	Location,
 	Selection,
+} from "src/action";
+import type {
 	UserAction,
-	modelDictionary,
 } from "src/action";
 import AIEditor from "src/main";
-import { Model } from "./llm/models";
+import type { Model } from "./llm/models";
 import { OpenAIModel } from "./llm/openai_llm";
 import { ActionEditModal } from "./modals/action_editor";
-import { AIProvider, AIModel, AIProvidersSettings, AIProviderType } from "./types";
+import { QuickPromptEditModal } from "./modals/quick_prompt_editor";
+import type { AIProvider, AIModel, AIProvidersSettings, AIProviderType } from "./types";
 import { ProviderEditModal } from "./modals/provider_editor";
 import { ModelEditModal } from "./modals/model_editor";
 
@@ -19,6 +22,7 @@ export interface AIEditorSettings {
 	testingMode: boolean;
 	defaultModel: string; // Deprecated, will be removed
 	customActions: Array<UserAction>;
+	quickPrompt: UserAction;
 	aiProviders: AIProvidersSettings;
 	useNativeFetch: boolean;
 	debugMode: boolean;
@@ -90,6 +94,17 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		// General Section - moved to the bottom
 		containerEl.createEl("h1", { text: "General" });
+
+		// Quick Prompt Section
+		this.createButton(
+			containerEl,
+			"Quick Prompt",
+			"Edit",
+			() => {
+				this.displayQuickPromptEditModal();
+			},
+			false
+		);
 
 		// Development mode toggle with special styling
 		const devModeContainer = containerEl.createDiv("ai-actions-dev-mode-container");
@@ -202,7 +217,6 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			sel: Selection.ALL,
 			loc: Location.INSERT_HEAD,
 			format: "{{result}}\n",
-			modalTitle: "Check result",
 			model: defaultModelId,
 			temperature: undefined,
 			maxOutputTokens: undefined,
@@ -377,5 +391,19 @@ export class AIEditorSettingTab extends PluginSettingTab {
 				await this.saveSettingsAndRefresh();
 			}
 		).open();
+	}
+
+	private displayQuickPromptEditModal() {
+		const modal = new QuickPromptEditModal(
+			this.app,
+			this.plugin,
+			this.plugin.settings.quickPrompt,
+			async (updatedAction) => {
+				this.plugin.settings.quickPrompt = updatedAction;
+				await this.plugin.saveSettings();
+				this.display();
+			}
+		);
+		modal.open();
 	}
 }

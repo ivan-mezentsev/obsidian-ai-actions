@@ -1,4 +1,5 @@
-import { requestUrl, RequestUrlParam } from "obsidian";
+import { requestUrl } from "obsidian";
+import type { RequestUrlParam } from "obsidian";
 
 // Native fetch wrapper that uses Obsidian's requestUrl to bypass CORS
 export async function nativeFetch(url: string, options: RequestInit = {}): Promise<Response> {
