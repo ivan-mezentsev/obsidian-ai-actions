@@ -272,3 +272,18 @@
     min-width: 60px;
   }
 }
+
+/* Quick prompt box positioning */
+.ai-actions-quick-prompt-box {
+  position: absolute;
+  z-index: 1000;
+}
+
+/* Auto-resize textarea */
+.ai-actions-auto-resize-textarea {
+  height: auto;
+  min-height: 40px;
+  max-height: 96px; /* 4 lines * 20px line height + 16px padding */
+  resize: none;
+  overflow-y: auto;
+}

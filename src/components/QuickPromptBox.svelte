@@ -65,7 +65,10 @@
 
 	// Auto-resize textarea function
 	const autoResize = (element: HTMLTextAreaElement) => {
+		// Temporarily reset height to auto to get proper scrollHeight
+		const originalHeight = element.style.height;
 		element.style.height = 'auto';
+		
 		const lineHeight = 20; // Approximate line height
 		const padding = 16; // Top and bottom padding
 		const maxLines = 4;
@@ -73,7 +76,10 @@
 		const maxHeight = (lineHeight * maxLines) + padding;
 		
 		const newHeight = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight);
-		element.style.height = newHeight + 'px';
+		
+		// Use CSS custom property for dynamic height
+		element.style.setProperty('--dynamic-height', newHeight + 'px');
+		element.style.height = 'var(--dynamic-height)';
 	};
 
 	export function show(initialPrompt?: string) {
@@ -170,7 +176,7 @@
 			on:input={onPromptChanged}
 			on:keydown={onKeyDown}
 			rows="1"
-			class="prompt-input"
+			class="prompt-input ai-actions-auto-resize-textarea"
 			bind:this={promptEl}
 			bind:value={prompt}
 			placeholder={dynamicPlaceholder}
