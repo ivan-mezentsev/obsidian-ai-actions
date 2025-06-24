@@ -1,5 +1,5 @@
 import { App, Modal, Setting, Notice } from "obsidian";
-import { AIProvider, AIProviderType } from "../types";
+import type { AIProvider, AIProviderType } from "../types";
 import AIEditor from "../main";
 
 export class ProviderEditModal extends Modal {

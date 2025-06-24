@@ -2,13 +2,20 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![GitHub issues](https://img.shields.io/github/issues/ivan-mezentsev/obsidian-ai-actions.svg)](https://github.com/ivan-mezentsev/obsidian-ai-actions/issues)
+[![plugin](https://img.shields.io/github/v/release/ivan-mezentsev/obsidian-ai-actions?label=plugin&display_name=tag&logo=obsidian&color=purple&logoColor=violet)](https://github.com/ivan-mezentsev/obsidian-ai-actions/releases/latest)
+[![downloads](https://img.shields.io/github/downloads/ivan-mezentsev/obsidian-ai-actions/total?logo=github)](href="https://github.com/ivan-mezentsev/obsidian-ai-actions)
+[![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?color=7e6ad6&labelColor=34208c&label=Obsidian%20Downloads&query=$['ai-actions'].downloads&url=https://raw.githubusercontent.com/obsidianmd/obsidian-releases/master/community-plugin-stats.json&)](obsidian://show-plugin?id=ai-actions)
+![GitHub stars](https://img.shields.io/github/stars/ivan-mezentsev/obsidian-ai-actions?style=flat)
 
 A powerful Obsidian plugin that integrates AI-powered text processing directly into your note-taking workflow. Transform, enhance, and automate your writing with customizable AI actions.
 
 ## 📋 Changelog
 For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
-[SCREENSHOTS.md](docs/SCREENSHOTS.md).
+## Demo
+![Demo](docs/QuickPrompt.gif)
+
+[SCREENSHOTS.md](docs/SCREENSHOTS.md)
 
 ## ✨ Key Features
 
@@ -149,7 +156,7 @@ This plugin is a fork of [obsidian-ai-editor](https://github.com/buszk/obsidian-
 
 - **Zekun Shen (buszk)** - Original plugin architecture and implementation
 - **Pavel Frankov** - LLM providers factory and prompt examples from [obsidian-ai-providers](https://github.com/pfrankov/obsidian-ai-providers)
-
+- **Pavel Frankov** - spinnerPlugin from [obsidian-local-gpt](https://github.com/pfrankov/obsidian-local-gpt)
 ---
 
 **Transform your Obsidian experience with AI-powered text processing!**
