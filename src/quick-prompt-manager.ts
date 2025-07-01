@@ -156,8 +156,8 @@ export class QuickPromptManager {
 	private registerPromptBoxEvents(mountEl: HTMLElement, promptBox: QuickPromptBox) {
 		// Handle submit event
 		promptBox.$on('submit', async (event: any) => {
-			const { prompt, modelId } = event.detail;
-			await this.processPrompt(prompt, modelId);
+			const { prompt, modelId, outputMode } = event.detail;
+			await this.processPrompt(prompt, modelId, outputMode);
 		});
 
 		// Handle close event
@@ -179,7 +179,7 @@ export class QuickPromptManager {
 	/**
 	 * Process the submitted prompt
 	 */
-	private async processPrompt(userPrompt: string, modelId?: string) {
+	private async processPrompt(userPrompt: string, modelId?: string, outputMode: string = "replace") {
 		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
 
@@ -189,10 +189,11 @@ export class QuickPromptManager {
 
 		const handler = new ActionHandler(this.plugin.settings);
 		
-		// Keep the original quick prompt action settings but use selected model
+		// Keep the original quick prompt action settings but use selected model and output mode
 		const quickPromptAction = {
 			...this.plugin.settings.quickPrompt,
-			model: modelId || this.plugin.settings.quickPrompt.model
+			model: modelId || this.plugin.settings.quickPrompt.model,
+			loc: outputMode === "append" ? Location.APPEND_CURRENT : Location.REPLACE_CURRENT
 		};
 
 		// Save cursor positions before processing

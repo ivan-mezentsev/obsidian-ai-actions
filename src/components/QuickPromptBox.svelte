@@ -9,6 +9,7 @@
 	export let availableModels: AIModel[] = [];
 	export let selectedModelId: string = "";
 	export let defaultModelId: string = "";
+	export let outputMode: string = "replace"; // "replace" or "append"
 
 	// Detect OS for keyboard shortcuts
 	const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -21,6 +22,15 @@
 	let dropdownOpen = false;
 	let dropdownEl: HTMLElement;
 	let dropdownDirection: 'down' | 'up' = 'down';
+	let modeDropdownOpen = false;
+	let modeDropdownEl: HTMLElement;
+	let modeDropdownDirection: 'down' | 'up' = 'down';
+
+	// Output mode options
+	const outputModes = [
+		{ value: "replace", label: "Replace" },
+		{ value: "append", label: "Append" }
+	];
 
 	// Initialize selected model with default
 	$: if (selectedModelId === "" && defaultModelId !== "") {
@@ -34,6 +44,9 @@
 	const handleClickOutside = (event: MouseEvent) => {
 		if (dropdownEl && !dropdownEl.contains(event.target as Node)) {
 			dropdownOpen = false;
+		}
+		if (modeDropdownEl && !modeDropdownEl.contains(event.target as Node)) {
+			modeDropdownOpen = false;
 		}
 	};
 
@@ -55,10 +68,33 @@
 		}
 	};
 
-	$: if (dropdownOpen) {
+	// Calculate mode dropdown direction
+	const calculateModeDropdownDirection = () => {
+		if (!modeDropdownEl) return;
+		
+		const rect = modeDropdownEl.getBoundingClientRect();
+		const viewportHeight = window.innerHeight;
+		const spaceBelow = viewportHeight - rect.bottom;
+		const spaceAbove = rect.top;
+		const dropdownHeight = outputModes.length * 32 + 8; // Approximate dropdown height
+		
+		// If not enough space below but enough space above, open upward
+		if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+			modeDropdownDirection = 'up';
+		} else {
+			modeDropdownDirection = 'down';
+		}
+	};
+
+	$: if (dropdownOpen || modeDropdownOpen) {
 		document.addEventListener('click', handleClickOutside);
 		// Calculate direction when dropdown opens
-		setTimeout(calculateDropdownDirection, 0);
+		if (dropdownOpen) {
+			setTimeout(calculateDropdownDirection, 0);
+		}
+		if (modeDropdownOpen) {
+			setTimeout(calculateModeDropdownDirection, 0);
+		}
 	} else {
 		document.removeEventListener('click', handleClickOutside);
 	}
@@ -136,7 +172,7 @@
 
 	const submitPrompt = () => {
 		if (prompt.trim() && selectedModelId) {
-			dispatch('submit', { prompt: prompt.trim(), modelId: selectedModelId });
+			dispatch('submit', { prompt: prompt.trim(), modelId: selectedModelId, outputMode });
 			hide();
 		}
 	};
@@ -148,6 +184,15 @@
 
 	const toggleDropdown = () => {
 		dropdownOpen = !dropdownOpen;
+	};
+
+	const toggleModeDropdown = () => {
+		modeDropdownOpen = !modeDropdownOpen;
+	};
+
+	const selectMode = (mode: string) => {
+		outputMode = mode;
+		modeDropdownOpen = false;
 	};
 
 	const closePrompt = () => {
@@ -185,6 +230,37 @@
 			tabindex="0"
 		/>
 		<div class="prompt-actions">
+			<!-- Output Mode Selector Dropdown -->
+			<div class="mode-selector" bind:this={modeDropdownEl}>
+				<div
+					class="mode-selector-button"
+					on:click={toggleModeDropdown}
+					role="button"
+					tabindex="0"
+					on:keydown={defaultEnterEvent}
+					aria-label="Select Output Mode"
+					title="Select Output Mode"
+				>
+					<span class="mode-name">{outputModes.find(m => m.value === outputMode)?.label || "Replace"}</span>
+					<ChevronDown size={14} class={modeDropdownOpen ? 'rotated' : ''} />
+				</div>
+				{#if modeDropdownOpen}
+					<div class="mode-dropdown mode-dropdown--{modeDropdownDirection}">
+						{#each outputModes as mode}
+							<div
+								class="mode-option {outputMode === mode.value ? 'selected' : ''}"
+								on:click={() => selectMode(mode.value)}
+								role="button"
+								tabindex="0"
+								on:keydown={defaultEnterEvent}
+							>
+								{mode.label}
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+			
 			<!-- Model Selector Dropdown -->
 			<div class="model-selector" bind:this={dropdownEl}>
 				<div
@@ -358,6 +434,95 @@
 
 	.prompt-btn--close {
 		color: var(--text-muted);
+	}
+
+	/* Mode Selector Styles */
+	.mode-selector {
+		position: relative;
+		margin-right: 8px;
+	}
+
+	.mode-selector-button {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 10px;
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 4px;
+		background: var(--background-primary);
+		color: var(--text-normal);
+		cursor: pointer;
+		font-size: 12px;
+		min-width: 80px;
+		transition: all 0.2s ease;
+		white-space: nowrap;
+	}
+
+	.mode-selector-button:hover {
+		background-color: var(--background-modifier-hover);
+		border-color: var(--interactive-accent);
+	}
+
+	.mode-selector-button:focus {
+		outline: none;
+		border-color: var(--interactive-accent);
+		box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
+	}
+
+	.mode-name {
+		flex: 1;
+		text-overflow: ellipsis;
+		overflow: hidden;
+	}
+
+	.mode-dropdown {
+		position: absolute;
+		left: 0;
+		right: 0;
+		z-index: 1001;
+		background: var(--background-primary);
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 4px;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		max-height: 200px;
+		overflow-y: auto;
+	}
+
+	.mode-dropdown--down {
+		top: 100%;
+		margin-top: 2px;
+	}
+
+	.mode-dropdown--up {
+		bottom: 100%;
+		margin-bottom: 2px;
+	}
+
+	.mode-option {
+		padding: 8px 12px;
+		cursor: pointer;
+		font-size: 12px;
+		color: var(--text-normal);
+		transition: background-color 0.2s ease;
+		border-bottom: 1px solid var(--background-modifier-border-hover);
+	}
+
+	.mode-option:last-child {
+		border-bottom: none;
+	}
+
+	.mode-option:hover {
+		background-color: var(--background-modifier-hover);
+	}
+
+	.mode-option.selected {
+		background-color: var(--interactive-accent);
+		color: var(--text-on-accent);
+	}
+
+	.mode-option:focus {
+		outline: none;
+		background-color: var(--background-modifier-hover);
 	}
 
 	/* Model Selector Styles */
