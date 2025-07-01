@@ -27,6 +27,7 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 - **Groq** - High-speed inference
 - **OpenRouter** - Access to multiple AI providers
 - **LM Studio** - Local model hosting
+- **Anthropic** - Claude models with official SDK
 
 ### ⚡ Pre-built Actions
 - **Document Summarization** - Generate concise summaries
@@ -38,6 +39,7 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 ### 🎯 Flexible Text Processing
 - **Selection Options**: Process entire document or selected text
 - **Output Locations**: Insert at beginning, append to end, replace selection, or save to specific files
+- **Output Modes**: Choose different processing modes for prompt results
 - **Custom Formatting**: Define output templates with placeholders
 - **Temperature Control**: Adjust AI creativity and randomness
 - **Token Limits**: Control response length
