@@ -47,6 +47,7 @@ export class QuickPromptManager {
 		// Create new component
 		const cid = this.generateUniqueId();
 		const availableModels = this.plugin.settings.aiProviders?.models || [];
+		const availableProviders = this.plugin.settings.aiProviders?.providers || [];
 		const defaultModelId = this.plugin.settings.quickPrompt?.model || this.plugin.settings.aiProviders?.defaultModelId || "";
 		
 		const promptBox = new QuickPromptBox({
@@ -56,6 +57,7 @@ export class QuickPromptManager {
 				prompt: "",
 				cid: cid,
 				availableModels: availableModels,
+				availableProviders: availableProviders,
 				selectedModelId: defaultModelId,
 				defaultModelId: defaultModelId
 			}

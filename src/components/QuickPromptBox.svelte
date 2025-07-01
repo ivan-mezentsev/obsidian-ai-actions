@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { X, Send, ChevronDown } from "lucide-svelte";
 	import { createEventDispatcher } from "svelte";
-	import type { AIModel } from "../types";
+	import type { AIModel, AIProvider } from "../types";
 
 	export let visible: boolean = false;
 	export let prompt: string = "";
 	export let cid: string = "";
 	export let availableModels: AIModel[] = [];
+	export let availableProviders: AIProvider[] = [];
 	export let selectedModelId: string = "";
 	export let defaultModelId: string = "";
 	export let outputMode: string = "replace"; // "replace" or "append"
@@ -25,6 +26,7 @@
 	let modeDropdownOpen = false;
 	let modeDropdownEl: HTMLElement;
 	let modeDropdownDirection: 'down' | 'up' = 'down';
+	let selectedModelName: string = "Select Model";
 
 	// Output mode options
 	const outputModes = [
@@ -37,8 +39,33 @@
 		selectedModelId = defaultModelId;
 	}
 
-	// Get selected model name for display
-	$: selectedModelName = availableModels.find(m => m.id === selectedModelId)?.name || "Select Model";
+	// Get selected model name for display with provider
+	$: {
+		const selectedModel = availableModels.find(m => m.id === selectedModelId);
+		if (selectedModel) {
+			// Find provider name by providerId
+			const providerName = getProviderNameForModel(selectedModel);
+			const fullName = providerName ? `${selectedModel.name} (${providerName})` : selectedModel.name;
+			// Truncate if too long
+			selectedModelName = truncateText(fullName, 25);
+		} else {
+			selectedModelName = "Select Model";
+		}
+	}
+
+	// Helper function to get provider name for a model
+	function getProviderNameForModel(model: AIModel): string {
+		const provider = availableProviders.find(p => p.id === model.providerId);
+		return provider ? provider.name : "Unknown Provider";
+	}
+
+	// Helper function to truncate text with ellipsis
+	function truncateText(text: string, maxLength: number): string {
+		if (text.length <= maxLength) {
+			return text;
+		}
+		return text.substring(0, maxLength - 3) + "...";
+	}
 
 	// Close dropdown when clicking outside
 	const handleClickOutside = (event: MouseEvent) => {
@@ -270,7 +297,14 @@
 					tabindex="0"
 					on:keydown={defaultEnterEvent}
 					aria-label="Select AI Model"
-					title="Select AI Model"
+					title={(() => {
+						const selectedModel = availableModels.find(m => m.id === selectedModelId);
+						if (selectedModel) {
+							const providerName = getProviderNameForModel(selectedModel);
+							return providerName ? `${selectedModel.name} (${providerName})` : selectedModel.name;
+						}
+						return "Select AI Model";
+					})()}
 				>
 					<span class="model-name">{selectedModelName}</span>
 					<ChevronDown size={14} class={dropdownOpen ? 'rotated' : ''} />
@@ -278,16 +312,16 @@
 				{#if dropdownOpen}
 					<div class="model-dropdown model-dropdown--{dropdownDirection}">
 						{#each availableModels as model}
-							<div
-								class="model-option {selectedModelId === model.id ? 'selected' : ''}"
-								on:click={() => selectModel(model.id)}
-								role="button"
-								tabindex="0"
-								on:keydown={defaultEnterEvent}
-							>
-								{model.name}
-							</div>
-						{/each}
+					<div
+						class="model-option {selectedModelId === model.id ? 'selected' : ''}"
+						on:click={() => selectModel(model.id)}
+						role="button"
+						tabindex="0"
+						on:keydown={defaultEnterEvent}
+					>
+						{model.name} ({getProviderNameForModel(model)})
+					</div>
+				{/each}
 					</div>
 				{/if}
 			</div>
@@ -542,7 +576,8 @@
 		color: var(--text-normal);
 		cursor: pointer;
 		font-size: 12px;
-		min-width: 120px;
+		width: 180px;
+		max-width: 180px;
 		transition: all 0.2s ease;
 		white-space: nowrap;
 	}
