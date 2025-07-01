@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.2.1 - 2025-07-01
+- feat(model-editor): auto-update display name when model is selected
+- feat(provider-editor): auto-update provider name when type changes
+- chore: upgrade openai dependency
+- feat(anthropic): add support for anthropic ai provider
+
 ### 0.2.0 - 2025-06-24
 - refactor(QuickPromptBox): replace mode dropdown with toggle button
 - feat(quick-prompt): display provider name with model in selection
