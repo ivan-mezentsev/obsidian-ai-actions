@@ -4,6 +4,9 @@ on:
     # Sequence of patterns matched against refs/tags
     tags:
     - '*' # Push events to matching any tag format, i.e. 1.0, 20.15.10
+
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,7 +22,7 @@ jobs:
     - name: Get Version
       id: version
       run: |
-        echo "::set-output name=tag::$(git describe --abbrev=0)"
+        echo "tag=$(git describe --abbrev=0)" >> "$GITHUB_OUTPUT"
     # Build the plugin
     - name: Build
       id: build
