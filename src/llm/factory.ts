@@ -6,6 +6,7 @@ import { OllamaLLM } from "./ollama_llm";
 import { GroqLLM } from "./groq_llm";
 import { OpenRouterLLM } from "./openrouter_llm";
 import { LMStudioLLM } from "./lmstudio_llm";
+import { AnthropicLLM } from "./anthropic_llm";
 import { OpenAIModel } from "./openai_llm";
 import type { AIEditorSettings } from "../settings";
 import type { Model } from "./models";
@@ -89,6 +90,8 @@ export class LLMFactory {
 					provider.url,
 					debugMode
 				);
+			case "anthropic":
+				return new AnthropicLLM(provider, model.modelName, useNativeFetch, debugMode);
 			case "gemini":
 				return new GeminiLLM(provider, model.modelName, useNativeFetch, debugMode);
 			case "ollama":

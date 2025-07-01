@@ -48,6 +48,7 @@ export class ProviderEditModal extends Modal {
             .addDropdown((dropdown) => {
                 const providerTypes: Record<AIProviderType, string> = {
                     'openai': 'OpenAI',
+                    'anthropic': 'Anthropic',
                     'ollama': 'Ollama',
                     'gemini': 'Google Gemini',
                     'openrouter': 'OpenRouter',
@@ -124,6 +125,7 @@ export class ProviderEditModal extends Modal {
     private getDefaultUrls(): Record<AIProviderType, string> {
         return {
             'openai': 'https://api.openai.com/v1',
+            'anthropic': 'https://api.anthropic.com',
             'ollama': 'http://localhost:11434',
             'gemini': 'https://generativelanguage.googleapis.com/v1beta/openai',
             'openrouter': 'https://openrouter.ai/api/v1',

@@ -1,6 +1,7 @@
 import { App, Modal, Setting, Notice } from "obsidian";
 import type { AIModel, AIProvider } from "../types";
 import AIEditor from "../main";
+import Anthropic from '@anthropic-ai/sdk';
 
 export class ModelEditModal extends Modal {
     model: AIModel;
@@ -170,6 +171,22 @@ export class ModelEditModal extends Modal {
     private async fetchModelsFromProvider(provider: AIProvider): Promise<string[]> {
         if (!provider.url || !provider.apiKey) {
             throw new Error("Provider URL and API key are required");
+        }
+
+        if (provider.type === 'anthropic') {
+            // For Anthropic, use the SDK's HTTP client to avoid CORS issues
+            const client = new Anthropic({
+                apiKey: provider.apiKey,
+                baseURL: provider.url,
+                dangerouslyAllowBrowser: true
+            });
+            
+            try {
+                const response = await client.get('/v1/models') as any;
+                return response.data?.map((model: any) => model.id) || [];
+            } catch (error) {
+                throw new Error(`Failed to fetch Anthropic models: ${error}`);
+            }
         }
 
         let url: string;
