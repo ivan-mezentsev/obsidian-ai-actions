@@ -1,4 +1,4 @@
-export type AIProviderType = 'openai' | 'ollama' | 'gemini' | 'openrouter' | 'lmstudio' | 'groq';
+export type AIProviderType = 'openai' | 'ollama' | 'gemini' | 'openrouter' | 'lmstudio' | 'groq' | 'anthropic';
 
 export interface AIProvider {
     id: string;

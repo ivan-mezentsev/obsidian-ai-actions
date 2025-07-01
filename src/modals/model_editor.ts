@@ -1,6 +1,7 @@
 import { App, Modal, Setting, Notice } from "obsidian";
 import type { AIModel, AIProvider } from "../types";
 import AIEditor from "../main";
+import Anthropic from '@anthropic-ai/sdk';
 
 export class ModelEditModal extends Modal {
     model: AIModel;
@@ -43,6 +44,7 @@ export class ModelEditModal extends Modal {
                     .onChange((value) => {
                         this.model.name = value;
                     });
+                this.displayNameText = text;
             });
 
         new Setting(contentEl)
@@ -123,6 +125,7 @@ export class ModelEditModal extends Modal {
     private modelNameText: any;
     private modelNameSetting: Setting;
     private refreshButton: Setting;
+    private displayNameText: any;
 
     private updateAvailableModels() {
         const selectedProvider = this.availableProviders.find(p => p.id === this.model.providerId);
@@ -136,8 +139,19 @@ export class ModelEditModal extends Modal {
                 dropdown.setValue(this.model.modelName)
                     .onChange((value) => {
                         this.model.modelName = value;
+                        // Auto-update display name when model is selected
+                        this.updateDisplayNameFromModel(value);
                     });
             });
+        }
+    }
+
+    private updateDisplayNameFromModel(modelName: string) {
+        // If model name contains "/", take only the part after the last slash
+        const displayName = modelName.includes("/") ? modelName.split("/").pop() || modelName : modelName;
+        this.model.name = displayName;
+        if (this.displayNameText) {
+            this.displayNameText.setValue(displayName);
         }
     }
 
@@ -170,6 +184,22 @@ export class ModelEditModal extends Modal {
     private async fetchModelsFromProvider(provider: AIProvider): Promise<string[]> {
         if (!provider.url || !provider.apiKey) {
             throw new Error("Provider URL and API key are required");
+        }
+
+        if (provider.type === 'anthropic') {
+            // For Anthropic, use the SDK's HTTP client to avoid CORS issues
+            const client = new Anthropic({
+                apiKey: provider.apiKey,
+                baseURL: provider.url,
+                dangerouslyAllowBrowser: true
+            });
+            
+            try {
+                const response = await client.get('/v1/models') as any;
+                return response.data?.map((model: any) => model.id) || [];
+            } catch (error) {
+                throw new Error(`Failed to fetch Anthropic models: ${error}`);
+            }
         }
 
         let url: string;
