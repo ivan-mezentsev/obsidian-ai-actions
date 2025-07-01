@@ -13,7 +13,8 @@ A powerful Obsidian plugin that integrates AI-powered text processing directly i
 For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Demo
-![Demo](docs/QuickPrompt.gif)
+![Demo0](docs/QuickPrompt0.gif)
+![Demo1](docs/QuickPrompt1.gif)
 
 [SCREENSHOTS.md](docs/SCREENSHOTS.md)
 
