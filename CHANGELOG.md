@@ -1,6 +1,12 @@
 ## Changelog
 
 ### 0.2.0 - 2025-06-24
+- refactor(QuickPromptBox): replace mode dropdown with toggle button
+- feat(quick-prompt): display provider name with model in selection
+- feat(quick-prompt): add output mode selection for prompt processing
+- refactor(ui): improve textarea styling and auto-resize logic
+- feat(quick-prompt): improve textarea auto-resize and positioning
+- chore: update dependencies to fix deprecation warnings
 - feat: add spinner based on the example project [obsidian-local-gpt](https://github.com/pfrankov/obsidian-local-gpt) by [Pavel Frankov](https://github.com/pfrankov) 
 - feat: add quick prompt feature with svelte UI
 - refactor: update type imports to use verbatimModuleSyntax
