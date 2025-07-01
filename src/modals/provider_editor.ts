@@ -40,6 +40,7 @@ export class ProviderEditModal extends Modal {
                     .onChange((value) => {
                         this.provider.name = value;
                     });
+                this.nameText = text;
             });
 
         new Setting(contentEl)
@@ -64,10 +65,11 @@ export class ProviderEditModal extends Modal {
                     .onChange((value) => {
                         this.provider.type = value as AIProviderType;
                         this.updateUrlForProviderType();
+                        this.updateNameForProviderType(value as AIProviderType);
                     });
             });
 
-        const urlSetting = new Setting(contentEl)
+        new Setting(contentEl)
             .setName("Provider URL")
             .setDesc("Enter the API endpoint URL")
             .addText((text) => {
@@ -121,6 +123,7 @@ export class ProviderEditModal extends Modal {
     }
 
     private urlText: any;
+    private nameText: any;
 
     private getDefaultUrls(): Record<AIProviderType, string> {
         return {
@@ -161,6 +164,24 @@ export class ProviderEditModal extends Modal {
         }
         
         this.urlText.setPlaceholder(defaultUrl || 'https://...');
+    }
+
+    private updateNameForProviderType(providerType: AIProviderType) {
+        const providerTypeNames: Record<AIProviderType, string> = {
+            'openai': 'OpenAI',
+            'anthropic': 'Anthropic',
+            'ollama': 'Ollama',
+            'gemini': 'Google Gemini',
+            'openrouter': 'OpenRouter',
+            'lmstudio': 'LM Studio',
+            'groq': 'Groq'
+        };
+        
+        const newName = providerTypeNames[providerType] || providerType;
+        this.provider.name = newName;
+        if (this.nameText) {
+            this.nameText.setValue(newName);
+        }
     }
 
     private validateProvider(): boolean {

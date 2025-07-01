@@ -44,6 +44,7 @@ export class ModelEditModal extends Modal {
                     .onChange((value) => {
                         this.model.name = value;
                     });
+                this.displayNameText = text;
             });
 
         new Setting(contentEl)
@@ -124,6 +125,7 @@ export class ModelEditModal extends Modal {
     private modelNameText: any;
     private modelNameSetting: Setting;
     private refreshButton: Setting;
+    private displayNameText: any;
 
     private updateAvailableModels() {
         const selectedProvider = this.availableProviders.find(p => p.id === this.model.providerId);
@@ -137,8 +139,19 @@ export class ModelEditModal extends Modal {
                 dropdown.setValue(this.model.modelName)
                     .onChange((value) => {
                         this.model.modelName = value;
+                        // Auto-update display name when model is selected
+                        this.updateDisplayNameFromModel(value);
                     });
             });
+        }
+    }
+
+    private updateDisplayNameFromModel(modelName: string) {
+        // If model name contains "/", take only the part after the last slash
+        const displayName = modelName.includes("/") ? modelName.split("/").pop() || modelName : modelName;
+        this.model.name = displayName;
+        if (this.displayNameText) {
+            this.displayNameText.setValue(displayName);
         }
     }
 
