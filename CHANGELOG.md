@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.2.2 - 2025-07-03
+- Replace custom Gemini API implementation with the official SDK to simplify maintenance and improve reliability.
+
 ### 0.2.1 - 2025-07-01
 - feat(model-editor): auto-update display name when model is selected
 - feat(provider-editor): auto-update provider name when type changes
