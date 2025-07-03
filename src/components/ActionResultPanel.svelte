@@ -159,7 +159,8 @@
 	}
 
 	.action-btn {
-		padding: 6px 12px;
+		height: 32px;
+		padding: 4px 8px;
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -168,9 +169,9 @@
 		transition: background-color 0.2s ease;
 		border: 1px solid transparent;
 		color: var(--text-normal);
-		font-size: 12px;
+		font-size: 11px;
 		font-family: var(--font-interface);
-		min-width: 50px;
+		min-width: 45px;
 		gap: 4px;
 	}
 
@@ -195,8 +196,9 @@
 
 	.action-btn--cancel {
 		color: var(--text-muted);
+		width: 32px;
 		min-width: 32px;
-		padding: 6px 8px;
+		padding: 4px 6px;
 	}
 
 	.action-btn--cancel:hover {
