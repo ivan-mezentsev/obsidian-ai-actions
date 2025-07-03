@@ -1,7 +1,14 @@
 <script lang="ts">
 	import { X, Send, ChevronDown } from "lucide-svelte";
 	import { createEventDispatcher } from "svelte";
+	import { App, MarkdownView } from "obsidian";
 	import type { AIModel, AIProvider } from "../types";
+
+	// Get app instance from global context
+	let app: App;
+	if (typeof window !== 'undefined' && (window as any).app) {
+		app = (window as any).app;
+	}
 
 	export let visible: boolean = false;
 	export let prompt: string = "";
@@ -140,6 +147,14 @@
 	export function hide() {
 		visible = false;
 		// Don't clear prompt here to preserve user input
+		
+		// Return focus to editor when hiding prompt box
+		setTimeout(() => {
+			const activeView = app?.workspace?.getActiveViewOfType?.(MarkdownView);
+			if (activeView?.editor) {
+				activeView.editor.focus();
+			}
+		}, 50);
 	}
 
 	const onPromptChanged = (e: Event) => {

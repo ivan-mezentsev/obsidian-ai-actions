@@ -189,6 +189,9 @@ export class QuickPromptManager {
 		// @ts-expect-error, not typed
 		const editorView = editor.cm;
 
+		// Ensure editor has focus for streaming visibility
+		editor.focus();
+
 		const handler = new ActionHandler(this.plugin.settings);
 		
 		// Keep the original quick prompt action settings but use selected model and output mode
@@ -254,6 +257,9 @@ export class QuickPromptManager {
 			// Hide spinner when done
 			hideSpinner && hideSpinner();
 
+			// Ensure editor maintains focus after streaming
+			editor.focus();
+
 			// Apply result using saved cursor positions
 			const formattedResult = quickPromptAction.format.replace("{{result}}", result);
 			
@@ -282,6 +288,9 @@ export class QuickPromptManager {
 			const spinner = editorView.plugin(spinnerPlugin) || undefined;
 			const hideSpinner = spinner?.hide;
 			hideSpinner && hideSpinner(editor.posToOffset(cursorPositionTo));
+			
+			// Ensure editor maintains focus even on error
+			editor.focus();
 		}
 	}
 

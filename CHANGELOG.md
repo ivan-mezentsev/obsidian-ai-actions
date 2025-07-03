@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.2.3 - 2025-07-03
+- fix: maintain editor focus during quick prompt operations
+
 ### 0.2.2 - 2025-07-03
 - Replace custom Gemini API implementation with the official SDK to simplify maintenance and improve reliability.
 
