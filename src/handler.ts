@@ -121,6 +121,9 @@ export class ActionHandler {
 		const providerName = this.llmFactory.getProviderName(action.model);
 		new Notice(`Querying ${providerName} API...`);
 
+		// Ensure editor has focus for streaming visibility
+		editor.focus();
+
 		// Get spinner plugin and show loading animation at cursor position
 		const spinner = editorView.plugin(spinnerPlugin) || undefined;
 		const hideSpinner = spinner?.show(editor.posToOffset(cursorPositionTo));
@@ -215,6 +218,9 @@ export class ActionHandler {
 			// When streaming is complete, hide spinner and handle final result
 			hideSpinner && hideSpinner();
 
+			// Ensure editor maintains focus after streaming
+			editor.focus();
+
 			// If modal is not shown, directly apply the result
 			if (!shouldShowModal && accumulatedText.trim()) {
 				const finalText = action.format.replace("{{result}}", accumulatedText.trim());
@@ -247,6 +253,8 @@ export class ActionHandler {
 			console.log(error);
 			new Notice(`Autocomplete error:\n${error}`);
 			hideSpinner && hideSpinner();
+			// Ensure editor maintains focus even on error
+			editor.focus();
 		}
 	}
 }
