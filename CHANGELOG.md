@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.3.0 - 2025-07-04
+- style(ActionResultPanel): adjust button dimensions and padding for consistency
+- refactor(action-result): change panel positioning to fixed top-left
+- refactor(ActionResultPanel): replace buttons with div elements and simplify styles
+- feat(action-handler): replace modal with svelte panel for action results
+
 ### 0.2.4 - 2025-07-03
 - refactor(handler): Add app.workspace.updateOptions() calls after UI operations
 
