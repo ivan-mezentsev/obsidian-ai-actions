@@ -19,17 +19,18 @@ export class QuickPromptManager {
 	 * Get or create QuickPromptBox component
 	 */
 	getPromptBox(): QuickPromptBox {
-		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+		const view =
+			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) {
 			throw new Error("No active MarkdownView found");
 		}
 
 		const targetEl = view.containerEl;
-		const promptBoxEl = targetEl.querySelector('.quick-prompt-box');
-		
+		const promptBoxEl = targetEl.querySelector(".quick-prompt-box");
+
 		// If prompt box already exists, find it in cache
 		if (promptBoxEl) {
-			const cid = promptBoxEl.getAttribute('data-cid');
+			const cid = promptBoxEl.getAttribute("data-cid");
 			if (cid) {
 				const cachedBox = this.promptBoxCache.get(cid);
 				if (cachedBox) {
@@ -47,9 +48,13 @@ export class QuickPromptManager {
 		// Create new component
 		const cid = this.generateUniqueId();
 		const availableModels = this.plugin.settings.aiProviders?.models || [];
-		const availableProviders = this.plugin.settings.aiProviders?.providers || [];
-		const defaultModelId = this.plugin.settings.quickPrompt?.model || this.plugin.settings.aiProviders?.defaultModelId || "";
-		
+		const availableProviders =
+			this.plugin.settings.aiProviders?.providers || [];
+		const defaultModelId =
+			this.plugin.settings.quickPrompt?.model ||
+			this.plugin.settings.aiProviders?.defaultModelId ||
+			"";
+
 		const promptBox = new QuickPromptBox({
 			target: targetEl,
 			props: {
@@ -59,8 +64,8 @@ export class QuickPromptManager {
 				availableModels: availableModels,
 				availableProviders: availableProviders,
 				selectedModelId: defaultModelId,
-				defaultModelId: defaultModelId
-			}
+				defaultModelId: defaultModelId,
+			},
 		});
 
 		this.registerPromptBoxEvents(targetEl, promptBox);
@@ -81,12 +86,12 @@ export class QuickPromptManager {
 	async showQuickPrompt(editor: Editor, view: MarkdownView) {
 		// Hide any existing prompt boxes first
 		this.hideAllPromptBoxes();
-		
+
 		const promptBox = this.getPromptBox();
-		
+
 		// Show the prompt box first
 		promptBox.show("");
-		
+
 		// Position after a short delay to ensure DOM is ready
 		setTimeout(() => {
 			this.positionPromptBox(editor, view);
@@ -110,43 +115,50 @@ export class QuickPromptManager {
 	private positionPromptBox(editor: Editor, view: MarkdownView) {
 		// Get cursor position (if there's selection, use the end of selection)
 		const selection = editor.getSelection();
-		const cursorPos = selection ? editor.getCursor("to") : editor.getCursor();
-		
+		const cursorPos = selection
+			? editor.getCursor("to")
+			: editor.getCursor();
+
 		// @ts-expect-error, not typed
 		const editorView = editor.cm;
 		const coords = editorView.coordsAtPos(editor.posToOffset(cursorPos));
-		
+
 		if (coords) {
-			const promptBoxEl = view.containerEl.querySelector('.quick-prompt-box') as HTMLElement;
+			const promptBoxEl = view.containerEl.querySelector(
+				".quick-prompt-box",
+			) as HTMLElement;
 			if (promptBoxEl) {
 				// Get editor container position for relative positioning
 				const editorContainer = view.contentEl;
 				const editorRect = editorContainer.getBoundingClientRect();
-				
+
 				// Calculate position relative to editor container
 				const relativeLeft = coords.left - editorRect.left;
 				const relativeTop = coords.bottom - editorRect.top;
-				
+
 				// Add CSS class for positioning
-				promptBoxEl.classList.add('ai-actions-quick-prompt-box');
-				
+				promptBoxEl.classList.add("ai-actions-quick-prompt-box");
+
 				// Position slightly below and to the right of cursor/selection
-				promptBoxEl.style.setProperty('left', `${relativeLeft + 10}px`);
-				promptBoxEl.style.setProperty('top', `${relativeTop + 10}px`);
-				
+				promptBoxEl.style.setProperty("left", `${relativeLeft + 10}px`);
+				promptBoxEl.style.setProperty("top", `${relativeTop + 10}px`);
+
 				// Ensure it doesn't go off screen
 				const rect = promptBoxEl.getBoundingClientRect();
 				const viewportWidth = window.innerWidth;
 				const viewportHeight = window.innerHeight;
-				
+
 				if (rect.right > viewportWidth) {
-					const newLeft = Math.max(10, relativeLeft - rect.width - 10);
-					promptBoxEl.style.setProperty('left', `${newLeft}px`);
+					const newLeft = Math.max(
+						10,
+						relativeLeft - rect.width - 10,
+					);
+					promptBoxEl.style.setProperty("left", `${newLeft}px`);
 				}
-				
+
 				if (rect.bottom > viewportHeight) {
 					const newTop = Math.max(10, relativeTop - rect.height - 20);
-					promptBoxEl.style.setProperty('top', `${newTop}px`);
+					promptBoxEl.style.setProperty("top", `${newTop}px`);
 				}
 			}
 		}
@@ -155,22 +167,27 @@ export class QuickPromptManager {
 	/**
 	 * Register event handlers for prompt box
 	 */
-	private registerPromptBoxEvents(mountEl: HTMLElement, promptBox: QuickPromptBox) {
+	private registerPromptBoxEvents(
+		mountEl: HTMLElement,
+		promptBox: QuickPromptBox,
+	) {
 		// Handle submit event
-		promptBox.$on('submit', async (event: any) => {
+		promptBox.$on("submit", async (event: any) => {
 			const { prompt, modelId, outputMode } = event.detail;
 			await this.processPrompt(prompt, modelId, outputMode);
 		});
 
 		// Handle close event
-		promptBox.$on('close', () => {
+		promptBox.$on("close", () => {
 			promptBox.hide();
 		});
 
 		// Handle escape key globally
-		this.plugin.registerDomEvent(mountEl, 'keydown', (e) => {
-			if (e.key === 'Escape') {
-				const promptBoxEl = mountEl.querySelector('.quick-prompt-box--active');
+		this.plugin.registerDomEvent(mountEl, "keydown", (e) => {
+			if (e.key === "Escape") {
+				const promptBoxEl = mountEl.querySelector(
+					".quick-prompt-box--active",
+				);
 				if (promptBoxEl) {
 					promptBox.hide();
 				}
@@ -181,8 +198,13 @@ export class QuickPromptManager {
 	/**
 	 * Process the submitted prompt
 	 */
-	private async processPrompt(userPrompt: string, modelId?: string, outputMode: string = "replace") {
-		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+	private async processPrompt(
+		userPrompt: string,
+		modelId?: string,
+		outputMode: string = "replace",
+	) {
+		const view =
+			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
 
 		const editor = view.editor;
@@ -193,12 +215,15 @@ export class QuickPromptManager {
 		editor.focus();
 
 		const handler = new ActionHandler(this.plugin.settings);
-		
+
 		// Keep the original quick prompt action settings but use selected model and output mode
 		const quickPromptAction = {
 			...this.plugin.settings.quickPrompt,
 			model: modelId || this.plugin.settings.quickPrompt.model,
-			loc: outputMode === "append" ? Location.APPEND_CURRENT : Location.REPLACE_CURRENT
+			loc:
+				outputMode === "append"
+					? Location.APPEND_CURRENT
+					: Location.REPLACE_CURRENT,
 		};
 
 		// Save cursor positions before processing
@@ -209,17 +234,25 @@ export class QuickPromptManager {
 
 		try {
 			// Get provider name for the model
-			const availableModels = this.plugin.settings.aiProviders?.models || [];
-			const model = availableModels.find(m => m.id === quickPromptAction.model);
-			const provider = this.plugin.settings.aiProviders?.providers.find(p => p.id === model?.providerId);
+			const availableModels =
+				this.plugin.settings.aiProviders?.models || [];
+			const model = availableModels.find(
+				(m) => m.id === quickPromptAction.model,
+			);
+			const provider = this.plugin.settings.aiProviders?.providers.find(
+				(p) => p.id === model?.providerId,
+			);
 			const providerName = provider?.name || "AI";
-			
+
 			// Show processing notice
 			const notice = new Notice(`Querying ${providerName} API...`, 0);
-			
+
 			// Get spinner plugin and show loading animation at cursor position
 			const spinner = editorView.plugin(spinnerPlugin) || undefined;
-			const hideSpinner = spinner?.show(editor.posToOffset(cursorPositionTo));
+			const hideSpinner = spinner?.show(
+				editor.posToOffset(cursorPositionTo),
+			);
+			this.plugin.app.workspace.updateOptions();
 
 			const processText = (text: string, selectedText: string) => {
 				if (!text.trim()) {
@@ -235,13 +268,14 @@ export class QuickPromptManager {
 
 			const onUpdate = (updatedString: string) => {
 				spinner?.processText(updatedString, (text: string) =>
-					processText(text, selectedText)
+					processText(text, selectedText),
 				);
+				this.plugin.app.workspace.updateOptions();
 			};
-			
+
 			// Get text input based on selection mode
 			const text = handler.getTextInput(quickPromptAction.sel, editor);
-			
+
 			let result = "";
 			// Use the new method that adds user prompt as additional message
 			await handler.autocompleteStreamingWithUserPrompt(
@@ -251,23 +285,27 @@ export class QuickPromptManager {
 				(token) => {
 					result += token;
 					onUpdate(result);
-				}
+				},
 			);
 
 			// Hide spinner when done
 			hideSpinner && hideSpinner();
+			this.plugin.app.workspace.updateOptions();
 
 			// Ensure editor maintains focus after streaming
 			editor.focus();
 
 			// Apply result using saved cursor positions
-			const formattedResult = quickPromptAction.format.replace("{{result}}", result);
-			
+			const formattedResult = quickPromptAction.format.replace(
+				"{{result}}",
+				result,
+			);
+
 			if (quickPromptAction.loc === Location.REPLACE_CURRENT) {
 				editor.replaceRange(
 					formattedResult,
 					cursorPositionFrom,
-					cursorPositionTo
+					cursorPositionTo,
 				);
 			} else {
 				await handler.addToNote(
@@ -275,20 +313,21 @@ export class QuickPromptManager {
 					formattedResult,
 					editor,
 					view.file?.vault,
-					quickPromptAction.locationExtra
+					quickPromptAction.locationExtra,
 				);
 			}
-			
+
 			notice.hide();
 		} catch (error) {
-			console.error('Quick Prompt error:', error);
+			console.error("Quick Prompt error:", error);
 			new Notice(`Quick Prompt error: ${error}`);
-			
+
 			// Hide spinner on error
 			const spinner = editorView.plugin(spinnerPlugin) || undefined;
 			const hideSpinner = spinner?.hide;
 			hideSpinner && hideSpinner(editor.posToOffset(cursorPositionTo));
-			
+			this.plugin.app.workspace.updateOptions();
+
 			// Ensure editor maintains focus even on error
 			editor.focus();
 		}

@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.2.4 - 2025-07-03
+- refactor(handler): Add app.workspace.updateOptions() calls after UI operations
+
 ### 0.2.3 - 2025-07-03
 - fix: maintain editor focus during quick prompt operations
 
