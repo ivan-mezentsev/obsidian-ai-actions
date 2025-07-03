@@ -129,7 +129,7 @@
 		min-width: 280px;
 		max-width: 400px;
 		padding: 4px;
-		transition: opacity 0.2s ease, transform 0.2s ease;
+		transition: opacity 0.2s ease, transform 0.2s ease, left 0.3s cubic-bezier(0.45, 0.05, 0.55, 0.95);
 	}
 
 	.action-result-panel--active {

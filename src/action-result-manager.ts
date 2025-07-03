@@ -108,50 +108,19 @@ export class ActionResultManager {
 	}
 
 	/**
-	 * Position the result panel near the cursor
+	 * Position the result panel at fixed position (top-left)
 	 */
 	private positionResultPanel() {
 		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
 
-		const editor = view.editor;
 		const targetEl = view.containerEl;
 		const panelEl = targetEl.querySelector(".action-result-panel") as HTMLElement;
 
 		if (panelEl) {
-			// Get cursor position
-			const cursor = editor.getCursor();
-			// @ts-expect-error, not typed
-			const editorView = editor.cm;
-			const coords = editorView.coordsAtPos(editor.posToOffset(cursor));
-
-			if (coords) {
-				// Get container bounds
-				const containerRect = targetEl.getBoundingClientRect();
-				const viewportWidth = window.innerWidth;
-				const viewportHeight = window.innerHeight;
-
-				// Calculate relative position
-				const relativeLeft = coords.left - containerRect.left;
-				const relativeTop = coords.bottom - containerRect.top + 10; // 10px below cursor
-
-				// Set initial position
-				panelEl.style.setProperty("left", `${relativeLeft}px`);
-				panelEl.style.setProperty("top", `${relativeTop}px`);
-
-				// Adjust if panel goes outside viewport
-				const rect = panelEl.getBoundingClientRect();
-
-				if (rect.right > viewportWidth) {
-					const newLeft = Math.max(10, relativeLeft - rect.width - 10);
-					panelEl.style.setProperty("left", `${newLeft}px`);
-				}
-
-				if (rect.bottom > viewportHeight) {
-					const newTop = Math.max(10, relativeTop - rect.height - 30);
-					panelEl.style.setProperty("top", `${newTop}px`);
-				}
-			}
+			// Set fixed position at top-left (mirrored from reference project)
+			panelEl.style.setProperty("top", "88px");
+			panelEl.style.setProperty("left", "48px");
 		}
 	}
 
