@@ -1,16 +1,18 @@
-import { OutputModal } from "src/modals/output";
 import { App, Editor, MarkdownView, Notice, TFile, Vault } from "obsidian";
 import { LLMFactory } from "./llm/factory";
 import type { AIEditorSettings } from "src/settings";
 import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
 import { spinnerPlugin } from "./spinnerPlugin";
+import type { ActionResultManager } from "./action-result-manager";
 
 export class ActionHandler {
 	private llmFactory: LLMFactory;
+	private plugin: any; // Reference to the main plugin
 
-	constructor(settings: AIEditorSettings) {
+	constructor(settings: AIEditorSettings, plugin?: any) {
 		this.llmFactory = new LLMFactory(settings);
+		this.plugin = plugin;
 	}
 
 	async handleAction(userAction: UserAction, input: string): Promise<string> {
@@ -166,81 +168,98 @@ export class ActionHandler {
 			app.workspace.updateOptions();
 		};
 
-		const shouldShowModal = action.showModalWindow ?? true;
-		let modal: OutputModal | null = null;
+		const shouldShowPanel = action.showModalWindow ?? true;
+		let resultManager: ActionResultManager | null = null;
 
-		if (shouldShowModal) {
-			modal = new OutputModal(
-				app,
-				action.name,
-				(text: string) => action.format.replace("{{result}}", text),
-				async (result: string) => {
-					// Use saved cursor positions for replacement
-					if (action.loc === Location.REPLACE_CURRENT) {
-						editor.replaceRange(
-							result,
-							cursorPositionFrom,
-							cursorPositionTo,
-						);
-					} else {
-						await this.addToNote(
-							action.loc,
-							result,
-							editor,
-							view.file?.vault,
-							action.locationExtra,
-						);
-					}
-				},
-				"",
-				async (result: string, location: Location) => {
-					if (location === Location.REPLACE_CURRENT) {
-						editor.replaceRange(
-							result,
-							cursorPositionFrom,
-							cursorPositionTo,
-						);
-					} else {
-						await this.addToNote(
-							location,
-							result,
-							editor,
-							view.file?.vault,
-							action.locationExtra,
-						);
-					}
-				},
-				action.loc === Location.APPEND_TO_FILE &&
-					!!action.locationExtra?.fileName,
-			);
+		if (shouldShowPanel) {
+			resultManager = this.plugin.actionResultManager;
 		}
 
-		let modalDisplayed = false;
 		let accumulatedText = "";
+		let streamingComplete = false;
+
+		// Create callbacks for the result panel
+		const onAccept = async (result: string) => {
+			// Use saved cursor positions for replacement
+			if (action.loc === Location.REPLACE_CURRENT) {
+				editor.replaceRange(
+					result,
+					cursorPositionFrom,
+					cursorPositionTo,
+				);
+			} else {
+				await this.addToNote(
+					action.loc,
+					result,
+					editor,
+					view.file?.vault,
+					action.locationExtra,
+				);
+			}
+		};
+
+		const onLocationAction = async (result: string, location: Location) => {
+			if (location === Location.REPLACE_CURRENT) {
+				editor.replaceRange(
+					result,
+					cursorPositionFrom,
+					cursorPositionTo,
+				);
+			} else {
+				await this.addToNote(
+					location,
+					result,
+					editor,
+					view.file?.vault,
+					action.locationExtra,
+				);
+			}
+		};
 
 		try {
 			await this.autocompleteStreaming(action, text, (token) => {
 				accumulatedText += token;
 				onUpdate(accumulatedText);
-
-				if (shouldShowModal) {
-					if (!modalDisplayed) {
-						modalDisplayed = true;
-						modal!.open();
-					}
-					modal!.addToken(token);
-				}
 			});
 
-			// When streaming is complete, hide spinner and handle final result
-			hideSpinner && hideSpinner();
-			app.workspace.updateOptions();
+			// Mark streaming as complete
+			streamingComplete = true;
 
 			// Ensure editor maintains focus after streaming
 			editor.focus();
 
-			// If modal is not shown, directly apply the result
-			if (!shouldShowModal && accumulatedText.trim()) {
+			// If panel should be shown, show it after streaming is complete
+			if (shouldShowPanel && accumulatedText.trim() && resultManager) {
+				// Show result panel and pass hideSpinner callback to be called when action is taken
+				await resultManager.showResultPanel(
+					accumulatedText.trim(),
+					null,
+					async (result: string) => {
+						// Apply format template and hide spinner before applying result
+						const finalText = action.format.replace("{{result}}", result);
+						hideSpinner && hideSpinner();
+						app.workspace.updateOptions();
+						await onAccept(finalText);
+					},
+					async (result: string, location: Location) => {
+						// Apply format template and hide spinner before applying result
+						const finalText = action.format.replace("{{result}}", result);
+						hideSpinner && hideSpinner();
+						app.workspace.updateOptions();
+						await onLocationAction(finalText, location);
+					},
+					action.loc === Location.APPEND_TO_FILE && !!action.locationExtra?.fileName,
+					() => {
+						// Hide spinner when panel is cancelled
+						hideSpinner && hideSpinner();
+						app.workspace.updateOptions();
+					}
+				);
+			} else if (!shouldShowPanel && accumulatedText.trim()) {
+				// Hide spinner when not showing panel
+				hideSpinner && hideSpinner();
+				app.workspace.updateOptions();
+				// If panel is not shown, directly apply the result
 				const finalText = action.format.replace(
 					"{{result}}",
 					accumulatedText.trim(),
@@ -260,21 +279,6 @@ export class ActionHandler {
 						action.locationExtra,
 					);
 				}
-			} else if (
-				shouldShowModal &&
-				action.loc === Location.REPLACE_CURRENT &&
-				accumulatedText.trim()
-			) {
-				// For replace mode with modal, directly replace the text using saved positions
-				const finalText = action.format.replace(
-					"{{result}}",
-					accumulatedText.trim(),
-				);
-				editor.replaceRange(
-					finalText,
-					cursorPositionFrom,
-					cursorPositionTo,
-				);
 			}
 		} catch (error) {
 			console.log(error);

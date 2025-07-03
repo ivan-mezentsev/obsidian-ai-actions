@@ -6,8 +6,8 @@ import { DEFAULT_MODEL } from "./llm/models";
 import type { AIProvidersSettings } from "./types";
 import { Selection, Location } from "./action";
 import { ActionHandler } from "./handler";
-import { OutputModal } from "./modals/output";
 import { QuickPromptManager } from "./quick-prompt-manager";
+import { ActionResultManager } from "./action-result-manager";
 import { spinnerPlugin } from "./spinnerPlugin";
 
 const DEFAULT_SETTINGS: AIEditorSettings = {
@@ -40,10 +40,11 @@ const DEFAULT_SETTINGS: AIEditorSettings = {
 export default class AIEditor extends Plugin {
 	settings: AIEditorSettings;
 	quickPromptManager: QuickPromptManager;
+	actionResultManager: ActionResultManager;
 
 	registerActions() {
 		let actions = this.settings.customActions;
-		let handler = new ActionHandler(this.settings);
+		let handler = new ActionHandler(this.settings, this);
 		actions.forEach((action, i) => {
 			this.addCommand({
 				// When user edit the settings, this method is called to updated command.
@@ -78,6 +79,9 @@ export default class AIEditor extends Plugin {
 		// Initialize QuickPromptManager
 		this.quickPromptManager = new QuickPromptManager(this);
 		
+		// Initialize ActionResultManager
+		this.actionResultManager = new ActionResultManager(this);
+		
 		this.addCommand({
 			id: "reload",
 			name: "Reload commands",
@@ -98,6 +102,9 @@ export default class AIEditor extends Plugin {
 	onunload() {
 		if (this.quickPromptManager) {
 			this.quickPromptManager.destroy();
+		}
+		if (this.actionResultManager) {
+			this.actionResultManager.destroy();
 		}
 	}
 
