@@ -32,7 +32,7 @@ const DEFAULT_SETTINGS: AIEditorSettings = {
 		providers: [],
 		models: []
 	},
-	useNativeFetch: true,
+	useNativeFetch: false,
 	debugMode: false,
 	developmentMode: false
 };

@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.3.1 - 2025-07-04
+- fix: disable useNativeFetch by default to support streaming
+
 ### 0.3.0 - 2025-07-04
 - style(ActionResultPanel): adjust button dimensions and padding for consistency
 - refactor(action-result): change panel positioning to fixed top-left

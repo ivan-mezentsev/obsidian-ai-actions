@@ -48,8 +48,6 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 - **Custom Actions**: Create unlimited personalized AI workflows
 - **Provider Management**: Configure multiple AI providers with different models
 - **Model Selection**: Choose specific models for each action
-- **Debug Mode**: Monitor API calls and responses
-- **Development Mode**: Advanced configuration options
 
 ## 🚀 Installation
 
