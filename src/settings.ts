@@ -25,7 +25,6 @@ export interface AIEditorSettings {
 	quickPrompt: UserAction;
 	aiProviders: AIProvidersSettings;
 	useNativeFetch: boolean;
-	debugMode: boolean;
 	developmentMode: boolean;
 }
 
@@ -158,19 +157,6 @@ export class AIEditorSettingTab extends PluginSettingTab {
 					})
 			);
 
-		new Setting(devOptionsContainer)
-			.setName("Debug mode")
-			.setDesc(
-				"Enable debug logging of all AI requests and responses with headers to the console. Check Developer Tools console to see the logs."
-			)
-			.addToggle((toggle) =>
-				toggle
-					.setValue(this.plugin.settings.debugMode)
-					.onChange(async (value) => {
-						this.plugin.settings.debugMode = value;
-						await this.plugin.saveSettings();
-					})
-			);
 	}
 
 	displayActionByIndex(containerEl: HTMLElement, index: number): void {

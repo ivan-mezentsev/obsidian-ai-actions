@@ -7,14 +7,12 @@ export abstract class BaseProviderLLM extends LLM {
     protected provider: AIProvider;
     protected modelName: string;
     protected useNativeFetch: boolean;
-    protected debugMode: boolean;
 
-    constructor(provider: AIProvider, modelName: string, useNativeFetch: boolean = false, debugMode: boolean = false) {
+    constructor(provider: AIProvider, modelName: string, useNativeFetch: boolean = false) {
         super();
         this.provider = provider;
         this.modelName = modelName;
         this.useNativeFetch = useNativeFetch;
-        this.debugMode = debugMode;
     }
 
     protected getFetch(): typeof fetch {

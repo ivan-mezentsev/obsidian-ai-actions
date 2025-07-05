@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.3.2 - 2025-07-05
+- refactor: remove debugMode parameter from LLM constructors and settings
+
 ### 0.3.1 - 2025-07-04
 - fix: disable useNativeFetch by default to support streaming
 

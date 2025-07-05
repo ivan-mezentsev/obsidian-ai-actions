@@ -80,7 +80,6 @@ export class LLMFactory {
 
 		// Create LLM instance based on provider type
 		const useNativeFetch = this.settings.useNativeFetch || false;
-		const debugMode = this.settings.debugMode || false;
 		
 		switch (provider.type) {
 			case "openai":
@@ -88,20 +87,19 @@ export class LLMFactory {
 					model.modelName as OpenAIModel,
 					provider.apiKey,
 					provider.url,
-					debugMode
 				);
 			case "anthropic":
-				return new AnthropicLLM(provider, model.modelName, useNativeFetch, debugMode);
+				return new AnthropicLLM(provider, model.modelName, useNativeFetch);
 			case "gemini":
-				return new GeminiLLM(provider, model.modelName, useNativeFetch, debugMode);
+				return new GeminiLLM(provider, model.modelName, useNativeFetch);
 			case "ollama":
-				return new OllamaLLM(provider, model.modelName, useNativeFetch, debugMode);
+				return new OllamaLLM(provider, model.modelName, useNativeFetch);
 			case "groq":
-				return new GroqLLM(provider, model.modelName, useNativeFetch, debugMode);
+				return new GroqLLM(provider, model.modelName, useNativeFetch);
 			case "openrouter":
-				return new OpenRouterLLM(provider, model.modelName, useNativeFetch, debugMode);
+				return new OpenRouterLLM(provider, model.modelName, useNativeFetch);
 			case "lmstudio":
-				return new LMStudioLLM(provider, model.modelName, useNativeFetch, debugMode);
+				return new LMStudioLLM(provider, model.modelName, useNativeFetch);
 			default:
 				if (this.settings.testingMode) {
 					return new DummyLLM();

@@ -8,10 +8,9 @@ export class GeminiLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
 		modelName: string,
-		useNativeFetch: boolean = false,
-		debugMode: boolean = false,
+		useNativeFetch: boolean = false
 	) {
-		super(provider, modelName, useNativeFetch, debugMode);
+		super(provider, modelName, useNativeFetch);
 
 		this.client = new GoogleGenAI({
 			apiKey: provider.apiKey,
@@ -56,9 +55,6 @@ export class GeminiLLM extends BaseProviderLLM {
 			}
 			return "";
 		} catch (error) {
-			if (this.debugMode) {
-				console.error("Gemini SDK error:", error);
-			}
 			throw new Error(
 				`Gemini SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
@@ -98,9 +94,6 @@ export class GeminiLLM extends BaseProviderLLM {
 				}
 			}
 		} catch (error) {
-			if (this.debugMode) {
-				console.error("Gemini streaming SDK error:", error);
-			}
 			throw new Error(
 				`Gemini streaming SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
@@ -142,9 +135,6 @@ export class GeminiLLM extends BaseProviderLLM {
 				}
 			}
 		} catch (error) {
-			if (this.debugMode) {
-				console.error("Gemini streaming SDK error:", error);
-			}
 			throw new Error(
 				`Gemini streaming SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
