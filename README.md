@@ -65,6 +65,14 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 2. Extract to your vault's `.obsidian/plugins/ai-actions/` directory
 3. Enable the plugin in Obsidian settings
 
+### With BART
+1. Install [BART](https://github.com/Sytone/obsidian-braty)
+2. In Obsidian, open the command palette
+3. Run `Brat: Add a beta plugin for testing`
+4. Paste `ivan-mezentsev/obsidian-ai-actions`
+5. BART will install the plugin
+6. Enable the plugin in Obsidian settings
+
 ## ⚙️ Configuration
 
 ### 1. Add AI Providers
@@ -126,13 +134,6 @@ Create specialized actions for your needs:
 - **Append Current**: After selection
 - **Replace Current**: Replace selection
 - **Append to File**: Specific file (e.g., Tasks.md)
-
-### Development Mode
-Enable advanced features:
-- Extended configuration options
-- Debug logging
-- API call monitoring
-- Custom provider testing
 
 ## 🔒 Privacy & Security
 

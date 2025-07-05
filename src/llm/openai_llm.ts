@@ -51,12 +51,10 @@ export enum OpenAIModel {
 export class OpenAILLM extends LLM {
 	private openai: OpenAI;
 	private model: OpenAIModel;
-	private debugMode: boolean;
 
-	constructor(model: OpenAIModel, apiKey: string, baseURL?: string, debugMode: boolean = false) {
+	constructor(model: OpenAIModel, apiKey: string, baseURL?: string) {
 		super();
 		this.model = model;
-		this.debugMode = debugMode;
 		const config: any = {
 			apiKey: apiKey,
 			dangerouslyAllowBrowser: true,
@@ -145,25 +143,16 @@ export class OpenAILLM extends LLM {
 				stream: true as const,
 			};
 			
-			if (this.debugMode) {
-				console.log(`[AI Actions Debug] OpenAI Streaming Request with User Prompt:`, requestData);
-			}
 			
 			const stream: any = await this.openai.chat.completions.create(requestData);
 
 			for await (const chunk of stream) {
-				if (this.debugMode) {
-					console.log(`[AI Actions Debug] OpenAI Streaming Chunk:`, chunk);
-				}
 				const content = chunk.choices[0]?.delta?.content;
 				if (content) {
 					callback(content);
 				}
 			}
 		} catch (error) {
-			if (this.debugMode) {
-				console.log(`[AI Actions Debug] OpenAI Streaming API error with User Prompt:`, error);
-			}
 			console.error("Error in autocompleteStreamingInnerWithUserPrompt:", error);
 			throw error;
 		}

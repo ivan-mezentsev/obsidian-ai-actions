@@ -5,8 +5,8 @@ import Anthropic from '@anthropic-ai/sdk';
 export class AnthropicLLM extends BaseProviderLLM {
     private client: Anthropic;
 
-    constructor(provider: AIProvider, modelName: string, useNativeFetch: boolean = false, debugMode: boolean = false) {
-        super(provider, modelName, useNativeFetch, debugMode);
+    constructor(provider: AIProvider, modelName: string, useNativeFetch: boolean = false) {
+        super(provider, modelName, useNativeFetch);
         
         this.client = new Anthropic({
             apiKey: provider.apiKey,
@@ -59,9 +59,6 @@ export class AnthropicLLM extends BaseProviderLLM {
             
             return '';
         } catch (error) {
-            if (this.debugMode) {
-                console.error('Anthropic API error:', error);
-            }
             throw new Error(`Anthropic API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
@@ -97,9 +94,6 @@ export class AnthropicLLM extends BaseProviderLLM {
                 }
             }
         } catch (error) {
-            if (this.debugMode) {
-                console.error('Anthropic streaming API error:', error);
-            }
             throw new Error(`Anthropic streaming API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
@@ -137,9 +131,6 @@ export class AnthropicLLM extends BaseProviderLLM {
                 }
             }
         } catch (error) {
-            if (this.debugMode) {
-                console.error('Anthropic streaming API error:', error);
-            }
             throw new Error(`Anthropic streaming API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }

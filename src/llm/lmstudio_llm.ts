@@ -2,8 +2,8 @@ import { BaseProviderLLM } from "./base_provider_llm";
 import type { AIProvider } from "../types";
 
 export class LMStudioLLM extends BaseProviderLLM {
-    constructor(provider: AIProvider, modelName: string, useNativeFetch: boolean = false, debugMode: boolean = false) {
-        super(provider, modelName, useNativeFetch, debugMode);
+    constructor(provider: AIProvider, modelName: string, useNativeFetch: boolean = false) {
+        super(provider, modelName, useNativeFetch);
     }
 
     protected getDefaultBaseUrl(): string {
