@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.3.3 - 2025-07-06
+- feat: enhance dynamic positioning for quick prompt box and update related styles
+
 ### 0.3.2 - 2025-07-05
 - refactor: remove debugMode parameter from LLM constructors and settings
 
