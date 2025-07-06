@@ -279,6 +279,14 @@
   z-index: 1000;
 }
 
+/* Quick prompt box dynamic positioning */
+.ai-actions-quick-prompt-dynamic {
+  position: absolute;
+  z-index: 1000;
+  left: var(--ai-actions-left, 10px);
+  top: var(--ai-actions-top, 10px);
+}
+
 /* Auto-resize textarea */
 .ai-actions-auto-resize-textarea {
   height: auto;

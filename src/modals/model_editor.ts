@@ -195,8 +195,8 @@ export class ModelEditModal extends Modal {
             });
             
             try {
-                const response = await client.get('/v1/models') as any;
-                return response.data?.map((model: any) => model.id) || [];
+            	const response = await client.get('/v1/models') as { data?: Array<{ id: string }> };
+            	return response.data?.map((model) => model.id) || [];
             } catch (error) {
                 throw new Error(`Failed to fetch Anthropic models: ${error}`);
             }
