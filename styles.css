@@ -356,7 +356,6 @@
 
 .ai-actions-filterable-dropdown-options {
   position: absolute;
-  top: 100%;
   left: 0;
   right: 0;
   background-color: var(--background-primary);
@@ -367,6 +366,16 @@
   overflow-y: auto;
   z-index: 1000;
   display: none;
+}
+
+.ai-actions-filterable-dropdown-options--down {
+  top: 100%;
+  margin-top: 2px;
+}
+
+.ai-actions-filterable-dropdown-options--up {
+  bottom: 100%;
+  margin-bottom: 2px;
 }
 
 .ai-actions-filterable-dropdown.is-open .ai-actions-filterable-dropdown-options {

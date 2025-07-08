@@ -15,6 +15,7 @@ export class FilterableDropdown {
     private isOpen: boolean = false;
     private highlightedIndex: number = -1;
     private onChange: (value: string) => void;
+    private dropdownDirection: 'down' | 'up' = 'down';
     
     private dropdownEl: HTMLElement;
     private inputEl: HTMLInputElement;
@@ -235,7 +236,30 @@ export class FilterableDropdown {
         this.isOpen = true;
         this.dropdownEl.addClass("is-open");
         this.highlightedIndex = -1;
+        
+        // Calculate dropdown direction based on available space
+        this.calculateDropdownDirection();
+        
         this.renderOptions();
+    }
+
+    private calculateDropdownDirection() {
+        const rect = this.dropdownEl.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const dropdownHeight = Math.min(200, this.filteredOptions.length * 32 + 8); // Approximate dropdown height
+        
+        // If not enough space below but enough space above, open upward
+        if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+            this.dropdownDirection = 'up';
+            this.optionsEl.addClass('ai-actions-filterable-dropdown-options--up');
+            this.optionsEl.removeClass('ai-actions-filterable-dropdown-options--down');
+        } else {
+            this.dropdownDirection = 'down';
+            this.optionsEl.addClass('ai-actions-filterable-dropdown-options--down');
+            this.optionsEl.removeClass('ai-actions-filterable-dropdown-options--up');
+        }
     }
 
     private closeDropdown() {

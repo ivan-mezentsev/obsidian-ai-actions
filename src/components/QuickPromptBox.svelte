@@ -1,8 +1,10 @@
 <script lang="ts">
-	import { X, Send, ChevronDown } from "lucide-svelte";
+	import { X, Send } from "lucide-svelte";
 	import { createEventDispatcher } from "svelte";
 	import { App, MarkdownView } from "obsidian";
 	import type { AIModel, AIProvider } from "../types";
+	import { FilterableDropdown } from "./FilterableDropdown";
+	import type { FilterableDropdownOption } from "./FilterableDropdown";
 
 	// Get app instance from global context
 	let app: App;
@@ -27,10 +29,8 @@
 	const dispatch = createEventDispatcher();
 	const iconSize = 18;
 	let promptEl: HTMLTextAreaElement;
-	let dropdownOpen = false;
-	let dropdownEl: HTMLElement;
-	let dropdownDirection: 'down' | 'up' = 'down';
-	// Removed mode dropdown variables - using toggle instead
+	let modelDropdownEl: HTMLElement;
+	let modelDropdown: FilterableDropdown | null = null;
 	let selectedModelName: string = "Select Model";
 
 	// Output mode options with symbols
@@ -72,39 +72,53 @@
 		return text.substring(0, maxLength - 3) + "...";
 	}
 
-	// Close dropdown when clicking outside
-	const handleClickOutside = (event: MouseEvent) => {
-		if (dropdownEl && !dropdownEl.contains(event.target as Node)) {
-			dropdownOpen = false;
+	// Initialize filterable dropdown when models change
+	$: if (availableModels.length > 0 && modelDropdownEl && !modelDropdown) {
+		initializeModelDropdown();
+	}
+
+	// Update dropdown when selectedModelId changes externally
+	$: if (modelDropdown && selectedModelId) {
+		modelDropdown.setValue(selectedModelId);
+	}
+
+	function initializeModelDropdown() {
+		if (!modelDropdownEl || availableModels.length === 0) return;
+
+		// Clean up existing dropdown
+		if (modelDropdown) {
+			modelDropdown.destroy();
 		}
-	};
 
-	// Calculate dropdown direction based on available space
-	const calculateDropdownDirection = () => {
-		if (!dropdownEl) return;
-		
-		const rect = dropdownEl.getBoundingClientRect();
-		const viewportHeight = window.innerHeight;
-		const spaceBelow = viewportHeight - rect.bottom;
-		const spaceAbove = rect.top;
-		const dropdownHeight = Math.min(200, availableModels.length * 32 + 8); // Approximate dropdown height
-		
-		// If not enough space below but enough space above, open upward
-		if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-			dropdownDirection = 'up';
-		} else {
-			dropdownDirection = 'down';
+		// Create options for the filterable dropdown
+		const options: FilterableDropdownOption[] = availableModels.map(model => {
+			const provider = availableProviders.find(p => p.id === model.providerId);
+			const providerName = provider ? provider.name : "Unknown Provider";
+			const displayName = `${model.name} (${providerName})`;
+			return {
+				value: model.id,
+				label: displayName,
+				model: model
+			};
+		});
+
+		// Create the filterable dropdown
+		modelDropdown = new FilterableDropdown(
+			modelDropdownEl,
+			options,
+			selectedModelId || availableModels[0].id,
+			(value) => {
+				selectedModelId = value;
+			}
+		);
+	}
+
+	// Cleanup on component destroy
+	function destroyModelDropdown() {
+		if (modelDropdown) {
+			modelDropdown.destroy();
+			modelDropdown = null;
 		}
-	};
-
-	// Removed mode dropdown direction calculation - using toggle instead
-
-	$: if (dropdownOpen) {
-		document.addEventListener('click', handleClickOutside);
-		// Calculate direction when dropdown opens
-		setTimeout(calculateDropdownDirection, 0);
-	} else {
-		document.removeEventListener('click', handleClickOutside);
 	}
 
 	// Auto-resize textarea function
@@ -193,14 +207,6 @@
 		}
 	};
 
-	const selectModel = (modelId: string) => {
-		selectedModelId = modelId;
-		dropdownOpen = false;
-	};
-
-	const toggleDropdown = () => {
-		dropdownOpen = !dropdownOpen;
-	};
 
 	const toggleOutputMode = () => {
 		outputMode = outputMode === "replace" ? "append" : "replace";
@@ -254,40 +260,8 @@
 			</div>
 			
 			<!-- Model Selector Dropdown -->
-			<div class="model-selector" bind:this={dropdownEl}>
-				<div
-					class="model-selector-button"
-					on:click={toggleDropdown}
-					role="button"
-					tabindex="0"
-					on:keydown={defaultEnterEvent}
-					aria-label={(() => {
-						const selectedModel = availableModels.find(m => m.id === selectedModelId);
-						if (selectedModel) {
-							const providerName = getProviderNameForModel(selectedModel);
-							return providerName ? `${selectedModel.name} (${providerName})` : selectedModel.name;
-						}
-						return "Select AI Model";
-					})()}
-				>
-					<span class="model-name">{selectedModelName}</span>
-					<ChevronDown size={14} class={dropdownOpen ? 'rotated' : ''} />
-				</div>
-				{#if dropdownOpen}
-					<div class="model-dropdown model-dropdown--{dropdownDirection}">
-						{#each availableModels as model}
-					<div
-						class="model-option {selectedModelId === model.id ? 'selected' : ''}"
-						on:click={() => selectModel(model.id)}
-						role="button"
-						tabindex="0"
-						on:keydown={defaultEnterEvent}
-					>
-						{model.name} ({getProviderNameForModel(model)})
-					</div>
-				{/each}
-					</div>
-				{/if}
+			<div class="model-selector" bind:this={modelDropdownEl}>
+				<!-- FilterableDropdown will be rendered here -->
 			</div>
 			
 			<div
