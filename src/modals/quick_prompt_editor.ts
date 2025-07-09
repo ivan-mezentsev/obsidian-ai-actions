@@ -6,6 +6,8 @@ import type {
 	UserAction
 } from "../action";
 import AIEditor from "src/main";
+import { FilterableDropdown } from "../components/FilterableDropdown";
+import type { FilterableDropdownOption } from "../components/FilterableDropdown";
 
 export class QuickPromptEditModal extends Modal {
 	action: UserAction;
@@ -43,26 +45,52 @@ export class QuickPromptEditModal extends Modal {
 		new Setting(contentEl)
 			.setName("LLM Model")
 			.setDesc("The LLM model to use for this action")
-			.addDropdown((dropdown) => {
-				const availableModels = getAvailableModels(this.plugin.settings);
-				if (availableModels.length === 0) {
-					dropdown.addOption("", "No models configured");
-					dropdown.setDisabled(true);
-				} else {
-					for (const model of availableModels) {
-						const provider = this.plugin.settings.aiProviders.providers.find(p => p.id === model.providerId);
-						const providerName = provider ? provider.name : "Unknown Provider";
-						const displayName = `${model.name} (${providerName})`;
-						dropdown.addOption(model.id, displayName);
-					}
-					// Set current value or default to first model
-					const currentModelId = this.action.model || availableModels[0].id;
-					dropdown.setValue(currentModelId);
-					dropdown.onChange((value) => {
-						this.action.model = value;
-					});
-				}
+			.addButton((button) => {
+				// This is a placeholder button that we'll replace with our custom dropdown
+				button.setButtonText("Select Model");
+				button.onClick(() => {
+					// This will be replaced by our custom dropdown functionality
+				});
 			});
+	
+		// Replace the button with our custom filterable dropdown
+		const modelSetting = contentEl.lastElementChild as HTMLElement;
+		const modelSettingControl = modelSetting.querySelector('.setting-item-control') as HTMLElement;
+		modelSettingControl.empty();
+	
+		const availableModels = getAvailableModels(this.plugin.settings);
+		if (availableModels.length === 0) {
+			const noModelsText = modelSettingControl.createDiv();
+			noModelsText.textContent = "No models configured";
+			noModelsText.style.color = "var(--text-muted)";
+			noModelsText.style.fontStyle = "italic";
+		} else {
+			// Create options for the filterable dropdown
+			const options: FilterableDropdownOption[] = availableModels.map(model => {
+				const provider = this.plugin.settings.aiProviders.providers.find(p => p.id === model.providerId);
+				const providerName = provider ? provider.name : "Unknown Provider";
+				// Use a better format for long names with line break
+				const displayName = `${model.name}\n(${providerName})`;
+				return {
+					value: model.id,
+					label: displayName,
+					model: model
+				};
+			});
+	
+			// Set current value or default to first model
+			const currentModelId = this.action.model || availableModels[0].id;
+			
+			// Create the filterable dropdown
+			const dropdown = new FilterableDropdown(
+				modelSettingControl,
+				options,
+				currentModelId,
+				(value) => {
+					this.action.model = value;
+				}
+			);
+		}
 
 		this.createTextSetting(
 			contentEl,
