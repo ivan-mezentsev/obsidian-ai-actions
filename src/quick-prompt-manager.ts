@@ -136,12 +136,12 @@ export class QuickPromptManager {
 				const relativeLeft = coords.left - editorRect.left;
 				const relativeTop = coords.bottom - editorRect.top;
 
-				// Add CSS classes for positioning
-				promptBoxEl.classList.add("ai-actions-quick-prompt-box", "ai-actions-quick-prompt-dynamic");
-	
-				// Position slightly below and to the right of cursor/selection using CSS custom properties
-				promptBoxEl.style.setProperty("--ai-actions-left", `${relativeLeft + 10}px`);
-				promptBoxEl.style.setProperty("--ai-actions-top", `${relativeTop + 10}px`);
+				// Add CSS class for positioning
+			promptBoxEl.classList.add("ai-actions-quick-prompt-box");
+
+			// Position slightly below and to the right of cursor/selection
+			promptBoxEl.style.setProperty("left", `${relativeLeft + 10}px`);
+			promptBoxEl.style.setProperty("top", `${relativeTop + 10}px`);
 
 				// Ensure it doesn't go off screen
 				const rect = promptBoxEl.getBoundingClientRect();
@@ -153,12 +153,12 @@ export class QuickPromptManager {
 						10,
 						relativeLeft - rect.width - 10,
 					);
-				promptBoxEl.style.setProperty("--ai-actions-left", `${newLeft}px`);
+				promptBoxEl.style.setProperty("left", `${newLeft}px`);
 			}
 	
 			if (rect.bottom > viewportHeight) {
 				const newTop = Math.max(10, relativeTop - rect.height - 20);
-				promptBoxEl.style.setProperty("--ai-actions-top", `${newTop}px`);
+				promptBoxEl.style.setProperty("top", `${newTop}px`);
 			}
 			}
 		}
