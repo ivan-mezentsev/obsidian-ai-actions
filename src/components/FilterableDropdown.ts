@@ -194,6 +194,8 @@ export class FilterableDropdown {
         this.onChange(value);
         this.closeDropdown();
         this.updateInputValue();
+        // Clear filter to show all options on next open
+        this.filteredOptions = [...this.options];
         this.renderOptions();
     }
 
