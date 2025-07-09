@@ -267,6 +267,8 @@ export class FilterableDropdown {
     private closeDropdown() {
         this.isOpen = false;
         this.dropdownEl.removeClass("is-open");
+        // Clear filter to show all options on next open
+        this.filteredOptions = [...this.options];
     }
 
     private updateInputValue() {
