@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.3.4 - 2025-07-08
+- fix(FilterableDropdown): clear filter when closing drop down
+- fix(FilterableDropdown): clear filter after selection to show all options
+- feat: add dynamic dropdown direction calculation for FilterableDropdown component
+- feat: implement filterable dropdown component for model selection in action editors
+
 ### 0.3.3 - 2025-07-06
 - feat: enhance dynamic positioning for quick prompt box and update related styles
 
