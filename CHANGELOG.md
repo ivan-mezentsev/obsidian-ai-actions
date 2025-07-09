@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.3.5 - 2025-07-09
+- refactor(quick-prompt): simplify positioning logic by using direct CSS properties
+
 ### 0.3.4 - 2025-07-08
 - fix(FilterableDropdown): clear filter when closing drop down
 - fix(FilterableDropdown): clear filter after selection to show all options
