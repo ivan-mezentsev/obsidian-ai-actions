@@ -20,6 +20,7 @@
 	export let selectedModelId: string = "";
 	export let defaultModelId: string = "";
 	export let outputMode: string = "replace"; // "replace" or "append"
+	export let loadModelsAsync: () => Promise<AIModel[]>; // Function to load models asynchronously
 
 	// Detect OS for keyboard shortcuts
 	const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -60,6 +61,11 @@
 
 	// Helper function to get provider name for a model
 	function getProviderNameForModel(model: AIModel): string {
+		// Handle plugin AI providers
+		if (model.id.startsWith('plugin_ai_providers_')) {
+			return "Plugin AI Providers";
+		}
+		// For internal providers, find by providerId
 		const provider = availableProviders.find(p => p.id === model.providerId);
 		return provider ? provider.name : "Unknown Provider";
 	}
@@ -72,6 +78,25 @@
 		return text.substring(0, maxLength - 3) + "...";
 	}
 
+	// Load models asynchronously when component mounts
+	let modelsLoaded = false;
+	$: if (loadModelsAsync && !modelsLoaded && visible) {
+		loadModelsAsync().then(models => {
+			if (models && models.length > 0) {
+				availableModels = models;
+				modelsLoaded = true;
+				// Initialize dropdown after models are loaded
+				setTimeout(() => {
+					if (modelDropdownEl) {
+						initializeModelDropdown();
+					}
+				}, 10);
+			}
+		}).catch(error => {
+			console.error('Failed to load models:', error);
+		});
+	}
+	
 	// Initialize filterable dropdown when models change
 	$: if (availableModels.length > 0 && modelDropdownEl && !modelDropdown) {
 		initializeModelDropdown();
@@ -92,8 +117,7 @@
 
 		// Create options for the filterable dropdown
 		const options: FilterableDropdownOption[] = availableModels.map(model => {
-			const provider = availableProviders.find(p => p.id === model.providerId);
-			const providerName = provider ? provider.name : "Unknown Provider";
+			const providerName = getProviderNameForModel(model);
 			const displayName = `${model.name} (${providerName})`;
 			return {
 				value: model.id,

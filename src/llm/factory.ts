@@ -7,6 +7,7 @@ import { GroqLLM } from "./groq_llm";
 import { OpenRouterLLM } from "./openrouter_llm";
 import { LMStudioLLM } from "./lmstudio_llm";
 import { AnthropicLLM } from "./anthropic_llm";
+import { PluginAIProvidersLLM } from "./plugin_ai_providers_llm";
 import { OpenAIModel } from "./openai_llm";
 import type { AIEditorSettings } from "../settings";
 import type { Model } from "./models";
@@ -19,7 +20,25 @@ export class LLMFactory {
 		this.settings = settings;
 	}
 
-	getProviderName(modelId: string): string {
+	async getProviderName(modelId: string): Promise<string> {
+		// Handle plugin AI providers
+		if (modelId.startsWith('plugin_ai_providers_')) {
+			try {
+				const pluginAIProviderId = modelId.replace('plugin_ai_providers_', '');
+				const { waitForAI } = await import("@obsidian-ai-providers/sdk");
+				const aiProvidersWaiter = await waitForAI();
+				const aiProviders = await aiProvidersWaiter.promise;
+				
+				const provider = aiProviders.providers.find((p: any) => p.id === pluginAIProviderId);
+				if (provider) {
+					return provider.model ? `${provider.name} ~ ${provider.model}` : provider.name;
+				}
+			} catch (error) {
+				console.error('Failed to get plugin AI provider name:', error);
+			}
+			return "Plugin AI Providers";
+		}
+
 		// Handle legacy OpenAI models
 		if (Object.values(OpenAIModel).includes(modelId as OpenAIModel)) {
 			return "OpenAI";
@@ -39,7 +58,39 @@ export class LLMFactory {
 		return provider.name;
 	}
 
+	// Synchronous version for backward compatibility
+	getProviderNameSync(modelId: string): string {
+		// Handle legacy OpenAI models
+		if (Object.values(OpenAIModel).includes(modelId as OpenAIModel)) {
+			return "OpenAI";
+		}
+
+		// Handle plugin AI providers (synchronous fallback)
+		if (modelId.startsWith('plugin_ai_providers_')) {
+			return "Plugin AI Providers";
+		}
+
+		// Handle new provider-based models
+		const model = this.settings.aiProviders?.models.find(m => m.id === modelId);
+		if (!model) {
+			return "Unknown";
+		}
+
+		const provider = this.settings.aiProviders?.providers.find(p => p.id === model.providerId);
+		if (!provider) {
+			return "Unknown";
+		}
+
+		return provider.name;
+	}
+
 	create(modelId: string): LLM {
+		// Handle plugin AI providers
+		if (modelId.startsWith('plugin_ai_providers_')) {
+			const pluginAIProviderId = modelId.replace('plugin_ai_providers_', '');
+			return new PluginAIProvidersLLM(pluginAIProviderId);
+		}
+
 		// Handle legacy OpenAI models
 		if (Object.values(OpenAIModel).includes(modelId as OpenAIModel)) {
 			if (this.settings.openAiApiKey) {

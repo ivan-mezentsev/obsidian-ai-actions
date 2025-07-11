@@ -9,6 +9,7 @@ import { ActionHandler } from "./handler";
 import { QuickPromptManager } from "./quick-prompt-manager";
 import { ActionResultManager } from "./action-result-manager";
 import { spinnerPlugin } from "./spinnerPlugin";
+import { initAI } from "@obsidian-ai-providers/sdk";
 
 const DEFAULT_SETTINGS: AIEditorSettings = {
 	// Legacy settings for backward compatibility
@@ -30,7 +31,8 @@ const DEFAULT_SETTINGS: AIEditorSettings = {
 	// New provider-based settings
 	aiProviders: {
 		providers: [],
-		models: []
+		models: [],
+		usePluginAIProviders: false
 	},
 	useNativeFetch: false,
 	developmentMode: false
@@ -73,29 +75,31 @@ export default class AIEditor extends Plugin {
 	}
 
 	async onload() {
-		await this.loadSettings();
-		
-		// Initialize QuickPromptManager
-		this.quickPromptManager = new QuickPromptManager(this);
-		
-		// Initialize ActionResultManager
-		this.actionResultManager = new ActionResultManager(this);
-		
-		this.addCommand({
-			id: "reload",
-			name: "Reload commands",
-			callback: () => {
-				this.registerActions();
-			},
-		});
-		this.registerActions();
+		initAI(this.app, this, async () => {
+			await this.loadSettings();
+			
+			// Initialize QuickPromptManager
+			this.quickPromptManager = new QuickPromptManager(this);
+			
+			// Initialize ActionResultManager
+			this.actionResultManager = new ActionResultManager(this);
+			
+			this.addCommand({
+				id: "reload",
+				name: "Reload commands",
+				callback: () => {
+					this.registerActions();
+				},
+			});
+			this.registerActions();
 
-		// Register the spinner plugin for loading animations
-		this.registerEditorExtension(spinnerPlugin);
+			// Register the spinner plugin for loading animations
+			this.registerEditorExtension(spinnerPlugin);
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
-		this.addSettingTab(new AIEditorSettingTab(this.app, this));
-		this.initializeDefaultModels();
+			// This adds a settings tab so the user can configure various aspects of the plugin
+			this.addSettingTab(new AIEditorSettingTab(this.app, this));
+			this.initializeDefaultModels();
+		}, { disableFallback: true });
 	}
 
 	onunload() {
@@ -119,7 +123,8 @@ export default class AIEditor extends Plugin {
 		if (!this.settings.aiProviders) {
 			this.settings.aiProviders = {
 				providers: [],
-				models: []
+				models: [],
+				usePluginAIProviders: false
 			};
 		}
 		if (!this.settings.aiProviders.providers) {
@@ -127,6 +132,9 @@ export default class AIEditor extends Plugin {
 		}
 		if (!this.settings.aiProviders.models) {
 			this.settings.aiProviders.models = [];
+		}
+		if (this.settings.aiProviders.usePluginAIProviders === undefined) {
+			this.settings.aiProviders.usePluginAIProviders = false;
 		}
 	}
 

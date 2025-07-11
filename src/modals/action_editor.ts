@@ -4,6 +4,7 @@ import {
 	locationDictionary,
 	modelDictionary,
 	getAvailableModels,
+	getAvailableModelsWithPluginAIProviders,
 	Selection,
 	Location
 } from "../action";
@@ -35,11 +36,11 @@ export class ActionEditModal extends Modal {
 		this.onSave = onSave;
 		this.onDelete = onDelete;
 	}
-	onOpen() {
-		const { contentEl } = this;
-		contentEl.empty();
+async onOpen() {
+	const { contentEl } = this;
+	contentEl.empty();
 
-		contentEl.createEl("h1", { text: "Edit Action" });
+	contentEl.createEl("h1", { text: "Edit Action" });
 
 		this.createTextSetting(
 			contentEl,
@@ -67,7 +68,7 @@ export class ActionEditModal extends Modal {
 		const modelSettingControl = modelSetting.querySelector('.setting-item-control') as HTMLElement;
 		modelSettingControl.empty();
 	
-		const availableModels = getAvailableModels(this.plugin.settings);
+		const availableModels = await getAvailableModelsWithPluginAIProviders(this.plugin.settings);
 		if (availableModels.length === 0) {
 			const noModelsText = modelSettingControl.createDiv();
 			noModelsText.textContent = "No models configured";
@@ -76,8 +77,18 @@ export class ActionEditModal extends Modal {
 		} else {
 			// Create options for the filterable dropdown
 			const options: FilterableDropdownOption[] = availableModels.map(model => {
-				const provider = this.plugin.settings.aiProviders.providers.find(p => p.id === model.providerId);
-				const providerName = provider ? provider.name : "Unknown Provider";
+				let providerName = "Unknown Provider";
+				
+				// Handle plugin AI providers
+				if (model.id.startsWith('plugin_ai_providers_')) {
+					// For plugin AI providers, the name already includes provider info
+					providerName = "Plugin AI Providers";
+				} else {
+					// For internal providers, find by providerId
+					const provider = this.plugin.settings.aiProviders.providers.find(p => p.id === model.providerId);
+					providerName = provider ? provider.name : "Unknown Provider";
+				}
+				
 				// Use a better format for long names with line break
 				const displayName = `${model.name}\n(${providerName})`;
 				return {
