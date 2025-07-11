@@ -1,7 +1,8 @@
 import type { Model } from "./llm/models";
 import { OpenAIModel } from "./llm/openai_llm";
-import type { AIModel } from "./types";
+import type { AIModel, AIProviderType } from "./types";
 import type { AIEditorSettings } from "./settings";
+import { waitForAI } from "@obsidian-ai-providers/sdk";
 
 export enum Selection {
 	ALL = "ALL",
@@ -47,10 +48,38 @@ const LOCATION_SETTING: { [key: string]: string } = {
 
 // Function to get available models from settings
 export function getAvailableModels(settings: AIEditorSettings): AIModel[] {
-	if (!settings.aiProviders || !settings.aiProviders.models) {
-		return [];
+	const internalModels = settings.aiProviders?.models || [];
+	return internalModels;
+}
+
+// Function to get available models including plugin AI providers
+export async function getAvailableModelsWithPluginAIProviders(settings: AIEditorSettings): Promise<AIModel[]> {
+	const internalModels = getAvailableModels(settings);
+	
+	// If plugin AI providers are not enabled, return only internal models
+	if (!settings.aiProviders?.usePluginAIProviders) {
+		return internalModels;
 	}
-	return settings.aiProviders.models;
+	
+	try {
+		const aiProvidersWaiter = await waitForAI();
+		const aiProvidersResponse = await aiProvidersWaiter.promise;
+		
+		// Convert plugin AI providers to AIModel format
+		const pluginAIModels: AIModel[] = aiProvidersResponse.providers.map(provider => ({
+			id: `plugin_ai_providers_${provider.id}`, // Prefix to distinguish from internal models
+			name: provider.model ? `${provider.name} ~ ${provider.model}` : provider.name,
+			modelName: provider.model || provider.name, // Model name for display
+			providerId: `plugin_ai_providers_${provider.id}`,
+			type: 'openai' as AIProviderType, // Default type for plugin AI providers
+			pluginAIProviderId: provider.id // Store original provider ID for execution
+		}));
+		
+		return [...internalModels, ...pluginAIModels];
+	} catch (error) {
+		console.error('Failed to load plugin AI providers:', error);
+		return internalModels;
+	}
 }
 
 export function locationDictionary(): { [key: string]: string } {

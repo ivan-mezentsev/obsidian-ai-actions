@@ -4,7 +4,7 @@ import AIEditor from "./main";
 import { ActionHandler } from "./handler";
 import { generateUniqueId } from "./utils/common";
 import { spinnerPlugin } from "./spinnerPlugin";
-import { Location } from "./action";
+import { Location, getAvailableModelsWithPluginAIProviders } from "./action";
 import type { AIModel } from "./types";
 
 export class QuickPromptManager {
@@ -54,7 +54,7 @@ export class QuickPromptManager {
 			this.plugin.settings.quickPrompt?.model ||
 			this.plugin.settings.aiProviders?.defaultModelId ||
 			"";
-
+	
 		const promptBox = new QuickPromptBox({
 			target: targetEl,
 			props: {
@@ -65,6 +65,7 @@ export class QuickPromptManager {
 				availableProviders: availableProviders,
 				selectedModelId: defaultModelId,
 				defaultModelId: defaultModelId,
+				loadModelsAsync: () => getAvailableModelsWithPluginAIProviders(this.plugin.settings),
 			},
 		});
 
@@ -233,16 +234,22 @@ export class QuickPromptManager {
 		const cursorPositionTo = editor.getCursor("to");
 
 		try {
-			// Get provider name for the model
-			const availableModels =
-				this.plugin.settings.aiProviders?.models || [];
+			// Get provider name for the model (including plugin AI providers)
+			const availableModels = await getAvailableModelsWithPluginAIProviders(this.plugin.settings);
 			const model = availableModels.find(
 				(m) => m.id === quickPromptAction.model,
 			);
-			const provider = this.plugin.settings.aiProviders?.providers.find(
-				(p) => p.id === model?.providerId,
-			);
-			const providerName = provider?.name || "AI";
+			
+			let providerName = "AI";
+			if (model?.pluginAIProviderId) {
+				// For plugin AI providers, use the model name as provider display
+				providerName = model.name;
+			} else {
+				const provider = this.plugin.settings.aiProviders?.providers.find(
+					(p) => p.id === model?.providerId,
+				);
+				providerName = provider?.name || "AI";
+			}
 
 			// Show processing notice
 			const notice = new Notice(`Querying ${providerName} API...`, 0);

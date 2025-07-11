@@ -138,7 +138,7 @@ export class ActionHandler {
 		const cursorPositionTo = editor.getCursor("to");
 
 		const text = this.getTextInput(action.sel, editor);
-		const providerName = this.llmFactory.getProviderName(action.model);
+		const providerName = this.llmFactory.getProviderNameSync(action.model);
 		new Notice(`Querying ${providerName} API...`);
 
 		// Ensure editor has focus for streaming visibility

@@ -24,6 +24,7 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 ## ✨ Key Features
 
 ### 🤖 Multi-Provider AI Support
+- **Plugin AI Providers** - External providers through the [obsidian-ai-providers](https://github.com/pfrankov/obsidian-ai-providers)
 - **OpenAI** - GPT models with custom API endpoints
 - **Google Gemini** - All models with official SDK (streaming supported)
 - **Ollama** - Local AI models for privacy

@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.4.0 - 2025-07-12
+- feat(ai-providers): integrate plugin AI providers support
+
 ### 0.3.5 - 2025-07-09
 - refactor(quick-prompt): simplify positioning logic by using direct CSS properties
 

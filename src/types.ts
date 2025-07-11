@@ -14,10 +14,13 @@ export interface AIModel {
     name: string;
     providerId: string;
     modelName: string;
+    type?: AIProviderType;
+    pluginAIProviderId?: string; // For plugin AI providers, store original provider ID
 }
 
 export interface AIProvidersSettings {
     providers: AIProvider[];
     models: AIModel[];
     defaultModelId?: string;
+    usePluginAIProviders?: boolean;
 }

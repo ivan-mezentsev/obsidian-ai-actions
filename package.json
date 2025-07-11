@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-ai-actions",
-	"version": "0.3.5",
+	"version": "0.4.0",
 	"description": "Obsidian AI Actions - Based on AI-powered Text Editor by Zekun Shen",
 	"main": "main.js",
 	"scripts": {
@@ -36,6 +36,7 @@
 	"dependencies": {
 		"@anthropic-ai/sdk": "^0.55.1",
 		"@google/genai": "^1.8.0",
+		"@obsidian-ai-providers/sdk": "^1.2.0",
 		"openai": "^5.8.2"
 	}
 }

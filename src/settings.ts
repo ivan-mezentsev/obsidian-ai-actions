@@ -15,6 +15,8 @@ import { QuickPromptEditModal } from "./modals/quick_prompt_editor";
 import type { AIProvider, AIModel, AIProvidersSettings, AIProviderType } from "./types";
 import { ProviderEditModal } from "./modals/provider_editor";
 import { ModelEditModal } from "./modals/model_editor";
+import { waitForAI } from "@obsidian-ai-providers/sdk";
+import type { IAIProvider, IAIProvidersService } from "@obsidian-ai-providers/sdk";
 
 
 export interface AIEditorSettings {
@@ -36,7 +38,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	display(): void {
+	async display(): Promise<void> {
 		const { containerEl } = this;
 
 		containerEl.empty();
@@ -73,6 +75,23 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		for (let i = 0; i < this.plugin.settings.aiProviders.models.length; i++) {
 			this.displayModelByIndex(containerEl, i);
+		}
+
+		new Setting(containerEl)
+			.setName('Enable Plugin "AI Providers" integration')
+			.setDesc('Show models from the AI Providers plugin')
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.aiProviders.usePluginAIProviders || false)
+			.onChange(async (value) => {
+				this.plugin.settings.aiProviders.usePluginAIProviders = value;
+						await this.plugin.saveSettings();
+						await this.display();
+					})
+			);
+
+		if (this.plugin.settings.aiProviders.usePluginAIProviders) {
+			await this.displayPluginAIProviders(containerEl);
 		}
 
 		containerEl.createEl("h1", { text: "Custom actions" });
@@ -119,7 +138,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 						this.plugin.settings.developmentMode = value;
 						await this.plugin.saveSettings();
 						// Refresh the display to show/hide development options
-						this.display();
+						await this.display();
 					})
 			);
 
@@ -270,7 +289,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	private async saveSettingsAndRefresh() {
 		await this.plugin.saveSettings();
 		this.plugin.registerActions();
-		this.display();
+		await this.display();
 	}
 
 	// Provider management methods
@@ -387,9 +406,52 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			async (updatedAction) => {
 				this.plugin.settings.quickPrompt = updatedAction;
 				await this.plugin.saveSettings();
-				this.display();
+				await this.display();
 			}
 		);
 		modal.open();
+	}
+
+	private async displayPluginAIProviders(containerEl: HTMLElement) {
+		try {
+			// Check if AI Providers plugin is available with timeout
+			const aiResolver = await waitForAI();
+			
+			// Add timeout to prevent infinite waiting
+			const timeoutPromise = new Promise<never>((_, reject) => {
+				setTimeout(() => {
+					reject(new Error('AI Providers plugin timeout'));
+				}, 1000); // 1 second timeout
+			});
+			
+			const aiProviders: IAIProvidersService = await Promise.race([
+				aiResolver.promise,
+				timeoutPromise
+			]);
+
+			if (!aiProviders || !aiProviders.providers || aiProviders.providers.length === 0) {
+				containerEl.createEl("p", {
+					text: "No AI providers available. Please configure providers in the AI Providers plugin.",
+					cls: "setting-item-description"
+				});
+				return;
+			}
+
+			// Display available providers as models using the same style as regular models
+			aiProviders.providers.forEach((provider: IAIProvider) => {
+const setting = new Setting(containerEl)
+	.setName(`${provider.name} (Plugin AI Providers)`);
+				
+				// Add a disabled button to show it's read-only
+				setting.addButton((button) => {
+					button.setButtonText("Read-only").setDisabled(true);
+				});
+			});
+		} catch (error) {
+			containerEl.createEl("p", {
+				text: "AI Providers plugin is not available or not loaded.",
+				cls: "setting-item-description"
+			});
+		}
 	}
 }
