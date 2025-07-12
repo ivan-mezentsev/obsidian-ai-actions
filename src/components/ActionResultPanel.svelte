@@ -54,7 +54,7 @@
 				tabindex="0"
 				title="Replace selected text"
 			>
-				Replace
+				REPLACE
 			</div>
 			<div
 				class="action-btn action-btn--insert"
@@ -64,7 +64,7 @@
 				tabindex="0"
 				title="Insert at cursor"
 			>
-				Insert
+				INSERT
 			</div>
 			<div
 				class="action-btn action-btn--begin"
@@ -74,7 +74,7 @@
 				tabindex="0"
 				title="Insert at beginning"
 			>
-				Begin
+				BEGIN
 			</div>
 			<div
 				class="action-btn action-btn--end"
@@ -84,7 +84,7 @@
 				tabindex="0"
 				title="Insert at end"
 			>
-				End
+				END
 			</div>
 			{#if hasFileOutput}
 				<div
@@ -202,7 +202,7 @@
 	}
 
 	.action-btn--cancel:hover {
-		color: var(--text-error);
-		border-color: var(--text-error);
+		color: var(--text-normal);
+		border-color: var(--text-normal);
 	}
 </style>
