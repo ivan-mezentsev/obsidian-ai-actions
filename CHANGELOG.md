@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.4.1 - 2025-07-12
+- fix: improve text formatting and escape key handling
+
 ### 0.4.0 - 2025-07-12
 - feat(ai-providers): integrate plugin AI providers support
 

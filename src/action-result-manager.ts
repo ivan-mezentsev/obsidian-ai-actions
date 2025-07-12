@@ -11,9 +11,11 @@ export class ActionResultManager {
 	private onAcceptCallback?: (result: string) => Promise<void>;
 	private onLocationActionCallback?: (result: string, location: Location) => Promise<void>;
 	private onCancelCallback?: () => void;
+	private globalKeyHandler?: (e: KeyboardEvent) => void;
 
 	constructor(plugin: AIEditor) {
 		this.plugin = plugin;
+		this.setupGlobalKeyHandler();
 	}
 
 	/**
@@ -157,19 +159,35 @@ export class ActionResultManager {
 				this.onCancelCallback();
 			}
 		});
+	}
 
-		// Handle escape key globally
-		this.plugin.registerDomEvent(mountEl, "keydown", (e) => {
+	/**
+	 * Setup global keyboard event handler for escape key
+	 */
+	private setupGlobalKeyHandler() {
+		this.globalKeyHandler = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
-				const panelEl = mountEl.querySelector(".action-result-panel--active");
-				if (panelEl) {
-					panel.hide();
-					if (this.onCancelCallback) {
-						this.onCancelCallback();
+				// Check if any result panel is currently active
+				const activePanelEl = document.querySelector(".action-result-panel--active");
+				if (activePanelEl) {
+					const cid = activePanelEl.getAttribute("data-cid");
+					if (cid) {
+						const panel = this.panelCache.get(cid);
+						if (panel) {
+							e.preventDefault();
+							e.stopPropagation();
+							panel.hide();
+							if (this.onCancelCallback) {
+								this.onCancelCallback();
+							}
+						}
 					}
 				}
 			}
-		});
+		};
+
+		// Register global keydown event
+		this.plugin.registerDomEvent(document, "keydown", this.globalKeyHandler);
 	}
 
 	/**

@@ -96,7 +96,7 @@ export class ActionHandler {
 				editor.replaceRange(text, editor.getCursor());
 				break;
 			case Location.APPEND_CURRENT:
-				text = editor.getSelection() + text;
+				text = editor.getSelection() + "\n\n" + text;
 				editor.replaceSelection(text);
 				break;
 			case Location.REPLACE_CURRENT:

@@ -270,7 +270,7 @@ export class QuickPromptManager {
 					return text.trim();
 				}
 				// For other modes, format as needed
-				return ["\n", text.trim(), "\n"].join("");
+				return ["\n\n", text.trim(), "\n"].join("");
 			};
 
 			const onUpdate = (updatedString: string) => {
