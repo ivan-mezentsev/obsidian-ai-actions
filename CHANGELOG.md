@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.4.2 - 2025-07-12
+- fix: update action button labels to uppercase and adjust cancel button styles
+
 ### 0.4.1 - 2025-07-12
 - fix: improve text formatting and escape key handling
 
