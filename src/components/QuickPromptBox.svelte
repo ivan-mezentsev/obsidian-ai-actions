@@ -227,7 +227,33 @@
 	const submitPrompt = () => {
 		if (prompt.trim() && selectedModelId) {
 			dispatch('submit', { prompt: prompt.trim(), modelId: selectedModelId, outputMode });
-			hide();
+
+			setTimeout(() => {
+				hide();
+			}, 100);
+
+			// Try to hide virtual keyboard on mobile devices with delay
+			setTimeout(() => {
+				if (app && (app as any).commands) {
+					// Check if the command exists before executing
+					const commands = (app as any).commands.listCommands ? (app as any).commands.listCommands() : [];
+					const keyboardCommand = commands.find((cmd: any) => 
+						cmd.id && (
+							cmd.id.includes('keyboard') || 
+							cmd.id.includes('toggle-keyboard') ||
+							cmd.id === 'app:toggle-keyboard'
+						)
+					);
+					
+					if (keyboardCommand) {
+						try {
+							(app as any).commands.executeCommandById(keyboardCommand.id);
+						} catch (error) {
+							// Silently handle errors
+						}
+					}
+				}
+			}, 1000);
 		}
 	};
 
