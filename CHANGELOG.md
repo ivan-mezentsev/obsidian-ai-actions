@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.5.1 - 2025-07-13
+- feat(gemini): enhance autocompleteStreaming to support system instructions for compatible models
+- fix(handler): validate clipboard content before returning it
+
 ### 0.5.0 - 2025-07-13
 - feat(handler): add clipboard support for text input
 

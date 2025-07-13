@@ -75,7 +75,13 @@ export class ActionHandler {
 				return editor.getSelection();
 			case Selection.CLIPBOARD:
 				try {
-					return await this.readClipboardContent();
+					const clipboardContent = await this.readClipboardContent();
+					// Check if clipboard is empty or contains only whitespace
+					if (!clipboardContent || !clipboardContent.trim()) {
+						new Notice("Clipboard is empty or contains only whitespace.", 10000);
+						throw "Clipboard is empty or contains only whitespace.";
+					}
+					return clipboardContent;
 				} catch (error) {
 					console.error('Failed to read clipboard:', error);
 					throw "Failed to read clipboard. Please ensure clipboard permissions are granted.";

@@ -109,11 +109,19 @@ export class GeminiLLM extends BaseProviderLLM {
 		maxOutputTokens?: number,
 	): Promise<void> {
 		try {
-			const contents = [
-				{ role: "user", parts: [{ text: systemPrompt }] },
-				{ role: "user", parts: [{ text: userPrompt }] },
-				{ role: "user", parts: [{ text: content }] },
-			];
+			// Check if model supports system instructions (avoid for Gemma models)
+			const supportsSystemInstruction = !this.modelName.toLowerCase().includes('gemma');
+			
+			const contents = supportsSystemInstruction
+				? [
+					{ role: "user", parts: [{ text: userPrompt }] },
+					{ role: "user", parts: [{ text: content }] },
+				]
+				: [
+					{ role: "user", parts: [{ text: systemPrompt }] },
+					{ role: "user", parts: [{ text: userPrompt }] },
+					{ role: "user", parts: [{ text: content }] },
+				];
 
 			const config: any = {
 				temperature: temperature !== undefined ? temperature : 0.7,
@@ -122,6 +130,11 @@ export class GeminiLLM extends BaseProviderLLM {
 						? maxOutputTokens
 						: 1000,
 			};
+
+			// Add system instruction for supported models
+			if (supportsSystemInstruction) {
+				config.systemInstruction = systemPrompt;
+			}
 
 			const stream = await this.client.models.generateContentStream({
 				model: this.modelName,
