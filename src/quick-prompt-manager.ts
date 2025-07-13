@@ -281,13 +281,13 @@ export class QuickPromptManager {
 			};
 
 			// Get text input based on selection mode
-			const text = handler.getTextInput(quickPromptAction.sel, editor);
+			const text = await handler.getTextInput(quickPromptAction.sel, editor);
 
 			let result = "";
 			// Use the new method that adds user prompt as additional message
 			await handler.autocompleteStreamingWithUserPrompt(
 				quickPromptAction,
-				text,
+				await text,
 				userPrompt,
 				(token) => {
 					result += token;

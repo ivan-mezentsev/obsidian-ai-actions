@@ -18,6 +18,7 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 ## Demo
 ![Demo0](docs/QuickPrompt0.gif)
 ![Demo1](docs/QuickPrompt1.gif)
+![Demo2](docs/СlipboardDemo0.gif)
 
 [SCREENSHOTS.md](docs/SCREENSHOTS.md)
 
@@ -39,6 +40,7 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 - **Professional Rewriting** - Enhance tone and clarity
 - **Hashtag Generation** - Auto-generate relevant tags
 - **Task List Creation** - Convert notes to actionable items
+- **Paste from clipboard as markdown** - You might like this ;-)
 
 ### 🎯 Flexible Text Processing
 - **Selection Options**: Process entire document or selected text
