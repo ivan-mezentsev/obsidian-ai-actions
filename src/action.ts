@@ -7,6 +7,7 @@ import { waitForAI } from "@obsidian-ai-providers/sdk";
 export enum Selection {
 	ALL = "ALL",
 	CURSOR = "CURSOR",
+	CLIPBOARD = "CLIPBOARD",
 }
 
 export enum Location {
@@ -34,6 +35,7 @@ export interface UserAction {
 const SELECTION_SETTING: { [key: string]: string } = {
 	[Selection.ALL.toString()]: "Select the whole document",
 	[Selection.CURSOR.toString()]: "Input selected text by cursor",
+	[Selection.CLIPBOARD.toString()]: "Input text from clipboard",
 };
 
 const LOCATION_SETTING: { [key: string]: string } = {

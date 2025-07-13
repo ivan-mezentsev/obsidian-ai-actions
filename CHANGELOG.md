@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.5.0 - 2025-07-13
+- feat(handler): add clipboard support for text input
+
 ### 0.4.3 - 2025-07-13
 - feat(mobile): add virtual keyboard auto-hide on mobile devices
 

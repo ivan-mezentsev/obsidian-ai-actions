@@ -67,17 +67,60 @@ export class ActionHandler {
 		return apiKey;
 	}
 
-	getTextInput(sel: Selection, editor: Editor) {
+	async getTextInput(sel: Selection, editor: Editor): Promise<string> {
 		switch (sel) {
 			case Selection.ALL:
 				return editor.getValue();
 			case Selection.CURSOR:
 				return editor.getSelection();
+			case Selection.CLIPBOARD:
+				try {
+					return await this.readClipboardContent();
+				} catch (error) {
+					console.error('Failed to read clipboard:', error);
+					throw "Failed to read clipboard. Please ensure clipboard permissions are granted.";
+				}
 			default:
 				console.log(`Selection ${sel}`);
 				throw "Selection not implemented";
 		}
 	}
+
+	/**
+	 * Read clipboard content as-is without any modifications
+	 * Preserves original formatting by reading HTML content directly
+	 */
+	private async readClipboardContent(): Promise<string> {
+		try {
+			// Try to read rich content using the modern Clipboard API
+			const clipboardItems = await navigator.clipboard.read();
+			
+			for (const item of clipboardItems) {
+				// Priority order: HTML (for rich formatting), then plain text
+				if (item.types.includes('text/html')) {
+					const blob = await item.getType('text/html');
+					const htmlContent = await blob.text();
+					
+					// Return HTML content as-is without any conversion
+					return htmlContent;
+				}
+				
+				if (item.types.includes('text/plain')) {
+					const blob = await item.getType('text/plain');
+					return await blob.text();
+				}
+			}
+			
+			// If no text content found, return empty string
+			return '';
+		} catch (error) {
+			// Fallback to the old method if the modern API fails
+			console.warn('Modern clipboard API failed, falling back to readText():', error);
+			return await navigator.clipboard.readText();
+		}
+	}
+
+
 
 	async addToNote(
 		location: Location,
@@ -137,7 +180,7 @@ export class ActionHandler {
 		const cursorPositionFrom = editor.getCursor("from");
 		const cursorPositionTo = editor.getCursor("to");
 
-		const text = this.getTextInput(action.sel, editor);
+		const text = await this.getTextInput(action.sel, editor);
 		const providerName = this.llmFactory.getProviderNameSync(action.model);
 		new Notice(`Querying ${providerName} API...`);
 

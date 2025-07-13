@@ -166,8 +166,8 @@ async onOpen() {
 			.setName("Max Output Tokens")
 			.setDesc("Maximum number of tokens to generate (leave empty or 0 for default)")
 			.addText((text) => {
-				text.setPlaceholder("1000")
-					.setValue(this.action.maxOutputTokens?.toString() || "1000")
+				text.setPlaceholder("10000")
+					.setValue(this.action.maxOutputTokens?.toString() || "10000")
 					.onChange((value) => {
 						const numValue = parseInt(value);
 						if (isNaN(numValue) || numValue <= 0) {
