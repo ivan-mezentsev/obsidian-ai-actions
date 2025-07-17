@@ -15,28 +15,13 @@ export class DummyLLM extends LLM {
 		content: string,
 		callback: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number
+		maxOutputTokens?: number,
+		userPrompt?: string
 	): Promise<void> {
 		return new Promise(async (resolve) => {
-			const split = textForTesting.split(" ");
-			for (const element of split) {
-				callback(element + " ");
-				await new Promise((r) => setTimeout(r, 20));
-			}
-			resolve();
-		});
-	}
-
-	async autocompleteStreamingInnerWithUserPrompt(
-		systemPrompt: string,
-		content: string,
-		userPrompt: string,
-		callback: (text: string) => void,
-		temperature?: number,
-		maxOutputTokens?: number
-	): Promise<void> {
-		return new Promise(async (resolve) => {
-			const responseText = `Response to system: "${systemPrompt}" and user prompt: "${userPrompt}" with content: "${content}" - ${textForTesting}`;
+			const responseText = userPrompt 
+				? `Response to system: "${prompt}" and user prompt: "${userPrompt}" with content: "${content}" - ${textForTesting}`
+				: textForTesting;
 			const split = responseText.split(" ");
 			for (const element of split) {
 				callback(element + " ");

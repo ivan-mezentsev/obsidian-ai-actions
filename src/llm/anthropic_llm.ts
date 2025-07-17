@@ -68,60 +68,36 @@ export class AnthropicLLM extends BaseProviderLLM {
         content: string,
         callback: (text: string) => void,
         temperature?: number,
-        maxOutputTokens?: number
+        maxOutputTokens?: number,
+        userPrompt?: string
     ): Promise<void> {
         const systemPrompt = prompt;
-        const userContent = content;
         
         try {
-            const stream = await this.client.messages.create({
-                model: this.modelName,
-                max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
-                temperature: temperature !== undefined ? temperature : 0.7,
-                system: systemPrompt,
-                messages: [
+            const messages = userPrompt 
+                ? [
                     {
-                        role: 'user',
-                        content: userContent
-                    }
-                ],
-                stream: true
-            });
-
-            for await (const chunk of stream) {
-                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-                    callback(chunk.delta.text);
-                }
-            }
-        } catch (error) {
-            throw new Error(`Anthropic streaming API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    }
-
-    async autocompleteStreamingInnerWithUserPrompt(
-        systemPrompt: string,
-        content: string,
-        userPrompt: string,
-        callback: (text: string) => void,
-        temperature?: number,
-        maxOutputTokens?: number
-    ): Promise<void> {
-        try {
-            const stream = await this.client.messages.create({
-                model: this.modelName,
-                max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
-                temperature: temperature !== undefined ? temperature : 0.7,
-                system: systemPrompt,
-                messages: [
-                    {
-                        role: 'user',
+                        role: 'user' as const,
                         content: userPrompt
                     },
                     {
-                        role: 'user',
+                        role: 'user' as const,
                         content: content
                     }
-                ],
+                ]
+                : [
+                    {
+                        role: 'user' as const,
+                        content: content
+                    }
+                ];
+
+            const stream = await this.client.messages.create({
+                model: this.modelName,
+                max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
+                temperature: temperature !== undefined ? temperature : 0.7,
+                system: systemPrompt,
+                messages: messages,
                 stream: true
             });
 

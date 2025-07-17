@@ -30,6 +30,7 @@ export class ActionHandler {
 		userAction: UserAction,
 		input: string,
 		onToken: (token: string) => void,
+		userPrompt?: string,
 	): Promise<void> {
 		const llm = this.llmFactory.create(userAction.model);
 		return await llm.autocompleteStreaming(
@@ -38,23 +39,7 @@ export class ActionHandler {
 			onToken,
 			userAction.temperature,
 			userAction.maxOutputTokens,
-		);
-	}
-
-	async autocompleteStreamingWithUserPrompt(
-		userAction: UserAction,
-		input: string,
-		userPrompt: string,
-		onToken: (token: string) => void,
-	): Promise<void> {
-		const llm = this.llmFactory.create(userAction.model);
-		return await llm.autocompleteStreamingWithUserPrompt(
-			userAction.prompt,
-			input,
 			userPrompt,
-			onToken,
-			userAction.temperature,
-			userAction.maxOutputTokens,
 		);
 	}
 

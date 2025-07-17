@@ -67,59 +67,25 @@ export class GeminiLLM extends BaseProviderLLM {
 		callback: (text: string) => void,
 		temperature?: number,
 		maxOutputTokens?: number,
-	): Promise<void> {
-		try {
-			const contents = [
-				{ role: "user", parts: [{ text: prompt }] },
-				{ role: "user", parts: [{ text: content }] },
-			];
-
-			const config: any = {
-				temperature: temperature !== undefined ? temperature : 0.7,
-				maxOutputTokens:
-					maxOutputTokens && maxOutputTokens > 0
-						? maxOutputTokens
-						: 1000,
-			};
-
-			const stream = await this.client.models.generateContentStream({
-				model: this.modelName,
-				contents,
-				config,
-			});
-
-			for await (const chunk of stream) {
-				if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
-					callback(chunk.candidates[0].content.parts[0].text);
-				}
-			}
-		} catch (error) {
-			throw new Error(
-				`Gemini streaming SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
-			);
-		}
-	}
-
-	async autocompleteStreamingInnerWithUserPrompt(
-		systemPrompt: string,
-		content: string,
-		userPrompt: string,
-		callback: (text: string) => void,
-		temperature?: number,
-		maxOutputTokens?: number,
+		userPrompt?: string,
 	): Promise<void> {
 		try {
 			// Check if model supports system instructions (avoid for Gemma models)
 			const supportsSystemInstruction = !this.modelName.toLowerCase().includes('gemma');
 			
-			const contents = supportsSystemInstruction
-				? [
-					{ role: "user", parts: [{ text: userPrompt }] },
-					{ role: "user", parts: [{ text: content }] },
-				]
+			const contents = userPrompt 
+				? (supportsSystemInstruction
+					? [
+						{ role: "user", parts: [{ text: userPrompt }] },
+						{ role: "user", parts: [{ text: content }] },
+					]
+					: [
+						{ role: "user", parts: [{ text: prompt }] },
+						{ role: "user", parts: [{ text: userPrompt }] },
+						{ role: "user", parts: [{ text: content }] },
+					])
 				: [
-					{ role: "user", parts: [{ text: systemPrompt }] },
-					{ role: "user", parts: [{ text: userPrompt }] },
+					{ role: "user", parts: [{ text: prompt }] },
 					{ role: "user", parts: [{ text: content }] },
 				];
 
@@ -131,9 +97,9 @@ export class GeminiLLM extends BaseProviderLLM {
 						: 1000,
 			};
 
-			// Add system instruction for supported models
-			if (supportsSystemInstruction) {
-				config.systemInstruction = systemPrompt;
+			// Add system instruction for supported models when userPrompt is provided
+			if (userPrompt && supportsSystemInstruction) {
+				config.systemInstruction = prompt;
 			}
 
 			const stream = await this.client.models.generateContentStream({

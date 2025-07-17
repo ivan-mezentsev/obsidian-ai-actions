@@ -44,72 +44,12 @@ export class OllamaLLM extends BaseProviderLLM {
         content: string,
         callback: (text: string) => void,
         temperature?: number,
-        maxOutputTokens?: number
+        maxOutputTokens?: number,
+        userPrompt?: string
     ): Promise<void> {
-        const combinedPrompt = prompt + '\n' + content;
-        const body = {
-            model: this.modelName,
-            prompt: combinedPrompt,
-            stream: true,
-            options: {
-                temperature: temperature !== undefined ? temperature : 0.7,
-                ...(maxOutputTokens && maxOutputTokens > 0 ? { num_predict: maxOutputTokens } : { num_predict: 1000 }),
-            }
-        };
-
-        const response = await this.makeRequest('/api/generate', body);
-        
-        if (!response.ok) {
-            throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
-        }
-
-        const reader = response.body?.getReader();
-        if (!reader) {
-            throw new Error('No response body reader available');
-        }
-
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
-
-                for (const line of lines) {
-                    if (line.trim()) {
-                        try {
-                            const data = JSON.parse(line);
-                            if (data.response) {
-                                callback(data.response);
-                            }
-                            if (data.done) {
-                                return;
-                            }
-                        } catch (e) {
-                            // Skip invalid JSON lines
-                        }
-                    }
-                }
-            }
-        } finally {
-            reader.releaseLock();
-        }
-    }
-
-    async autocompleteStreamingInnerWithUserPrompt(
-        systemPrompt: string,
-        content: string,
-        userPrompt: string,
-        callback: (text: string) => void,
-        temperature?: number,
-        maxOutputTokens?: number
-    ): Promise<void> {
-        const combinedPrompt = systemPrompt + '\n' + userPrompt + '\n' + content;
+        const combinedPrompt = userPrompt 
+            ? prompt + '\n' + userPrompt + '\n' + content
+            : prompt + '\n' + content;
         const body = {
             model: this.modelName,
             prompt: combinedPrompt,

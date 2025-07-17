@@ -93,56 +93,28 @@ export class OpenAILLM extends LLM {
 		content: string,
 		callback: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number
+		maxOutputTokens?: number,
+		userPrompt?: string
 	): Promise<void> {
 		try {
-			
-			const requestData: any = {
-				model: this.model,
-				messages: [
+			const messages = userPrompt 
+				? [
 					{ role: "system" as const, content: prompt },
-				{ role: "user" as const, content: content }
-				],
-				max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
-				temperature: temperature !== undefined ? temperature : 0.7,
-				stream: true as const,
-			};
-			
-			const stream: any = await this.openai.chat.completions.create(requestData);
-
-			for await (const chunk of stream) {
-				const content = chunk.choices[0]?.delta?.content;
-				if (content) {
-					callback(content);
-				}
-			}
-		} catch (error) {
-			throw error;
-		}
-	}
-
-	async autocompleteStreamingInnerWithUserPrompt(
-		systemPrompt: string,
-		content: string,
-		userPrompt: string,
-		callback: (text: string) => void,
-		temperature?: number,
-		maxOutputTokens?: number
-	): Promise<void> {
-		try {
+					{ role: "user" as const, content: userPrompt },
+					{ role: "user" as const, content: content }
+				]
+				: [
+					{ role: "system" as const, content: prompt },
+					{ role: "user" as const, content: content }
+				];
 			
 			const requestData: any = {
 				model: this.model,
-				messages: [
-				{ role: "system" as const, content: systemPrompt },
-				{ role: "user" as const, content: userPrompt },
-				{ role: "user" as const, content: content }
-			],
+				messages: messages,
 				max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
 				temperature: temperature !== undefined ? temperature : 0.7,
 				stream: true as const,
 			};
-			
 			
 			const stream: any = await this.openai.chat.completions.create(requestData);
 
@@ -153,7 +125,7 @@ export class OpenAILLM extends LLM {
 				}
 			}
 		} catch (error) {
-			console.error("Error in autocompleteStreamingInnerWithUserPrompt:", error);
+			console.error("Error in autocompleteStreamingInner:", error);
 			throw error;
 		}
 	}
