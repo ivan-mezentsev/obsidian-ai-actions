@@ -26,49 +26,12 @@ export class GeminiLLM extends BaseProviderLLM {
 	async autocomplete(
 		prompt: string,
 		content: string,
-		temperature?: number,
-		maxOutputTokens?: number,
-	): Promise<string> {
-		try {
-			const contents = [
-				{ role: "user", parts: [{ text: prompt }] },
-				{ role: "user", parts: [{ text: content }] },
-			];
-
-			const config: any = {
-				temperature: temperature !== undefined ? temperature : 0.7,
-				maxOutputTokens:
-					maxOutputTokens && maxOutputTokens > 0
-						? maxOutputTokens
-						: 1000,
-			};
-
-			const response = await this.client.models.generateContent({
-				model: this.modelName,
-				contents,
-				config,
-			});
-
-			// Gemini SDK returns candidates[0].content.parts[0].text
-			if (response?.candidates?.[0]?.content?.parts?.[0]?.text) {
-				return response.candidates[0].content.parts[0].text;
-			}
-			return "";
-		} catch (error) {
-			throw new Error(
-				`Gemini SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
-			);
-		}
-	}
-
-	async autocompleteStreamingInner(
-		prompt: string,
-		content: string,
-		callback: (text: string) => void,
+		callback?: (text: string) => void,
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-	): Promise<void> {
+		streaming: boolean = false,
+	): Promise<string | void> {
 		try {
 			// Check if model supports system instructions (avoid for Gemma models)
 			const supportsSystemInstruction = !this.modelName.toLowerCase().includes('gemma');
@@ -102,20 +65,37 @@ export class GeminiLLM extends BaseProviderLLM {
 				config.systemInstruction = prompt;
 			}
 
-			const stream = await this.client.models.generateContentStream({
-				model: this.modelName,
-				contents,
-				config,
-			});
+			if (streaming && callback) {
+				// Streaming mode
+				const stream = await this.client.models.generateContentStream({
+					model: this.modelName,
+					contents,
+					config,
+				});
 
-			for await (const chunk of stream) {
-				if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
-					callback(chunk.candidates[0].content.parts[0].text);
+				for await (const chunk of stream) {
+					if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
+						callback(chunk.candidates[0].content.parts[0].text);
+					}
 				}
+				return;
+			} else {
+				// Non-streaming mode
+				const response = await this.client.models.generateContent({
+					model: this.modelName,
+					contents,
+					config,
+				});
+
+				// Gemini SDK returns candidates[0].content.parts[0].text
+				if (response?.candidates?.[0]?.content?.parts?.[0]?.text) {
+					return response.candidates[0].content.parts[0].text;
+				}
+				return "";
 			}
 		} catch (error) {
 			throw new Error(
-				`Gemini streaming SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
+				`Gemini SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
 			);
 		}
 	}

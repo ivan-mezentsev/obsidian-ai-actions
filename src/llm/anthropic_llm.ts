@@ -32,45 +32,15 @@ export class AnthropicLLM extends BaseProviderLLM {
         return headers;
     }
 
-    async autocomplete(prompt: string, content: string, temperature?: number, maxOutputTokens?: number): Promise<string> {
-        const systemPrompt = prompt;
-        const userContent = content;
-        
-        try {
-            const message = await this.client.messages.create({
-                model: this.modelName,
-                max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
-                temperature: temperature !== undefined ? temperature : 0.7,
-                system: systemPrompt,
-                messages: [
-                    {
-                        role: 'user',
-                        content: userContent
-                    }
-                ]
-            });
-
-            if (message.content && message.content.length > 0) {
-                const textBlock = message.content.find((block: any) => block.type === 'text');
-                if (textBlock && 'text' in textBlock) {
-                    return textBlock.text;
-                }
-            }
-            
-            return '';
-        } catch (error) {
-            throw new Error(`Anthropic API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        }
-    }
-
-    async autocompleteStreamingInner(
+    async autocomplete(
         prompt: string,
         content: string,
-        callback: (text: string) => void,
+        callback?: (text: string) => void,
         temperature?: number,
         maxOutputTokens?: number,
-        userPrompt?: string
-    ): Promise<void> {
+        userPrompt?: string,
+        streaming: boolean = false
+    ): Promise<string | void> {
         const systemPrompt = prompt;
         
         try {
@@ -92,22 +62,44 @@ export class AnthropicLLM extends BaseProviderLLM {
                     }
                 ];
 
-            const stream = await this.client.messages.create({
-                model: this.modelName,
-                max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
-                temperature: temperature !== undefined ? temperature : 0.7,
-                system: systemPrompt,
-                messages: messages,
-                stream: true
-            });
+            if (streaming && callback) {
+                // Streaming mode
+                const stream = await this.client.messages.create({
+                    model: this.modelName,
+                    max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
+                    temperature: temperature !== undefined ? temperature : 0.7,
+                    system: systemPrompt,
+                    messages: messages,
+                    stream: true
+                });
 
-            for await (const chunk of stream) {
-                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-                    callback(chunk.delta.text);
+                for await (const chunk of stream) {
+                    if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+                        callback(chunk.delta.text);
+                    }
                 }
+                return;
+            } else {
+                // Non-streaming mode
+                const message = await this.client.messages.create({
+                    model: this.modelName,
+                    max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
+                    temperature: temperature !== undefined ? temperature : 0.7,
+                    system: systemPrompt,
+                    messages: messages
+                });
+
+                if (message.content && message.content.length > 0) {
+                    const textBlock = message.content.find((block: any) => block.type === 'text');
+                    if (textBlock && 'text' in textBlock) {
+                        return textBlock.text;
+                    }
+                }
+                
+                return '';
             }
         } catch (error) {
-            throw new Error(`Anthropic streaming API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new Error(`Anthropic API error: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     }
 }

@@ -18,12 +18,14 @@ export class ActionHandler {
 	async handleAction(userAction: UserAction, input: string): Promise<string> {
 		const llm = this.llmFactory.create(userAction.model);
 		const prompt = userAction.prompt.replace("{{input}}", input);
-		return await llm.autocomplete(
+		const result = await llm.autocomplete(
 			prompt,
 			input,
+			undefined,
 			userAction.temperature,
 			userAction.maxOutputTokens,
 		);
+		return result as string;
 	}
 
 	async autocompleteStreaming(
@@ -33,13 +35,14 @@ export class ActionHandler {
 		userPrompt?: string,
 	): Promise<void> {
 		const llm = this.llmFactory.create(userAction.model);
-		return await llm.autocompleteStreaming(
+		await llm.autocomplete(
 			userAction.prompt,
 			input,
 			onToken,
 			userAction.temperature,
 			userAction.maxOutputTokens,
 			userPrompt,
+			true
 		);
 	}
 

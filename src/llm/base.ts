@@ -3,16 +3,15 @@ export abstract class LLM {
 	// For non-streaming mode, this is the timeout for the whole query
 	queryTimeout = 45000;
 
-	abstract autocomplete(prompt: string, content: string, temperature?: number, maxOutputTokens?: number): Promise<string>;
-
-	abstract autocompleteStreamingInner(
+	abstract autocomplete(
 		prompt: string,
 		content: string,
-		callback: (text: string) => void,
+		callback?: (text: string) => void,
 		temperature?: number,
 		maxOutputTokens?: number,
-		userPrompt?: string
-	): Promise<void>;
+		userPrompt?: string,
+		streaming?: boolean
+	): Promise<string | void>;
 
 	async autocompleteStreaming(
 		prompt: string,
@@ -36,7 +35,7 @@ export abstract class LLM {
 			callback(text);
 		}
 
-		let promise = this.autocompleteStreamingInner(prompt, content, callback_wrapper, temperature, maxOutputTokens, userPrompt);
+		let promise = this.autocomplete(prompt, content, callback_wrapper, temperature, maxOutputTokens, userPrompt, true);
 		return new Promise<void>((resolve, reject) => {
 			const intervalId = setInterval(() => {
 				let now = new Date().getTime();

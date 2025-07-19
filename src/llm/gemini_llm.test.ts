@@ -68,6 +68,7 @@ describe('GeminiLLM', () => {
             const result = await geminiLLM.autocomplete(
                 'You are a helpful assistant',
                 'Write a hello world function',
+                undefined,
                 0.7,
                 1000
             );
@@ -146,9 +147,7 @@ describe('GeminiLLM', () => {
             await expect(geminiLLM.autocomplete('prompt', 'content'))
                 .rejects.toThrow('Gemini SDK error: Unknown error');
         });
-    });
 
-    describe('autocompleteStreamingInner', () => {
         it('should successfully stream completion without userPrompt', async () => {
             const mockStream = {
                 async *[Symbol.asyncIterator]() {
@@ -184,12 +183,14 @@ describe('GeminiLLM', () => {
             mockClient.models.generateContentStream.mockResolvedValue(mockStream);
 
             const callback = jest.fn();
-            await geminiLLM.autocompleteStreamingInner(
+            await geminiLLM.autocomplete(
                 'You are helpful',
                 'Say hello',
                 callback,
                 0.8,
-                500
+                500,
+                undefined,
+                true
             );
 
             expect(callback).toHaveBeenCalledTimes(3);
@@ -227,13 +228,14 @@ describe('GeminiLLM', () => {
             mockClient.models.generateContentStream.mockResolvedValue(mockStream);
 
             const callback = jest.fn();
-            await geminiLLM.autocompleteStreamingInner(
+            await geminiLLM.autocomplete(
                 'System instruction',
                 'Content text',
                 callback,
                 0.7,
                 1000,
-                'User custom prompt'
+                'User custom prompt',
+                true
             );
 
             expect(mockClient.models.generateContentStream).toHaveBeenCalledWith({
@@ -256,11 +258,15 @@ describe('GeminiLLM', () => {
 
             const callback = jest.fn();
             
-            await expect(geminiLLM.autocompleteStreamingInner(
+            await expect(geminiLLM.autocomplete(
                 'prompt',
                 'content',
-                callback
-            )).rejects.toThrow('Gemini streaming SDK error: Streaming connection failed');
+                callback,
+                undefined,
+                undefined,
+                undefined,
+                true
+            )).rejects.toThrow('Gemini SDK error: Streaming connection failed');
         });
 
         it('should handle empty streaming chunks gracefully', async () => {
@@ -275,7 +281,7 @@ describe('GeminiLLM', () => {
             mockClient.models.generateContentStream.mockResolvedValue(mockStream);
 
             const callback = jest.fn();
-            await geminiLLM.autocompleteStreamingInner('prompt', 'content', callback);
+            await geminiLLM.autocomplete('prompt', 'content', callback, undefined, undefined, undefined, true);
 
             // Should only call callback for valid chunks
             expect(callback).toHaveBeenCalledTimes(1);
@@ -325,8 +331,8 @@ describe('GeminiLLM', () => {
             mockClient.models.generateContentStream.mockRejectedValue(rateLimitError);
 
             const callback = jest.fn();
-            await expect(geminiLLM.autocompleteStreamingInner('prompt', 'content', callback))
-                .rejects.toThrow('Gemini streaming SDK error: Rate limit exceeded');
+            await expect(geminiLLM.autocomplete('prompt', 'content', callback, undefined, undefined, undefined, true))
+                .rejects.toThrow('Gemini SDK error: Rate limit exceeded');
         });
     });
 });

@@ -9,52 +9,15 @@ export class PluginAIProvidersLLM extends LLM {
         this.pluginAIProviderId = pluginAIProviderId;
     }
 
-    async autocomplete(prompt: string, content: string, temperature?: number, maxOutputTokens?: number): Promise<string> {
-        const { promise } = await waitForAI();
-        const aiProviders = await promise;
-        
-        const provider = aiProviders.providers.find(p => p.id === this.pluginAIProviderId);
-        if (!provider) {
-            throw new Error(`Provider with id ${this.pluginAIProviderId} not found`);
-        }
-        
-        return new Promise(async (resolve, reject) => {
-            let result = '';
-            
-            try {
-                const chunkHandler = await aiProviders.execute({
-                    provider,
-                    messages: [
-                        { role: 'user', content: prompt },
-                        { role: 'user', content: content }
-                    ]
-                });
-                
-                chunkHandler.onData((chunk: string) => {
-                    result += chunk;
-                });
-                
-                chunkHandler.onEnd(() => {
-                    resolve(result);
-                });
-                
-                chunkHandler.onError((error: Error) => {
-                    reject(new Error(`Plugin AI providers API error: ${error.message}`));
-                });
-            } catch (error) {
-                reject(new Error(`Plugin AI providers API error: ${error instanceof Error ? error.message : 'Unknown error'}`));
-            }
-        });
-    }
-
-    async autocompleteStreamingInner(
+    async autocomplete(
         prompt: string,
         content: string,
-        callback: (text: string) => void,
+        callback?: (text: string) => void,
         temperature?: number,
         maxOutputTokens?: number,
-        userPrompt?: string
-    ): Promise<void> {
+        userPrompt?: string,
+        streaming: boolean = false
+    ): Promise<string | void> {
         const { promise } = await waitForAI();
         const aiProviders = await promise;
         
@@ -75,6 +38,8 @@ export class PluginAIProvidersLLM extends LLM {
             ];
         
         return new Promise(async (resolve, reject) => {
+            let result = '';
+            
             try {
                 const chunkHandler = await aiProviders.execute({
                     provider,
@@ -82,18 +47,26 @@ export class PluginAIProvidersLLM extends LLM {
                 });
                 
                 chunkHandler.onData((chunk: string) => {
-                    callback(chunk);
+                    if (streaming && callback) {
+                        callback(chunk);
+                    } else {
+                        result += chunk;
+                    }
                 });
                 
                 chunkHandler.onEnd(() => {
-                    resolve();
+                    if (streaming) {
+                        resolve();
+                    } else {
+                        resolve(result);
+                    }
                 });
                 
                 chunkHandler.onError((error: Error) => {
-                    reject(new Error(`Plugin AI providers streaming API error: ${error.message}`));
+                    reject(new Error(`Plugin AI providers API error: ${error.message}`));
                 });
             } catch (error) {
-                reject(new Error(`Plugin AI providers streaming API error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+                reject(new Error(`Plugin AI providers API error: ${error instanceof Error ? error.message : 'Unknown error'}`));
             }
         });
     }

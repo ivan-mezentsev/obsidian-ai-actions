@@ -20,48 +20,15 @@ export class OpenRouterLLM extends BaseProviderLLM {
         return headers;
     }
 
-    async autocomplete(prompt: string, content: string, temperature?: number, maxOutputTokens?: number): Promise<string> {
-        
-        const body = {
-            model: this.modelName,
-            messages: [
-                {
-                    role: 'user',
-                    content: prompt
-                },
-                {
-                    role: 'user',
-                    content: content
-                }
-            ],
-            temperature: temperature !== undefined ? temperature : 0.7,
-            max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
-            stream: false
-        };
-
-        const response = await this.makeRequest('/chat/completions', body);
-        
-        if (!response.ok) {
-            throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        
-        if (data.choices && data.choices[0] && data.choices[0].message) {
-            return data.choices[0].message.content || '';
-        }
-        
-        return '';
-    }
-
-    async autocompleteStreamingInner(
-		prompt: string,
-		content: string,
-		callback: (text: string) => void,
-		temperature?: number,
-		maxOutputTokens?: number,
-		userPrompt?: string
-	): Promise<void> {
+    async autocomplete(
+        prompt: string,
+        content: string,
+        callback?: (text: string) => void,
+        temperature?: number,
+        maxOutputTokens?: number,
+        userPrompt?: string,
+        streaming: boolean = false
+    ): Promise<string | void> {
         
         const messages = userPrompt 
             ? [
@@ -94,7 +61,7 @@ export class OpenRouterLLM extends BaseProviderLLM {
             messages: messages,
             temperature: temperature !== undefined ? temperature : 0.7,
             max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
-            stream: true
+            stream: streaming
         };
 
         const response = await this.makeRequest('/chat/completions', body);
@@ -103,44 +70,57 @@ export class OpenRouterLLM extends BaseProviderLLM {
             throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
         }
 
-        const reader = response.body?.getReader();
-        if (!reader) {
-            throw new Error('No response body reader available');
-        }
+        if (streaming && callback) {
+            // Streaming mode
+            const reader = response.body?.getReader();
+            if (!reader) {
+                throw new Error('No response body reader available');
+            }
 
-        const decoder = new TextDecoder();
-        let buffer = '';
+            const decoder = new TextDecoder();
+            let buffer = '';
 
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
 
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || '';
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
 
-                for (const line of lines) {
-                    if (line.trim() && line.startsWith('data: ')) {
-                        const jsonStr = line.slice(6);
-                        if (jsonStr.trim() === '[DONE]') break;
-                        
-                        try {
-                            const data = JSON.parse(jsonStr);
-                            if (data.choices && data.choices[0] && data.choices[0].delta) {
-                                const content = data.choices[0].delta.content;
-                                if (content) {
-                                    callback(content);
+                    for (const line of lines) {
+                        if (line.trim() && line.startsWith('data: ')) {
+                            const jsonStr = line.slice(6);
+                            if (jsonStr.trim() === '[DONE]') break;
+                            
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                if (data.choices && data.choices[0] && data.choices[0].delta) {
+                                    const content = data.choices[0].delta.content;
+                                    if (content) {
+                                        callback(content);
+                                    }
                                 }
+                            } catch (e) {
+                                // Skip invalid JSON lines
                             }
-                        } catch (e) {
-                            // Skip invalid JSON lines
                         }
                     }
                 }
+            } finally {
+                reader.releaseLock();
             }
-        } finally {
-            reader.releaseLock();
+            return;
+        } else {
+            // Non-streaming mode
+            const data = await response.json();
+            
+            if (data.choices && data.choices[0] && data.choices[0].message) {
+                return data.choices[0].message.content || '';
+            }
+            
+            return '';
         }
     }
 }
