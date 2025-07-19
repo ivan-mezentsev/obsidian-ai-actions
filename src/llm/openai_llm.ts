@@ -65,95 +65,60 @@ export class OpenAILLM extends LLM {
 		this.openai = new OpenAI(config);
 	}
 
-	async autocomplete(prompt: string, content: string, temperature?: number, maxOutputTokens?: number): Promise<string> {
-		try {
-			const systemPrompt = prompt;
-			const userContent = content;
-			
-			const requestData: any = {
-			model: this.model,
-			messages: [
-				{ role: "system" as const, content: systemPrompt },
-				{ role: "user" as const, content: userContent }
-			],
-			max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
-			temperature: temperature !== undefined ? temperature : 0.7,
-		};
-			
-			const response = await this.openai.chat.completions.create(requestData);
-			
-			return response.choices[0]?.message?.content || "";
-		} catch (error) {
-			throw error;
-		}
-	}
-
-	async autocompleteStreamingInner(
+	async autocomplete(
 		prompt: string,
 		content: string,
-		callback: (text: string) => void,
+		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number
-	): Promise<void> {
+		maxOutputTokens?: number,
+		userPrompt?: string,
+		streaming: boolean = false
+	): Promise<string | void> {
 		try {
-			
-			const requestData: any = {
-				model: this.model,
-				messages: [
+			const messages = userPrompt 
+				? [
 					{ role: "system" as const, content: prompt },
-				{ role: "user" as const, content: content }
-				],
-				max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
-				temperature: temperature !== undefined ? temperature : 0.7,
-				stream: true as const,
-			};
-			
-			const stream: any = await this.openai.chat.completions.create(requestData);
-
-			for await (const chunk of stream) {
-				const content = chunk.choices[0]?.delta?.content;
-				if (content) {
-					callback(content);
-				}
-			}
-		} catch (error) {
-			throw error;
-		}
-	}
-
-	async autocompleteStreamingInnerWithUserPrompt(
-		systemPrompt: string,
-		content: string,
-		userPrompt: string,
-		callback: (text: string) => void,
-		temperature?: number,
-		maxOutputTokens?: number
-	): Promise<void> {
-		try {
+					{ role: "user" as const, content: userPrompt },
+					{ role: "user" as const, content: content }
+				]
+				: [
+					{ role: "system" as const, content: prompt },
+					{ role: "user" as const, content: content }
+				];
 			
 			const requestData: any = {
 				model: this.model,
-				messages: [
-				{ role: "system" as const, content: systemPrompt },
-				{ role: "user" as const, content: userPrompt },
-				{ role: "user" as const, content: content }
-			],
+				messages: messages,
 				max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
 				temperature: temperature !== undefined ? temperature : 0.7,
-				stream: true as const,
 			};
-			
-			
-			const stream: any = await this.openai.chat.completions.create(requestData);
 
-			for await (const chunk of stream) {
-				const content = chunk.choices[0]?.delta?.content;
-				if (content) {
-					callback(content);
+			if (streaming && callback) {
+				// Streaming mode
+				requestData.stream = true;
+				const stream: any = await this.openai.chat.completions.create(requestData);
+
+				for await (const chunk of stream) {
+					const content = chunk.choices[0]?.delta?.content;
+					if (content) {
+						callback(content);
+					}
 				}
+				return;
+			} else {
+				// Non-streaming mode
+				const response = await this.openai.chat.completions.create(requestData);
+				const result = response.choices[0]?.message?.content || "";
+				
+				// Call callback with the full result if provided
+				if (callback && result) {
+					callback(result);
+				}
+				
+				return result;
 			}
 		} catch (error) {
-			console.error("Error in autocompleteStreamingInnerWithUserPrompt:", error);
+			console.error("Error in autocomplete:", error);
 			throw error;
 		}
 	}

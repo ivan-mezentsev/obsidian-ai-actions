@@ -2,6 +2,8 @@ import { App, Modal, Setting, Notice } from "obsidian";
 import type { AIModel, AIProvider } from "../types";
 import AIEditor from "../main";
 import Anthropic from '@anthropic-ai/sdk';
+import { FilterableDropdown } from "../components/FilterableDropdown";
+import type { FilterableDropdownOption } from "../components/FilterableDropdown";
 
 export class ModelEditModal extends Modal {
     model: AIModel;
@@ -126,23 +128,32 @@ export class ModelEditModal extends Modal {
     private modelNameSetting: Setting;
     private refreshButton: Setting;
     private displayNameText: any;
+    private filterableDropdown: FilterableDropdown | null = null;
 
     private updateAvailableModels() {
         const selectedProvider = this.availableProviders.find(p => p.id === this.model.providerId);
         if (selectedProvider?.availableModels && selectedProvider.availableModels.length > 0) {
-            // Replace text input with dropdown
+            // Replace text input with FilterableDropdown
             this.modelNameSetting.clear();
-            this.modelNameSetting.addDropdown((dropdown) => {
-                selectedProvider.availableModels!.forEach(modelName => {
-                    dropdown.addOption(modelName, modelName);
-                });
-                dropdown.setValue(this.model.modelName)
-                    .onChange((value) => {
-                        this.model.modelName = value;
-                        // Auto-update display name when model is selected
-                        this.updateDisplayNameFromModel(value);
-                    });
-            });
+            
+            // Prepare options for FilterableDropdown
+            const options: FilterableDropdownOption[] = selectedProvider.availableModels.map(modelName => ({
+                value: modelName,
+                label: modelName,
+                model: { id: modelName, name: modelName, providerId: selectedProvider.id, modelName: modelName }
+            }));
+            
+            // Create FilterableDropdown
+            this.filterableDropdown = new FilterableDropdown(
+                this.modelNameSetting.controlEl,
+                options,
+                this.model.modelName,
+                (value: string) => {
+                    this.model.modelName = value;
+                    // Auto-update display name when model is selected
+                    this.updateDisplayNameFromModel(value);
+                }
+            );
         }
     }
 
@@ -261,6 +272,12 @@ export class ModelEditModal extends Modal {
     }
 
     onClose() {
+        // Clean up FilterableDropdown if it exists
+        if (this.filterableDropdown) {
+            this.filterableDropdown.destroy();
+            this.filterableDropdown = null;
+        }
+        
         const { contentEl } = this;
         contentEl.empty();
     }

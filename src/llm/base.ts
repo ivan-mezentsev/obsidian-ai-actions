@@ -3,31 +3,23 @@ export abstract class LLM {
 	// For non-streaming mode, this is the timeout for the whole query
 	queryTimeout = 45000;
 
-	abstract autocomplete(prompt: string, content: string, temperature?: number, maxOutputTokens?: number): Promise<string>;
-
-	abstract autocompleteStreamingInner(
+	abstract autocomplete(
 		prompt: string,
 		content: string,
-		callback: (text: string) => void,
+		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number
-	): Promise<void>;
-
-	abstract autocompleteStreamingInnerWithUserPrompt(
-		systemPrompt: string,
-		content: string,
-		userPrompt: string,
-		callback: (text: string) => void,
-		temperature?: number,
-		maxOutputTokens?: number
-	): Promise<void>;
+		maxOutputTokens?: number,
+		userPrompt?: string,
+		streaming?: boolean
+	): Promise<string | void>;
 
 	async autocompleteStreaming(
 		prompt: string,
 		content: string,
 		callback: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number
+		maxOutputTokens?: number,
+		userPrompt?: string
 	): Promise<void> {
 		let last_tick = new Date().getTime();
 		let has_timeout = false;
@@ -43,7 +35,7 @@ export abstract class LLM {
 			callback(text);
 		}
 
-		let promise = this.autocompleteStreamingInner(prompt, content, callback_wrapper, temperature, maxOutputTokens);
+		let promise = this.autocomplete(prompt, content, callback_wrapper, temperature, maxOutputTokens, userPrompt, true);
 		return new Promise<void>((resolve, reject) => {
 			const intervalId = setInterval(() => {
 				let now = new Date().getTime();
@@ -58,59 +50,11 @@ export abstract class LLM {
 				}
 			}, 1000);
 			promise
-				.then((_) => {
+				.then((_: any) => {
 					clearInterval(intervalId);
 					resolve();
 				})
-				.catch((error) => {
-					clearInterval(intervalId);
-					reject(error);
-				});
-		});
-	}
-
-	async autocompleteStreamingWithUserPrompt(
-		systemPrompt: string,
-		content: string,
-		userPrompt: string,
-		callback: (text: string) => void,
-		temperature?: number,
-		maxOutputTokens?: number
-	): Promise<void> {
-		let last_tick = new Date().getTime();
-		let has_timeout = false;
-
-		// define a wrapper function to update last_tick
-		function callback_wrapper(text: string): void {
-			// Once start the query promise, we cannot cancel it.
-			// Ignore the callback if timeout has already happened.
-			if (has_timeout) {
-				return;
-			}
-			last_tick = new Date().getTime();
-			callback(text);
-		}
-
-		let promise = this.autocompleteStreamingInnerWithUserPrompt(systemPrompt, content, userPrompt, callback_wrapper, temperature, maxOutputTokens);
-		return new Promise<void>((resolve, reject) => {
-			const intervalId = setInterval(() => {
-				let now = new Date().getTime();
-				if (now - last_tick > this.queryTimeout) {
-					has_timeout = true;
-					clearInterval(intervalId);
-					reject(
-						"Timeout: last streaming output is " +
-							(now - last_tick) +
-							"ms ago."
-					);
-				}
-			}, 1000);
-			promise
-				.then((_) => {
-					clearInterval(intervalId);
-					resolve();
-				})
-				.catch((error) => {
+				.catch((error: any) => {
 					clearInterval(intervalId);
 					reject(error);
 				});

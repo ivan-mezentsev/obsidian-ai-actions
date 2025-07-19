@@ -21,6 +21,7 @@ export class FilterableDropdown {
     private inputEl: HTMLInputElement;
     private arrowEl: HTMLElement;
     private optionsEl: HTMLElement;
+    private documentClickHandler: (e: Event) => void;
 
     constructor(
         containerEl: HTMLElement,
@@ -60,8 +61,11 @@ export class FilterableDropdown {
         // Create arrow
         this.arrowEl = this.dropdownEl.createDiv("ai-actions-filterable-dropdown-arrow");
         
-        // Create options container
-        this.optionsEl = this.dropdownEl.createDiv("ai-actions-filterable-dropdown-options");
+        // Create options container attached to body to escape modal overflow
+        this.optionsEl = document.body.createDiv("ai-actions-filterable-dropdown-options");
+        this.optionsEl.style.position = "fixed";
+        this.optionsEl.style.display = "none";
+        this.optionsEl.style.zIndex = "10000";
         
         // Set initial value
         this.updateInputValue();
@@ -136,11 +140,13 @@ export class FilterableDropdown {
         });
 
         // Click outside to close
-        document.addEventListener("click", (e) => {
-            if (!this.dropdownEl.contains(e.target as Node)) {
+        this.documentClickHandler = (e: Event) => {
+            const target = e.target as Node;
+            if (!this.dropdownEl.contains(target) && !this.optionsEl.contains(target)) {
                 this.closeDropdown();
             }
-        });
+        };
+        document.addEventListener("click", this.documentClickHandler);
     }
 
     private filterOptions(query: string) {
@@ -239,26 +245,41 @@ export class FilterableDropdown {
         this.dropdownEl.addClass("is-open");
         this.highlightedIndex = -1;
         
-        // Calculate dropdown direction based on available space
-        this.calculateDropdownDirection();
+        // Position dropdown relative to input
+        this.positionDropdown();
+        
+        // Show dropdown
+        this.optionsEl.style.display = "block";
         
         this.renderOptions();
     }
 
-    private calculateDropdownDirection() {
+    private positionDropdown() {
         const rect = this.dropdownEl.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
         const spaceBelow = viewportHeight - rect.bottom;
         const spaceAbove = rect.top;
-        const dropdownHeight = Math.min(200, this.filteredOptions.length * 32 + 8); // Approximate dropdown height
+        const dropdownHeight = Math.min(200, this.filteredOptions.length * 32 + 8);
         
-        // If not enough space below but enough space above, open upward
+        // Set position and size
+        this.optionsEl.style.left = rect.left + "px";
+        this.optionsEl.style.width = rect.width + "px";
+        this.optionsEl.style.maxHeight = "200px";
+        this.optionsEl.style.overflowY = "auto";
+        
+        // Determine direction
         if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
+            // Open upward
             this.dropdownDirection = 'up';
+            this.optionsEl.style.bottom = (viewportHeight - rect.top + 2) + "px";
+            this.optionsEl.style.top = "auto";
             this.optionsEl.addClass('ai-actions-filterable-dropdown-options--up');
             this.optionsEl.removeClass('ai-actions-filterable-dropdown-options--down');
         } else {
+            // Open downward
             this.dropdownDirection = 'down';
+            this.optionsEl.style.top = (rect.bottom + 2) + "px";
+            this.optionsEl.style.bottom = "auto";
             this.optionsEl.addClass('ai-actions-filterable-dropdown-options--down');
             this.optionsEl.removeClass('ai-actions-filterable-dropdown-options--up');
         }
@@ -267,6 +288,7 @@ export class FilterableDropdown {
     private closeDropdown() {
         this.isOpen = false;
         this.dropdownEl.removeClass("is-open");
+        this.optionsEl.style.display = "none";
         // Clear filter to show all options on next open
         this.filteredOptions = [...this.options];
     }
@@ -296,6 +318,13 @@ export class FilterableDropdown {
     }
 
     public destroy() {
+        // Remove event listener
+        if (this.documentClickHandler) {
+            document.removeEventListener("click", this.documentClickHandler);
+        }
+        
+        // Remove elements
         this.dropdownEl.remove();
+        this.optionsEl.remove();
     }
 }

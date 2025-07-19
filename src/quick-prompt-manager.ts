@@ -284,15 +284,15 @@ export class QuickPromptManager {
 			const text = await handler.getTextInput(quickPromptAction.sel, editor);
 
 			let result = "";
-			// Use the new method that adds user prompt as additional message
-			await handler.autocompleteStreamingWithUserPrompt(
+			// Use the streaming method with optional user prompt
+			await handler.autocompleteStreaming(
 				quickPromptAction,
 				await text,
-				userPrompt,
 				(token) => {
 					result += token;
 					onUpdate(result);
 				},
+				userPrompt,
 			);
 
 			// Hide spinner when done
