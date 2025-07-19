@@ -108,7 +108,14 @@ export class OpenAILLM extends LLM {
 			} else {
 				// Non-streaming mode
 				const response = await this.openai.chat.completions.create(requestData);
-				return response.choices[0]?.message?.content || "";
+				const result = response.choices[0]?.message?.content || "";
+				
+				// Call callback with the full result if provided
+				if (callback && result) {
+					callback(result);
+				}
+				
+				return result;
 			}
 		} catch (error) {
 			console.error("Error in autocomplete:", error);

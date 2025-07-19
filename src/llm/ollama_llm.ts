@@ -87,7 +87,14 @@ export class OllamaLLM extends BaseProviderLLM {
         } else {
             // Non-streaming mode
             const data = await response.json();
-            return data.response || '';
+            const result = data.response || '';
+            
+            // Call callback with the full result if provided
+            if (callback && result) {
+                callback(result);
+            }
+            
+            return result;
         }
     }
 }

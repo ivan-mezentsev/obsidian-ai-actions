@@ -86,12 +86,16 @@ export class GeminiLLM extends BaseProviderLLM {
 					contents,
 					config,
 				});
-
+	
 				// Gemini SDK returns candidates[0].content.parts[0].text
-				if (response?.candidates?.[0]?.content?.parts?.[0]?.text) {
-					return response.candidates[0].content.parts[0].text;
+				const result = response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+				
+				// Call callback with the full result if provided
+				if (callback && result) {
+					callback(result);
 				}
-				return "";
+				
+				return result;
 			}
 		} catch (error) {
 			throw new Error(

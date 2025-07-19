@@ -89,14 +89,20 @@ export class AnthropicLLM extends BaseProviderLLM {
                     messages: messages
                 });
 
+                let result = '';
                 if (message.content && message.content.length > 0) {
                     const textBlock = message.content.find((block: any) => block.type === 'text');
                     if (textBlock && 'text' in textBlock) {
-                        return textBlock.text;
+                        result = textBlock.text;
                     }
                 }
                 
-                return '';
+                // Call callback with the full result if provided
+                if (callback && result) {
+                    callback(result);
+                }
+                
+                return result;
             }
         } catch (error) {
             throw new Error(`Anthropic API error: ${error instanceof Error ? error.message : 'Unknown error'}`);

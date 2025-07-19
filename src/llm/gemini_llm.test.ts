@@ -148,6 +148,86 @@ describe('GeminiLLM', () => {
                 .rejects.toThrow('Gemini SDK error: Unknown error');
         });
 
+        it('should have identical final result for streaming and non-streaming modes', async () => {
+            const expectedText = 'Hello world response';
+            
+            // Setup mocks for both modes to return the same final result
+            const mockNonStreamingResponse = {
+                candidates: [{
+                    content: {
+                        parts: [{
+                            text: expectedText
+                        }]
+                    }
+                }]
+            };
+            
+            const mockStreamingResponse = {
+                async *[Symbol.asyncIterator]() {
+                    // Simulate streaming the same text in chunks
+                    yield { candidates: [{ content: { parts: [{ text: 'Hello' }] } }] };
+                    yield { candidates: [{ content: { parts: [{ text: ' world' }] } }] };
+                    yield { candidates: [{ content: { parts: [{ text: ' response' }] } }] };
+                }
+            };
+
+            // Test non-streaming mode
+            mockClient.models.generateContent.mockResolvedValue(mockNonStreamingResponse);
+            const nonStreamingCallback = jest.fn();
+            const nonStreamingResult = await geminiLLM.autocomplete(
+                'Test prompt',
+                'Test content',
+                nonStreamingCallback,
+                0.7,
+                1000,
+                undefined,
+                false
+            );
+
+            // Test streaming mode
+            mockClient.models.generateContentStream.mockResolvedValue(mockStreamingResponse);
+            const streamingCallback = jest.fn();
+            let streamingResult = '';
+            const mockStreamingCallbackWrapper = (chunk: string) => {
+                streamingResult += chunk;
+                streamingCallback(chunk);
+            };
+            
+            await geminiLLM.autocomplete(
+                'Test prompt',
+                'Test content',
+                mockStreamingCallbackWrapper,
+                0.7,
+                1000,
+                undefined,
+                true
+            );
+
+            // Verify identical final results
+            expect(nonStreamingResult).toBe(expectedText);
+            expect(streamingResult).toBe(expectedText);
+            
+            // Verify different callback behavior but same final outcome
+            expect(nonStreamingCallback).toHaveBeenCalledTimes(1);
+            expect(nonStreamingCallback).toHaveBeenCalledWith(expectedText);
+            
+            expect(streamingCallback).toHaveBeenCalledTimes(3);
+            expect(streamingCallback).toHaveBeenNthCalledWith(1, 'Hello');
+            expect(streamingCallback).toHaveBeenNthCalledWith(2, ' world');
+            expect(streamingCallback).toHaveBeenNthCalledWith(3, ' response');
+        });
+
+        it('should not call callback in non-streaming mode when result is empty', async () => {
+            const mockResponse = { candidates: [] };
+            mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+            const callback = jest.fn();
+            const result = await geminiLLM.autocomplete('prompt', 'content', callback, undefined, undefined, undefined, false);
+
+            expect(result).toBe('');
+            expect(callback).not.toHaveBeenCalled();
+        });
+
         it('should successfully stream completion without userPrompt', async () => {
             const mockStream = {
                 async *[Symbol.asyncIterator]() {

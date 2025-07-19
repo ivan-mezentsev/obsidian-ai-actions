@@ -116,11 +116,17 @@ export class OpenRouterLLM extends BaseProviderLLM {
             // Non-streaming mode
             const data = await response.json();
             
+            let result = '';
             if (data.choices && data.choices[0] && data.choices[0].message) {
-                return data.choices[0].message.content || '';
+                result = data.choices[0].message.content || '';
             }
             
-            return '';
+            // Call callback with the full result if provided
+            if (callback && result) {
+                callback(result);
+            }
+            
+            return result;
         }
     }
 }
