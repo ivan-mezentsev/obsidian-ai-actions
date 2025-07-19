@@ -355,27 +355,23 @@
 }
 
 .ai-actions-filterable-dropdown-options {
-  position: absolute;
-  left: 0;
-  right: 0;
+  position: fixed;
   background-color: var(--background-primary);
   border: 1px solid var(--background-modifier-border);
   border-radius: var(--radius-s);
   box-shadow: var(--shadow-s);
   max-height: 200px;
   overflow-y: auto;
-  z-index: 1000;
+  z-index: 10000;
   display: none;
 }
 
 .ai-actions-filterable-dropdown-options--down {
-  top: 100%;
-  margin-top: 2px;
+  /* Position set via JavaScript */
 }
 
 .ai-actions-filterable-dropdown-options--up {
-  bottom: 100%;
-  margin-bottom: 2px;
+  /* Position set via JavaScript */
 }
 
 .ai-actions-filterable-dropdown.is-open .ai-actions-filterable-dropdown-options {
