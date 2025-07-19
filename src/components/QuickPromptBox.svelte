@@ -78,13 +78,19 @@
 		return text.substring(0, maxLength - 3) + "...";
 	}
 
-	// Load models asynchronously when component mounts
-	let modelsLoaded = false;
-	$: if (loadModelsAsync && !modelsLoaded && visible) {
+	// Load models asynchronously when component becomes visible
+	$: if (loadModelsAsync && visible) {
 		loadModelsAsync().then(models => {
 			if (models && models.length > 0) {
 				availableModels = models;
-				modelsLoaded = true;
+				
+				// Check if currently selected model is still available
+				const isCurrentModelAvailable = models.some(m => m.id === selectedModelId);
+				if (!isCurrentModelAvailable) {
+					// If current model is not available, use default model
+					selectedModelId = defaultModelId;
+				}
+				
 				// Initialize dropdown after models are loaded
 				setTimeout(() => {
 					if (modelDropdownEl) {
