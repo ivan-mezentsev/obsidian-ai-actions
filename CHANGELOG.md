@@ -1,5 +1,13 @@
 ## Changelog
 
+### 0.5.2 - 2025-07-19
+- feat: integrate FilterableDropdown into ModelEditModal and update styles for dropdown positioning
+- feat: enhance LLM classes to support callback functionality for result handling in both streaming and non-streaming modes
+- fix(QuickPromptBox): ensure selected model is available after loading
+- feat: refactor autocomplete methods to support streaming and callback functionality across various LLM implementations
+- feat: add Jest testing framework and setup for GeminiLLM
+- feat: add support for optional user prompts in autocomplete streaming methods
+
 ### 0.5.1 - 2025-07-13
 - feat(gemini): enhance autocompleteStreaming to support system instructions for compatible models
 - fix(handler): validate clipboard content before returning it
