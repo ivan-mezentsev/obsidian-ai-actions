@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.5.5 - 2025-07-20
+- feat(styles): add border to model selection modal for improved visibility
+
 ### 0.5.4 - 2025-07-20
 - feat(FilterableDropdown): add position monitoring for mobile devices during dropdown interactions
 
