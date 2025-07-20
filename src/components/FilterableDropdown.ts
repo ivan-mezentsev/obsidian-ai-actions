@@ -22,6 +22,9 @@ export class FilterableDropdown {
     private arrowEl: HTMLElement;
     private optionsEl: HTMLElement;
     private documentClickHandler: (e: Event) => void;
+    private resizeHandler: () => void;
+    private scrollHandler: () => void;
+    private positionUpdateInterval: number | null = null;
 
     constructor(
         containerEl: HTMLElement,
@@ -147,6 +150,23 @@ export class FilterableDropdown {
             }
         };
         document.addEventListener("click", this.documentClickHandler);
+
+        // Handle viewport changes (resize, orientation change, keyboard show/hide)
+        this.resizeHandler = () => {
+            if (this.isOpen) {
+                this.positionDropdown();
+            }
+        };
+        window.addEventListener("resize", this.resizeHandler);
+        window.addEventListener("orientationchange", this.resizeHandler);
+        
+        // Handle scroll events that might affect positioning
+        this.scrollHandler = () => {
+            if (this.isOpen) {
+                this.positionDropdown();
+            }
+        };
+        document.addEventListener("scroll", this.scrollHandler, true);
     }
 
     private filterOptions(query: string) {
@@ -251,6 +271,9 @@ export class FilterableDropdown {
         // Show dropdown
         this.optionsEl.style.display = "block";
         
+        // Start position monitoring for mobile devices
+        this.startPositionMonitoring();
+        
         this.renderOptions();
     }
 
@@ -289,6 +312,10 @@ export class FilterableDropdown {
         this.isOpen = false;
         this.dropdownEl.removeClass("is-open");
         this.optionsEl.style.display = "none";
+        
+        // Stop position monitoring
+        this.stopPositionMonitoring();
+        
         // Clear filter to show all options on next open
         this.filteredOptions = [...this.options];
     }
@@ -317,10 +344,47 @@ export class FilterableDropdown {
         }, 100);
     }
 
+    private startPositionMonitoring() {
+        // Stop any existing monitoring
+        this.stopPositionMonitoring();
+        
+        // For mobile devices, continuously monitor position changes
+        // This helps handle cases where the modal shifts due to keyboard appearance
+        if (this.isMobileDevice()) {
+            this.positionUpdateInterval = window.setInterval(() => {
+                if (this.isOpen) {
+                    this.positionDropdown();
+                }
+            }, 100); // Check every 100ms
+        }
+    }
+    
+    private stopPositionMonitoring() {
+        if (this.positionUpdateInterval !== null) {
+            clearInterval(this.positionUpdateInterval);
+            this.positionUpdateInterval = null;
+        }
+    }
+    
+    private isMobileDevice(): boolean {
+        // Check if device is likely mobile based on screen size and touch capability
+        return window.innerWidth <= 768 || ('ontouchstart' in window);
+    }
+
     public destroy() {
-        // Remove event listener
+        // Stop position monitoring
+        this.stopPositionMonitoring();
+        
+        // Remove event listeners
         if (this.documentClickHandler) {
             document.removeEventListener("click", this.documentClickHandler);
+        }
+        if (this.resizeHandler) {
+            window.removeEventListener("resize", this.resizeHandler);
+            window.removeEventListener("orientationchange", this.resizeHandler);
+        }
+        if (this.scrollHandler) {
+            document.removeEventListener("scroll", this.scrollHandler, true);
         }
         
         // Remove elements

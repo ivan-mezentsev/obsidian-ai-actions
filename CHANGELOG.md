@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.5.4 - 2025-07-20
+- feat(FilterableDropdown): add position monitoring for mobile devices during dropdown interactions
+
 ### 0.5.3 - 2025-07-20
 - feat(modal): implement model selection modal and integrate with action handler
 
