@@ -287,6 +287,20 @@
   top: var(--ai-actions-top, 10px);
 }
 
+/* Modal box positioning */
+.ai-actions-modal-box {
+  position: absolute;
+  z-index: 1000;
+}
+
+/* Quick prompt box dynamic positioning */
+.ai-actions-modal-box-dynamic {
+  position: absolute;
+  z-index: 1000;
+  left: var(--ai-actions-left, 10px);
+  top: var(--ai-actions-top, 10px);
+}
+
 /* Auto-resize textarea */
 .ai-actions-auto-resize-textarea {
   height: auto;
@@ -413,4 +427,60 @@
   color: var(--text-muted);
   font-style: italic;
   text-align: center;
+}
+
+/* Modal styles for model selection */
+.modal.ai-actions-model-selection-modal {
+  width: 300px !important;
+}
+
+.modal.ai-actions-model-selection-modal .modal-content {
+  width: 100%;
+}
+
+.ai-actions-modal-message {
+  color: var(--text-normal);
+  font-family: var(--font-interface);
+  font-size: 14px;
+  line-height: 1.4;
+  text-align: center;
+  padding: 0 0 16px 0;
+  margin-bottom: 16px;
+}
+
+.ai-actions-modal-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-actions-modal-dropdown {
+  width: 100%;
+}
+
+.ai-actions-modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.ai-actions-modal-buttons button {
+  min-width: 70px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .ai-actions-modal-controls {
+    gap: 8px;
+  }
+  
+  .ai-actions-modal-buttons {
+    flex-direction: column;
+  }
+  
+  .ai-actions-modal-buttons button {
+    width: 100%;
+  }
 }
