@@ -40,10 +40,13 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 - **Professional Rewriting** - Enhance tone and clarity
 - **Hashtag Generation** - Auto-generate relevant tags
 - **Task List Creation** - Convert notes to actionable items
-- **Paste from clipboard as markdown** - You might like this ;-)
+- **Paste from clipboard as markdown** - You might like this with GPT-4.1 ;-)
+
+### ⚡ Quick Prompt command
+- **Quick Prompt** - Instant access popup for quick AI queries without creating permanent actions.
 
 ### 🎯 Flexible Text Processing
-- **Selection Options**: Process entire document or selected text
+- **Selection Options**: Process entire document, selected text or clipboard
 - **Output Locations**: Insert at beginning, append to end, replace selection, or save to specific files
 - **Output Modes**: Choose different processing modes for prompt results
 - **Custom Formatting**: Define output templates with placeholders
@@ -106,7 +109,7 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
    - **Selection**: Text input method
    - **Location**: Output placement
    - **Format**: Output template with `{{result}}` placeholder
-   - **Temperature**: Creativity level (0.0-1.0)
+   - **Temperature**: Creativity level (0,25%,50%,75%,100%)
    - **Max Tokens**: Response length limit
 
 ## 📝 Usage
@@ -128,7 +131,6 @@ Create specialized actions for your needs:
 ## 🔧 Advanced Features
 
 ### Template Variables
-- `{{input}}` - Selected or document text
 - `{{result}}` - AI-generated output
 
 ### Output Locations
