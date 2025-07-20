@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.5.3 - 2025-07-20
+- feat(modal): implement model selection modal and integrate with action handler
+
 ### 0.5.2 - 2025-07-19
 - feat: integrate FilterableDropdown into ModelEditModal and update styles for dropdown positioning
 - feat: enhance LLM classes to support callback functionality for result handling in both streaming and non-streaming modes

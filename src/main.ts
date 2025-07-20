@@ -8,6 +8,7 @@ import { Selection, Location } from "./action";
 import { ActionHandler } from "./handler";
 import { QuickPromptManager } from "./quick-prompt-manager";
 import { ActionResultManager } from "./action-result-manager";
+import { ModalBoxManager } from "./modal-box-manager";
 import { spinnerPlugin } from "./spinnerPlugin";
 import { initAI } from "@obsidian-ai-providers/sdk";
 
@@ -42,6 +43,7 @@ export default class AIEditor extends Plugin {
 	settings: AIEditorSettings;
 	quickPromptManager: QuickPromptManager;
 	actionResultManager: ActionResultManager;
+	modalManager: ModalBoxManager;
 
 	registerActions() {
 		let actions = this.settings.customActions;
@@ -83,6 +85,9 @@ export default class AIEditor extends Plugin {
 			
 			// Initialize ActionResultManager
 			this.actionResultManager = new ActionResultManager(this);
+			
+			// Initialize ModalManager
+			this.modalManager = new ModalBoxManager(this);
 			
 			this.addCommand({
 				id: "reload",

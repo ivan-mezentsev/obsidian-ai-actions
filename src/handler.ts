@@ -166,6 +166,16 @@ export class ActionHandler {
 		editor: Editor,
 		view: MarkdownView,
 	) {
+		// Check if model is available and get user selection if not
+		const validatedModelId = await this.plugin.modalManager.validateAndSelectModel(action);
+		if (!validatedModelId) {
+			// User cancelled model selection
+			return;
+		}
+		
+		// Update action with validated model ID
+		action.model = validatedModelId;
+		
 		// @ts-expect-error, not typed
 		const editorView = editor.cm;
 
