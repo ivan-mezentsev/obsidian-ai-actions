@@ -18,6 +18,8 @@ export default [
       '@typescript-eslint': tseslint
     },
     rules: {
+      ...tseslint.configs.recommended.rules,
+      ...tseslint.configs['eslint-recommended'].rules,
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { args: 'none' }],
       '@typescript-eslint/ban-ts-comment': 'off',
@@ -30,7 +32,10 @@ export default [
       'node_modules/',
       'main.js',
       'references/',
-      'version-bump.mjs'
+      'version-bump.mjs',
+      '**/*.test.ts',
+      '**/jest.*',
+      '__mocks__/'
     ]
   }
 ];
