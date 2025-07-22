@@ -466,7 +466,7 @@ export class StreamingProcessor {
 	}
 
 	/**
-	 * Format result for display
+	 * Format result for display during streaming
 	 */
 	private formatResultForDisplay(result: string): string {
 		if (!result.trim()) {
@@ -474,6 +474,48 @@ export class StreamingProcessor {
 		}
 		// Always format with empty lines like APPEND_CURRENT for consistent streaming display
 		return ["\n", result.trim(), "\n"].join("");
+	}
+
+	/**
+	 * Apply final formatting to displayed result after streaming completion
+	 * This applies the action.format template to the final result for display
+	 */
+	applyFinalFormatToDisplay(format?: string): void {
+		if (!format || !this.state.currentResult.trim()) {
+			return;
+		}
+
+		try {
+			// Apply format template to the current result
+			const formattedResult = format.replace(/\{\{result\}\}/g, this.state.currentResult.trim());
+			
+			// Update the displayed result with formatted version
+			const displayResult = this.formatResultForDisplay(formattedResult);
+			
+			// Update spinner with formatted result if spinner is active
+			if (this.currentSpinnerHide) {
+				try {
+					const activeView = this.app?.workspace.getActiveViewOfType(MarkdownView);
+					if (activeView) {
+						// @ts-expect-error, not typed
+						const editorView = activeView.editor.cm;
+						if (editorView) {
+							const spinner = editorView.plugin(spinnerPlugin);
+							if (spinner) {
+								spinner.processText(displayResult, (text: string) => text);
+								if (this.app) {
+									this.app.workspace.updateOptions();
+								}
+							}
+						}
+					}
+				} catch (error) {
+					// Silently handle spinner update errors
+				}
+			}
+		} catch (error) {
+			// Silently handle formatting errors
+		}
 	}
 
 }
@@ -583,7 +625,11 @@ export class PromptProcessor {
 				await this.handleDirectResult(accumulatedResult.trim(), config, cursorPositionFrom, cursorPositionTo);
 				this.streamingProcessor.clearResults();
 			} else {
-				// Modal mode: show ActionResultManager panel, keep result visible until user action
+				// Modal mode: apply final formatting to display and show ActionResultManager panel
+				// Apply format template to the displayed result
+				this.streamingProcessor.applyFinalFormatToDisplay(action.format);
+				
+				// Show ActionResultManager panel, keep result visible until user action
 				// Do NOT hide spinner or clear results here - they remain visible until user chooses action
 				await this.handleModalResult(accumulatedResult, config, cursorPositionFrom, cursorPositionTo);
 			}
@@ -759,13 +805,17 @@ export class PromptProcessor {
 	/**
 	 * Apply format template to result with error handling
 	 */
-	private formatResult(result: string, format: string): string {
+	private formatResult(result: string, format?: string): string {
 		try {
-			if (!format) {
+			if (!format || !format.trim()) {
 				return result;
 			}
 			
-			return format.replace("{{result}}", result);
+			// Clean up the streaming result (remove extra newlines added for display)
+			const cleanResult = result.trim();
+			
+			// Apply the format template
+			return format.replace(/\{\{result\}\}/g, cleanResult);
 		} catch (error) {
 			// Return original result as fallback
 			return result;

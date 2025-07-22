@@ -643,7 +643,8 @@ describe('PromptProcessor', () => {
 			clearResults: jest.fn(),
 			hideSpinner: jest.fn(),
 			getCurrentResult: jest.fn().mockReturnValue(''),
-			isStreaming: jest.fn().mockReturnValue(false)
+			isStreaming: jest.fn().mockReturnValue(false),
+			applyFinalFormatToDisplay: jest.fn()
 		};
 
 		// Mock ActionHandler
@@ -715,7 +716,8 @@ describe('PromptProcessor', () => {
 				expect.any(Function), // onAccept
 				expect.any(Function), // onLocationAction
 				false, // hasFileOutput
-				expect.any(Function)  // onCancel
+				expect.any(Function), // onCancel
+				"REPLACE_CURRENT" // location
 			);
 
 			expect(mockEditor.focus).toHaveBeenCalledTimes(2); // Before and after streaming
