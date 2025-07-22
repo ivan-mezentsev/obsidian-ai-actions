@@ -23,11 +23,16 @@
 		hide();
 	};
 
-
-
 	const handleCancel = () => {
 		dispatch('cancel');
 		hide();
+	};
+
+	// Handle touch events for mobile devices to ensure buttons work even with active text selection
+	const handleTouchStart = (e: TouchEvent, callback: () => void) => {
+		e.preventDefault();
+		e.stopPropagation();
+		callback();
 	};
 
 	const defaultEnterEvent = (e: KeyboardEvent) => {
@@ -49,6 +54,7 @@
 			<div
 				class="action-btn action-btn--replace"
 				on:click={() => handleAction(Location.REPLACE_CURRENT)}
+				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.REPLACE_CURRENT))}
 				on:keydown={defaultEnterEvent}
 				role="button"
 				tabindex="0"
@@ -59,6 +65,7 @@
 			<div
 				class="action-btn action-btn--insert"
 				on:click={() => handleAction(Location.APPEND_CURRENT)}
+				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.APPEND_CURRENT))}
 				on:keydown={defaultEnterEvent}
 				role="button"
 				tabindex="0"
@@ -69,6 +76,7 @@
 			<div
 				class="action-btn action-btn--begin"
 				on:click={() => handleAction(Location.INSERT_HEAD)}
+				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.INSERT_HEAD))}
 				on:keydown={defaultEnterEvent}
 				role="button"
 				tabindex="0"
@@ -79,6 +87,7 @@
 			<div
 				class="action-btn action-btn--end"
 				on:click={() => handleAction(Location.APPEND_BOTTOM)}
+				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.APPEND_BOTTOM))}
 				on:keydown={defaultEnterEvent}
 				role="button"
 				tabindex="0"
@@ -90,6 +99,7 @@
 				<div
 					class="action-btn action-btn--file"
 					on:click={() => handleAction(Location.APPEND_TO_FILE)}
+					on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.APPEND_TO_FILE))}
 					on:keydown={defaultEnterEvent}
 					role="button"
 					tabindex="0"
@@ -101,6 +111,7 @@
 			<div
 				class="action-btn action-btn--cancel"
 				on:click={handleCancel}
+				on:touchstart={(e) => handleTouchStart(e, handleCancel)}
 				on:keydown={defaultEnterEvent}
 				role="button"
 				tabindex="0"
@@ -173,6 +184,11 @@
 		font-family: var(--font-interface);
 		min-width: 45px;
 		gap: 4px;
+		/* Improve touch interaction on mobile devices */
+		touch-action: manipulation;
+		-webkit-touch-callout: none;
+		-webkit-user-select: none;
+		user-select: none;
 	}
 
 	.action-btn:hover {
