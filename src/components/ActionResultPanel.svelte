@@ -6,6 +6,7 @@
 	export let visible: boolean = false;
 	export let cid: string = "";
 	export let hasFileOutput: boolean = false;
+	export let defaultLocation: Location = Location.REPLACE_CURRENT;
 
 	const dispatch = createEventDispatcher();
 	const iconSize = 18;
@@ -52,7 +53,7 @@
 	<div class="panel-container">
 		<div class="action-buttons">
 			<div
-				class="action-btn action-btn--replace"
+				class={`action-btn action-btn--replace ${defaultLocation === Location.REPLACE_CURRENT ? 'action-btn--default' : ''}`}
 				on:click={() => handleAction(Location.REPLACE_CURRENT)}
 				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.REPLACE_CURRENT))}
 				on:keydown={defaultEnterEvent}
@@ -63,7 +64,7 @@
 				REPLACE
 			</div>
 			<div
-				class="action-btn action-btn--insert"
+				class={`action-btn action-btn--insert ${defaultLocation === Location.APPEND_CURRENT ? 'action-btn--default' : ''}`}
 				on:click={() => handleAction(Location.APPEND_CURRENT)}
 				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.APPEND_CURRENT))}
 				on:keydown={defaultEnterEvent}
@@ -74,7 +75,7 @@
 				INSERT
 			</div>
 			<div
-				class="action-btn action-btn--begin"
+				class={`action-btn action-btn--begin ${defaultLocation === Location.INSERT_HEAD ? 'action-btn--default' : ''}`}
 				on:click={() => handleAction(Location.INSERT_HEAD)}
 				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.INSERT_HEAD))}
 				on:keydown={defaultEnterEvent}
@@ -85,7 +86,7 @@
 				BEGIN
 			</div>
 			<div
-				class="action-btn action-btn--end"
+				class={`action-btn action-btn--end ${defaultLocation === Location.APPEND_BOTTOM ? 'action-btn--default' : ''}`}
 				on:click={() => handleAction(Location.APPEND_BOTTOM)}
 				on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.APPEND_BOTTOM))}
 				on:keydown={defaultEnterEvent}
@@ -97,7 +98,7 @@
 			</div>
 			{#if hasFileOutput}
 				<div
-					class="action-btn action-btn--file"
+					class={`action-btn action-btn--file ${defaultLocation === Location.APPEND_TO_FILE ? 'action-btn--default' : ''}`}
 					on:click={() => handleAction(Location.APPEND_TO_FILE)}
 					on:touchstart={(e) => handleTouchStart(e, () => handleAction(Location.APPEND_TO_FILE))}
 					on:keydown={defaultEnterEvent}
@@ -201,11 +202,11 @@
 		box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb), 0.2);
 	}
 
-	.action-btn--replace {
+	.action-btn--default {
 		color: var(--interactive-accent);
 	}
 
-	.action-btn--replace:hover {
+	.action-btn--default:hover {
 		background-color: var(--interactive-accent);
 		color: var(--text-on-accent);
 	}

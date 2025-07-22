@@ -702,7 +702,8 @@ export class PromptProcessor {
 					onAccept,
 					onLocationAction,
 					action.loc === Location.APPEND_TO_FILE && !!action.locationExtra?.fileName,
-					onCancel
+					onCancel,
+					action.loc // Pass default location from action settings
 				);
 				// Note: Do NOT clear results here - they remain visible in spinner until user chooses action
 			} catch (error) {

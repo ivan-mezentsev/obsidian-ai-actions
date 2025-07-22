@@ -78,7 +78,8 @@ export class ActionResultManager {
 		onAccept: (result: string) => Promise<void>,
 		onLocationAction?: (result: string, location: Location) => Promise<void>,
 		hasFileOutput: boolean = false,
-		onCancel?: () => void
+		onCancel?: () => void,
+		defaultLocation: Location = Location.REPLACE_CURRENT
 	) {
 		// Hide any existing panels first
 		this.hideAllPanels();
@@ -93,7 +94,7 @@ export class ActionResultManager {
 		const panel = this.getResultPanel();
 		
 		// Update panel props
-		panel.$set({ hasFileOutput });
+		panel.$set({ hasFileOutput, defaultLocation });
 
 		// Position and show the panel
 		this.positionResultPanel();
