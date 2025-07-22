@@ -11,7 +11,14 @@ export default [
       ecmaVersion: 2020,
       sourceType: 'module',
       globals: {
-        node: true
+        node: true,
+        document: 'readonly',
+        window: 'readonly',
+        HTMLElement: 'readonly',
+        KeyboardEvent: 'readonly',
+        Event: 'readonly',
+        Element: 'readonly',
+        CustomEvent: 'readonly'
       }
     },
     plugins: {

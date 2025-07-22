@@ -134,7 +134,7 @@ export class ActionResultManager {
 		panel: ActionResultPanel
 	) {
 		// Handle action event (location-based actions)
-		panel.$on("action", async (event: any) => {
+		panel.$on("action", async (event: CustomEvent<{ location: Location }>) => {
 			const { location } = event.detail;
 			if (this.onLocationActionCallback && this.currentResult) {
 				const formattedResult = this.currentFormat ? this.currentFormat(this.currentResult) : this.currentResult;
