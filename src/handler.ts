@@ -6,6 +6,15 @@ import { Selection, Location } from "./action";
 import { spinnerPlugin } from "./spinnerPlugin";
 import type { ActionResultManager } from "./action-result-manager";
 
+// Plugin interface
+interface PluginInterface {
+	app?: App;
+	actionResultManager?: ActionResultManager;
+	modalManager?: {
+		validateAndSelectModel: (action: UserAction) => Promise<string | null>;
+	};
+}
+
 // StreamingProcessor interfaces
 export interface StreamingConfig {
 	action: UserAction;
@@ -33,7 +42,7 @@ export interface PromptConfig {
 	app: App;
 	userPrompt?: string;
 	outputMode?: string;
-	plugin?: any; // Reference to main plugin
+	plugin?: unknown; // Reference to main plugin
 }
 
 /**
@@ -86,7 +95,7 @@ export class StreamingProcessor {
 			// Get provider name for notice with error handling
 			try {
 				providerName = this.llmFactory.getProviderNameSync(config.action.model);
-			} catch (error) {
+			} catch {
 				providerName = "AI Provider";
 			}
 
@@ -122,7 +131,7 @@ export class StreamingProcessor {
 						
 						// Update spinner with formatted result
 						spinner?.onUpdate(displayResult);
-					} catch (error) {
+					} catch {
 						// Continue streaming despite callback errors
 					}
 				},
@@ -141,12 +150,7 @@ export class StreamingProcessor {
 			// Streaming completed successfully
 			this.state.isActive = false;
 			
-			try {
-				config.onComplete(this.state.currentResult);
-			} catch (error) {
-				// Treat callback error as streaming error
-				throw error;
-			}
+			config.onComplete(this.state.currentResult);
 
 		} catch (error) {
 			this.state.isActive = false;
@@ -157,7 +161,7 @@ export class StreamingProcessor {
 
 			try {
 				config.onError(streamingError);
-			} catch (callbackError) {
+			} catch {
 				// Don't throw callback errors to avoid masking original error
 			}
 		} finally {
@@ -175,7 +179,7 @@ export class StreamingProcessor {
 			if (this.currentSpinnerHide) {
 				try {
 					this.currentSpinnerHide();
-				} catch (error) {
+				} catch {
 					// Silently handle spinner hide errors
 				}
 				this.currentSpinnerHide = undefined;
@@ -185,12 +189,12 @@ export class StreamingProcessor {
 			if (this.app) {
 				try {
 					this.app.workspace.updateOptions();
-				} catch (error) {
+				} catch {
 					// Silently handle workspace update errors
 				}
 			}
 			
-		} catch (error) {
+		} catch {
 			// Silently handle any remaining errors
 		}
 	}
@@ -203,7 +207,7 @@ export class StreamingProcessor {
 			// Clear result state
 			this.state.currentResult = "";
 			
-		} catch (error) {
+		} catch {
 			// Silently handle any remaining errors
 		}
 	}
@@ -224,7 +228,7 @@ export class StreamingProcessor {
 				this.clearResults();
 				this.performCleanup();
 			}
-		} catch (error) {
+		} catch {
 			// Force state reset even if cleanup fails
 			this.state.isActive = false;
 			this.state.isCancelled = true;
@@ -277,7 +281,7 @@ export class StreamingProcessor {
 				try {
 					// Return text as-is without trimming to ensure uniform processing
 					return text;
-				} catch (error) {
+				} catch {
 					return text; // Return original text as fallback
 				}
 			};
@@ -288,14 +292,14 @@ export class StreamingProcessor {
 					if (this.app) {
 						this.app.workspace.updateOptions();
 					}
-				} catch (error) {
+				} catch {
 					// Silently handle spinner update errors
 				}
 			};
 
 			return { hideSpinner, onUpdate };
 
-		} catch (error) {
+		} catch {
 			return null;
 		}
 	}
@@ -309,7 +313,7 @@ export class StreamingProcessor {
 			if (this.escapeHandler) {
 				try {
 					document.removeEventListener("keydown", this.escapeHandler, true);
-				} catch (error) {
+				} catch {
 					// Silently handle removal errors
 				}
 			}
@@ -326,18 +330,18 @@ export class StreamingProcessor {
 						// Then call the callback
 						try {
 							onCancel();
-						} catch (error) {
+						} catch {
 							// Silently handle callback errors
 						}
 					}
-				} catch (error) {
+				} catch {
 					// Silently handle handler errors
 				}
 			};
 
 			document.addEventListener("keydown", this.escapeHandler, true);
 
-		} catch (error) {
+		} catch {
 			// Silently handle setup errors
 		}
 	}
@@ -352,21 +356,29 @@ export class StreamingProcessor {
 
 		setTimeout(() => {
 			try {
-				if (!this.app || !(this.app as any).commands) {
+				interface ObsidianAppWithCommands {
+					commands?: {
+						listCommands?: () => Array<{ id: string; name?: string }>;
+						executeCommandById?: (id: string) => void;
+					};
+				}
+		
+				const appWithCommands = this.app as ObsidianAppWithCommands;
+				if (!appWithCommands?.commands) {
 					return;
 				}
-
+		
 				// Check if the command exists before executing
-				let commands: any[] = [];
+				let commands: Array<{ id: string; name?: string }> = [];
 				try {
-					commands = (this.app as any).commands.listCommands ? (this.app as any).commands.listCommands() : [];
-				} catch (error) {
+					commands = appWithCommands.commands.listCommands?.() || [];
+				} catch {
 					return;
 				}
-
-				const keyboardCommand = commands.find((cmd: any) => 
+		
+				const keyboardCommand = commands.find((cmd) =>
 					cmd.id && (
-						cmd.id.includes('keyboard') || 
+						cmd.id.includes('keyboard') ||
 						cmd.id.includes('toggle-keyboard') ||
 						cmd.id === 'app:toggle-keyboard'
 					)
@@ -374,12 +386,12 @@ export class StreamingProcessor {
 				
 				if (keyboardCommand) {
 					try {
-						(this.app as any).commands.executeCommandById(keyboardCommand.id);
-					} catch (error) {
+						appWithCommands.commands.executeCommandById?.(keyboardCommand.id);
+					} catch {
 						// Silently handle execution errors
 					}
 				}
-			} catch (error) {
+			} catch {
 				// Silently handle any errors
 			}
 		}, 1000);
@@ -403,7 +415,7 @@ export class StreamingProcessor {
 			if (this.activeEditor) {
 				this.activeEditor.focus();
 			}
-		} catch (error) {
+		} catch {
 			// Silently handle focus restoration errors
 		}
 	}
@@ -439,7 +451,7 @@ export class StreamingProcessor {
 			if (this.escapeHandler) {
 				try {
 					document.removeEventListener("keydown", this.escapeHandler, true);
-				} catch (error) {
+				} catch {
 					// Silently handle event listener removal errors
 				}
 				this.escapeHandler = undefined;
@@ -452,7 +464,7 @@ export class StreamingProcessor {
 			if (this.app) {
 				try {
 					this.app.workspace.updateOptions();
-				} catch (error) {
+				} catch {
 					// Silently handle workspace update errors
 				}
 			}
@@ -460,7 +472,7 @@ export class StreamingProcessor {
 			// Restore editor focus
 			this.restoreEditorFocus();
 
-		} catch (error) {
+		} catch {
 			// Silently handle any remaining cleanup errors
 		}
 	}
@@ -509,11 +521,11 @@ export class StreamingProcessor {
 							}
 						}
 					}
-				} catch (error) {
+				} catch {
 					// Silently handle spinner update errors
 				}
 			}
-		} catch (error) {
+		} catch {
 			// Silently handle formatting errors
 		}
 	}
@@ -528,9 +540,9 @@ export class PromptProcessor {
 	private streamingProcessor: StreamingProcessor;
 	private actionHandler: ActionHandler;
 	private settings: AIEditorSettings;
-	private plugin?: any;
+	private plugin?: PluginInterface;
 
-	constructor(settings: AIEditorSettings, plugin?: any) {
+	constructor(settings: AIEditorSettings, plugin?: PluginInterface) {
 		this.settings = settings;
 		this.plugin = plugin;
 		this.streamingProcessor = new StreamingProcessor(settings, plugin?.app);
@@ -541,10 +553,10 @@ export class PromptProcessor {
 	 * Process prompt with coordinated streaming and result application
 	 */
 	async processPrompt(config: PromptConfig): Promise<void> {
-		const { action, input, editor, view, app, userPrompt, outputMode } = config;
-
-		let cursorPositionFrom: any;
-		let cursorPositionTo: any;
+		const { action, input, editor, userPrompt, outputMode } = config;
+	
+		let cursorPositionFrom: { line: number; ch: number };
+		let cursorPositionTo: { line: number; ch: number };
 		let cursorOffset: number;
 
 		try {
@@ -553,14 +565,14 @@ export class PromptProcessor {
 				cursorPositionFrom = editor.getCursor("from");
 				cursorPositionTo = editor.getCursor("to");
 				cursorOffset = editor.posToOffset(cursorPositionTo);
-			} catch (error) {
+			} catch {
 				throw new Error("Failed to get editor cursor position");
 			}
 
 			// Ensure editor has focus for streaming visibility
 			try {
 				editor.focus();
-			} catch (error) {
+			} catch {
 				// Continue without focus - not critical
 			}
 
@@ -611,7 +623,7 @@ export class PromptProcessor {
 			// Ensure editor maintains focus after streaming
 			try {
 				editor.focus();
-			} catch (error) {
+			} catch {
 				// Continue without focus - not critical
 			}
 
@@ -641,7 +653,7 @@ export class PromptProcessor {
 			try {
 				this.streamingProcessor.hideSpinner();
 				this.streamingProcessor.clearResults();
-			} catch (cleanupError) {
+			} catch {
 				// Silently handle cleanup errors
 			}
 
@@ -651,7 +663,7 @@ export class PromptProcessor {
 			// Ensure editor maintains focus even on error
 			try {
 				editor.focus();
-			} catch (focusError) {
+			} catch {
 				// Silently handle focus errors
 			}
 
@@ -666,14 +678,17 @@ export class PromptProcessor {
 	private async handleModalResult(
 		result: string,
 		config: PromptConfig,
-		cursorPositionFrom: any,
-		cursorPositionTo: any
+		cursorPositionFrom: { line: number; ch: number },
+		cursorPositionTo: { line: number; ch: number }
 	): Promise<void> {
 		const { action, editor, view } = config;
 		
 		try {
 
-			const resultManager = this.plugin.actionResultManager as ActionResultManager;
+			const resultManager = this.plugin?.actionResultManager;
+			if (!resultManager) {
+				throw new Error("ActionResultManager not available");
+			}
 
 			// Create callbacks for result application with error handling
 			const onAccept = async (finalResult: string) => {
@@ -735,7 +750,7 @@ export class PromptProcessor {
 					// Hide spinner and clear streaming results when modal is cancelled
 					this.streamingProcessor.hideSpinner();
 					this.streamingProcessor.clearResults();
-				} catch (error) {
+				} catch {
 					// Silently handle cancel errors
 				}
 			};
@@ -752,11 +767,11 @@ export class PromptProcessor {
 					action.loc // Pass default location from action settings
 				);
 				// Note: Do NOT clear results here - they remain visible in spinner until user chooses action
-			} catch (error) {
+			} catch {
 				return;
 			}
 
-		} catch (error) {
+		} catch {
 			return;
 		}
 	}
@@ -767,38 +782,33 @@ export class PromptProcessor {
 	private async handleDirectResult(
 		result: string,
 		config: PromptConfig,
-		cursorPositionFrom: any,
-		cursorPositionTo: any
+		cursorPositionFrom: { line: number; ch: number },
+		cursorPositionTo: { line: number; ch: number }
 	): Promise<void> {
-		const { action, editor, view } = config;
+		const { action, editor } = config;
 
-		try {
-			// Apply format template (result should already be trimmed by caller)
-			const formattedResult = this.formatResult(result, action.format);
+		// Apply format template (result should already be trimmed by caller)
+		const formattedResult = this.formatResult(result, action.format);
 
-			// Apply result based on location
-			if (action.loc === Location.REPLACE_CURRENT) {
-				try {
-					editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
-				} catch (error) {
-					throw new Error("Failed to apply result to editor");
-				}
-			} else {
-				try {
-					await this.actionHandler.addToNote(
-						action.loc,
-						formattedResult,
-						editor,
-						view.file?.vault,
-						action.locationExtra
-					);
-				} catch (error) {
-					throw new Error("Failed to add result to note");
-				}
+		// Apply result based on location
+		if (action.loc === Location.REPLACE_CURRENT) {
+			try {
+				editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
+			} catch {
+				throw new Error("Failed to apply result to editor");
 			}
-
-		} catch (error) {
-			throw error; // Re-throw to allow caller to handle
+		} else {
+			try {
+				await this.actionHandler.addToNote(
+					action.loc,
+					formattedResult,
+					editor,
+					config.view.file?.vault,
+					action.locationExtra
+				);
+			} catch {
+				throw new Error("Failed to add result to note");
+			}
 		}
 	}
 
@@ -816,7 +826,7 @@ export class PromptProcessor {
 			
 			// Apply the format template
 			return format.replace(/\{\{result\}\}/g, cleanResult);
-		} catch (error) {
+		} catch {
 			// Return original result as fallback
 			return result;
 		}
@@ -843,9 +853,9 @@ export class PromptProcessor {
 
 export class ActionHandler {
 	private llmFactory: LLMFactory;
-	private plugin: any; // Reference to the main plugin
+	private plugin?: PluginInterface; // Reference to the main plugin
 
-	constructor(settings: AIEditorSettings, plugin?: any) {
+	constructor(settings: AIEditorSettings, plugin?: PluginInterface) {
 		this.llmFactory = new LLMFactory(settings);
 		this.plugin = plugin;
 	}
@@ -922,9 +932,10 @@ export class ActionHandler {
 	private async readClipboardContent(): Promise<string> {
 		try {
 			// Try to read rich content using the modern Clipboard API
-			const clipboardItems = await navigator.clipboard.read();
+			const clipboardAPI = (globalThis as unknown as { navigator: { clipboard: { read(): Promise<unknown[]> } } }).navigator;
+			const clipboardItems = await clipboardAPI.clipboard.read();
 			
-			for (const item of clipboardItems) {
+			for (const item of clipboardItems as unknown as Array<{ types: string[]; getType(type: string): Promise<{ text(): Promise<string> }> }>) {
 				// Priority order: HTML (for rich formatting), then plain text
 				if (item.types.includes('text/html')) {
 					const blob = await item.getType('text/html');
@@ -945,7 +956,8 @@ export class ActionHandler {
 		} catch (error) {
 			// Fallback to the old method if the modern API fails
 			console.warn('Modern clipboard API failed, falling back to readText():', error);
-			return await navigator.clipboard.readText();
+			const clipboardAPI = (globalThis as unknown as { navigator: { clipboard: { readText(): Promise<string> } } }).navigator;
+			return await clipboardAPI.clipboard.readText();
 		}
 	}
 
@@ -974,12 +986,13 @@ export class ActionHandler {
 			case Location.REPLACE_CURRENT:
 				editor.replaceSelection(text);
 				break;
-			case Location.APPEND_TO_FILE:
-				let fileName = locationExtra?.fileName;
+			case Location.APPEND_TO_FILE: {
+				const fileName = locationExtra?.fileName;
 				if (vault && fileName) {
 					await this.appendToFileInVault(vault, fileName, text);
 				}
 				break;
+			}
 			default:
 				throw "Location not implemented";
 		}
@@ -1002,7 +1015,7 @@ export class ActionHandler {
 		view: MarkdownView,
 	) {
 		// Check if model is available and get user selection if not
-		const validatedModelId = await this.plugin.modalManager.validateAndSelectModel(action);
+		const validatedModelId = await this.plugin?.modalManager?.validateAndSelectModel(action);
 		if (!validatedModelId) {
 			// User cancelled model selection
 			return;
