@@ -1,9 +1,25 @@
 // Mock for Obsidian API
-export class Plugin {
-	app: any;
-	manifest: any;
+interface MockApp {
+	vault: Vault;
+	workspace: {
+		getActiveFile: () => TFile | null;
+		getLeavesOfType: () => unknown[];
+		activeLeaf: unknown;
+	};
+}
 
-	constructor(app: any, manifest: any) {
+interface MockManifest {
+	id: string;
+	name: string;
+	version: string;
+	description?: string;
+}
+
+export class Plugin {
+	app: MockApp;
+	manifest: MockManifest;
+
+	constructor(app: MockApp, manifest: MockManifest) {
 		this.app = app;
 		this.manifest = manifest;
 	}
@@ -44,14 +60,14 @@ export class Setting {
 
 export class PluginSettingTab {
 	constructor(
-		public app: any,
-		public plugin: any
+		public app: MockApp,
+		public plugin: Plugin
 	) {}
 	display() {}
 }
 
 export class Modal {
-	constructor(public app: any) {}
+	constructor(public app: MockApp) {}
 	open() {}
 	close() {}
 	onOpen() {}

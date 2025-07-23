@@ -1,6 +1,13 @@
 import { GeminiLLM } from "./gemini_llm";
 import type { AIProvider } from "../types";
 
+type MockGeminiClient = {
+	models: {
+		generateContent: jest.Mock;
+		generateContentStream: jest.Mock;
+	};
+};
+
 // Mock the Google GenAI SDK
 jest.mock("@google/genai", () => ({
 	GoogleGenAI: jest.fn().mockImplementation(() => ({
@@ -14,7 +21,7 @@ jest.mock("@google/genai", () => ({
 describe("GeminiLLM", () => {
 	let geminiLLM: GeminiLLM;
 	let mockProvider: AIProvider;
-	let mockClient: any;
+	let mockClient: MockGeminiClient;
 
 	beforeEach(() => {
 		// Create a mock provider
@@ -33,7 +40,7 @@ describe("GeminiLLM", () => {
 		geminiLLM = new GeminiLLM(mockProvider, "gemini-1.5-pro", false);
 
 		// Get the mock client
-		mockClient = (geminiLLM as any).client;
+		mockClient = geminiLLM["client"] as unknown as MockGeminiClient;
 	});
 
 	afterEach(() => {
@@ -43,7 +50,7 @@ describe("GeminiLLM", () => {
 	describe("Constructor", () => {
 		it("should initialize with correct parameters", () => {
 			expect(geminiLLM).toBeDefined();
-			expect((geminiLLM as any).modelName).toBe("gemini-1.5-pro");
+			expect(geminiLLM["modelName"]).toBe("gemini-1.5-pro");
 		});
 
 		it("should set useNativeFetch correctly", () => {

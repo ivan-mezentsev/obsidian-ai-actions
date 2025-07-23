@@ -56,15 +56,55 @@ export default [
 	},
 	// Prettier integration - must be last to override conflicting rules
 	eslintConfigPrettier,
+	// Jest test files configuration
+	{
+		files: [
+			"**/*.test.ts",
+			"**/*.test.js",
+			"__mocks__/**/*.ts",
+			"__mocks__/**/*.js",
+		],
+		languageOptions: {
+			globals: {
+				jest: "readonly",
+				describe: "readonly",
+				test: "readonly",
+				it: "readonly",
+				expect: "readonly",
+				beforeEach: "readonly",
+				afterEach: "readonly",
+				beforeAll: "readonly",
+				afterAll: "readonly",
+			},
+		},
+	},
+	// Node.js files configuration
+	{
+		files: ["**/*.js", "__mocks__/**/*.js"],
+		languageOptions: {
+			globals: {
+				module: "readonly",
+				require: "readonly",
+				exports: "readonly",
+				__dirname: "readonly",
+				__filename: "readonly",
+				global: "readonly",
+				process: "readonly",
+				Buffer: "readonly",
+				navigator: "readonly",
+			},
+		},
+		rules: {
+			"@typescript-eslint/no-require-imports": "off",
+		},
+	},
 	{
 		ignores: [
 			"node_modules/",
 			"main.js",
 			"references/",
 			"version-bump.mjs",
-			"**/*.test.ts",
 			"**/jest.*",
-			"__mocks__/",
 		],
 	},
 ];

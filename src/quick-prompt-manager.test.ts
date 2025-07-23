@@ -1,8 +1,10 @@
 import { QuickPromptManager } from "./quick-prompt-manager";
-import { PromptProcessor } from "./handler";
 import { Location, getAvailableModelsWithPluginAIProviders } from "./action";
 import type { AIEditorSettings } from "./settings";
 import { Selection } from "./action";
+import type { App, Editor, MarkdownView } from "obsidian";
+import { ActionHandler, PromptProcessor } from "./handler";
+import type AIEditor from "./main";
 
 // Mock dependencies
 jest.mock("./handler");
@@ -24,12 +26,12 @@ jest.mock("obsidian", () => ({
 
 describe("QuickPromptManager Integration Tests", () => {
 	let quickPromptManager: QuickPromptManager;
-	let mockPlugin: any;
+	let mockPlugin: AIEditor;
 	let mockSettings: AIEditorSettings;
-	let mockEditor: any;
-	let mockView: any;
-	let mockPromptProcessor: any;
-	let mockActionHandler: any;
+	let mockEditor: jest.Mocked<Editor>;
+	let mockView: jest.Mocked<MarkdownView>;
+	let mockPromptProcessor: jest.Mocked<PromptProcessor>;
+	let mockActionHandler: jest.Mocked<ActionHandler>;
 
 	beforeEach(() => {
 		jest.clearAllMocks();
@@ -82,7 +84,7 @@ describe("QuickPromptManager Integration Tests", () => {
 			setCursor: jest.fn(),
 			lastLine: jest.fn().mockReturnValue(10),
 			posToOffset: jest.fn().mockReturnValue(100),
-		};
+		} as unknown as jest.Mocked<Editor>;
 
 		// Mock view
 		mockView = {
@@ -94,7 +96,7 @@ describe("QuickPromptManager Integration Tests", () => {
 					getAbstractFileByPath: jest.fn(),
 				},
 			},
-		};
+		} as unknown as jest.Mocked<MarkdownView>;
 
 		// Mock app
 		const mockApp = {
@@ -102,34 +104,31 @@ describe("QuickPromptManager Integration Tests", () => {
 				getActiveViewOfType: jest.fn().mockReturnValue(mockView),
 				updateOptions: jest.fn(),
 			},
-		};
+		} as unknown as jest.Mocked<App>;
 
 		// Mock plugin
 		mockPlugin = {
 			app: mockApp,
 			settings: mockSettings,
-		};
+		} as unknown as AIEditor;
 
 		// Mock ActionHandler
 		mockActionHandler = {
 			getTextInput: jest.fn().mockResolvedValue("test input"),
-		};
+		} as unknown as jest.Mocked<ActionHandler>;
 
 		// Mock PromptProcessor
 		mockPromptProcessor = {
 			processPrompt: jest.fn().mockResolvedValue(undefined),
-		};
+		} as unknown as jest.Mocked<PromptProcessor>;
 
 		// Mock the constructors
-		const { ActionHandler } = require("./handler");
-		const { PromptProcessor } = require("./handler");
-
-		(
-			ActionHandler as jest.MockedClass<typeof ActionHandler>
-		).mockImplementation(() => mockActionHandler);
-		(
-			PromptProcessor as jest.MockedClass<typeof PromptProcessor>
-		).mockImplementation(() => mockPromptProcessor);
+		(ActionHandler as jest.Mock).mockImplementation(
+			() => mockActionHandler
+		);
+		(PromptProcessor as jest.Mock).mockImplementation(
+			() => mockPromptProcessor
+		);
 
 		// Mock getAvailableModelsWithPluginAIProviders
 		(
@@ -262,7 +261,9 @@ describe("QuickPromptManager Integration Tests", () => {
 
 		it("should handle missing view gracefully", async () => {
 			// Mock no active view
-			mockPlugin.app.workspace.getActiveViewOfType.mockReturnValue(null);
+			(
+				mockPlugin.app.workspace.getActiveViewOfType as jest.Mock
+			).mockReturnValue(null);
 
 			const userPrompt = "Test user prompt";
 
