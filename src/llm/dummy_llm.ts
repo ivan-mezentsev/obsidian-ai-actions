@@ -15,16 +15,24 @@ export class DummyLLM extends LLM {
 	): Promise<string | void> {
 		if (streaming && callback) {
 			// Streaming mode
-			return new Promise(async (resolve) => {
+			return new Promise((resolve) => {
 				const responseText = userPrompt 
 					? `Response to system: "${prompt}" and user prompt: "${userPrompt}" with content: "${content}" - ${textForTesting}`
 					: textForTesting;
 				const split = responseText.split(" ");
-				for (const element of split) {
-					callback(element + " ");
+				
+				const processNextChunk = async (index: number) => {
+					if (index >= split.length) {
+						resolve();
+						return;
+					}
+					
+					callback(split[index] + " ");
 					await new Promise((r) => setTimeout(r, 20));
-				}
-				resolve();
+					await processNextChunk(index + 1);
+				};
+				
+				processNextChunk(0);
 			});
 		} else {
 			// Non-streaming mode

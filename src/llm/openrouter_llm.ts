@@ -77,7 +77,7 @@ export class OpenRouterLLM extends BaseProviderLLM {
                 throw new Error('No response body reader available');
             }
 
-            const decoder = new (globalThis as any).TextDecoder();
+            const decoder = new TextDecoder();
             let buffer = '';
 
             try {

@@ -10,7 +10,6 @@ import { AnthropicLLM } from "./anthropic_llm";
 import { PluginAIProvidersLLM } from "./plugin_ai_providers_llm";
 import { OpenAIModel } from "./openai_llm";
 import type { AIEditorSettings } from "../settings";
-import type { AIModel } from "../types";
 
 export class LLMFactory {
 	private settings: AIEditorSettings;

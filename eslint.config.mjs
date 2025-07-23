@@ -23,7 +23,14 @@ export default [
         Node: 'readonly',
         CustomEvent: 'readonly',
         setTimeout: 'readonly',
-        clearInterval: 'readonly'
+        clearInterval: 'readonly',
+        RequestInfo: 'readonly',
+        URL: 'readonly',
+        RequestInit: 'readonly',
+        Response: 'readonly',
+        fetch: 'readonly',
+        TextDecoder: 'readonly',
+        setInterval: 'readonly'
       }
     },
     plugins: {

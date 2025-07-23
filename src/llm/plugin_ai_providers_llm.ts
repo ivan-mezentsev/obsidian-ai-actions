@@ -37,37 +37,41 @@ export class PluginAIProvidersLLM extends LLM {
                 { role: 'user', content: content }
             ];
         
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             let result = '';
             
-            try {
-                const chunkHandler = await aiProviders.execute({
-                    provider,
-                    messages: messages
-                });
-                
-                chunkHandler.onData((chunk: string) => {
-                    if (streaming && callback) {
-                        callback(chunk);
-                    } else {
-                        result += chunk;
-                    }
-                });
-                
-                chunkHandler.onEnd(() => {
-                    if (streaming) {
-                        resolve();
-                    } else {
-                        resolve(result);
-                    }
-                });
-                
-                chunkHandler.onError((error: Error) => {
-                    reject(new Error(`Plugin AI providers API error: ${error.message}`));
-                });
-            } catch (error) {
-                reject(new Error(`Plugin AI providers API error: ${error instanceof Error ? error.message : 'Unknown error'}`));
-            }
+            const executeRequest = async () => {
+                try {
+                    const chunkHandler = await aiProviders.execute({
+                        provider,
+                        messages: messages
+                    });
+                    
+                    chunkHandler.onData((chunk: string) => {
+                        if (streaming && callback) {
+                            callback(chunk);
+                        } else {
+                            result += chunk;
+                        }
+                    });
+                    
+                    chunkHandler.onEnd(() => {
+                        if (streaming) {
+                            resolve();
+                        } else {
+                            resolve(result);
+                        }
+                    });
+                    
+                    chunkHandler.onError((error: Error) => {
+                        reject(new Error(`Plugin AI providers API error: ${error.message}`));
+                    });
+                } catch (error) {
+                    reject(new Error(`Plugin AI providers API error: ${error instanceof Error ? error.message : 'Unknown error'}`));
+                }
+            };
+            
+            executeRequest();
         });
     }
 }

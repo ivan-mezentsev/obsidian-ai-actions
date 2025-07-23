@@ -59,17 +59,19 @@ export class OpenAILLM extends LLM {
 				const requestData = { ...baseRequestData, stream: true };
 				const stream = await this.openai.chat.completions.create(requestData as Parameters<typeof this.openai.chat.completions.create>[0]);
 	
-				for await (const chunk of stream as any) {
-					const content = chunk.choices[0]?.delta?.content;
-					if (content) {
-						callback(content);
+				if ('stream' in requestData && requestData.stream) {
+					for await (const chunk of stream as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>) {
+						const content = chunk.choices[0]?.delta?.content;
+						if (content) {
+							callback(content);
+						}
 					}
 				}
 				return;
 			} else {
 				// Non-streaming mode
 				const response = await this.openai.chat.completions.create(baseRequestData as Parameters<typeof this.openai.chat.completions.create>[0]);
-				const result = (response as any).choices[0]?.message?.content || "";
+				const result = (response as OpenAI.Chat.Completions.ChatCompletion).choices[0]?.message?.content || "";
 				
 				// Call callback with the full result if provided
 				if (callback && result) {

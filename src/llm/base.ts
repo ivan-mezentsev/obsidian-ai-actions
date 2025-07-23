@@ -37,7 +37,7 @@ export abstract class LLM {
 
 		let promise = this.autocomplete(prompt, content, callback_wrapper, temperature, maxOutputTokens, userPrompt, true);
 		return new Promise<void>((resolve, reject) => {
-			const intervalId = (globalThis as any).setInterval(() => {
+			const intervalId = globalThis.setInterval(() => {
 				let now = new Date().getTime();
 				if (now - last_tick > this.queryTimeout) {
 					has_timeout = true;
