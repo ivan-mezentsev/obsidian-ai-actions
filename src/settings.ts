@@ -1,11 +1,6 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
-import {
-	Location,
-	Selection,
-} from "src/action";
-import type {
-	UserAction,
-} from "src/action";
+import { Location, Selection } from "src/action";
+import type { UserAction } from "src/action";
 import AIEditor from "src/main";
 import { ActionEditModal } from "./modals/action_editor";
 import { QuickPromptEditModal } from "./modals/quick_prompt_editor";
@@ -13,8 +8,10 @@ import type { AIProvider, AIModel, AIProvidersSettings } from "./types";
 import { ProviderEditModal } from "./modals/provider_editor";
 import { ModelEditModal } from "./modals/model_editor";
 import { waitForAI } from "@obsidian-ai-providers/sdk";
-import type { IAIProvider, IAIProvidersService } from "@obsidian-ai-providers/sdk";
-
+import type {
+	IAIProvider,
+	IAIProvidersService,
+} from "@obsidian-ai-providers/sdk";
 
 export interface AIEditorSettings {
 	openAiApiKey: string; // Deprecated, will be removed
@@ -42,7 +39,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		// AI Providers Section
 		containerEl.createEl("h1", { text: "AI Providers" });
-		
+
 		this.createButton(
 			containerEl,
 			"Add new AI provider",
@@ -53,13 +50,17 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			true
 		);
 
-		for (let i = 0; i < this.plugin.settings.aiProviders.providers.length; i++) {
+		for (
+			let i = 0;
+			i < this.plugin.settings.aiProviders.providers.length;
+			i++
+		) {
 			this.displayProviderByIndex(containerEl, i);
 		}
 
 		// AI Models Section
 		containerEl.createEl("h1", { text: "AI Models" });
-		
+
 		this.createButton(
 			containerEl,
 			"Add new AI model",
@@ -70,18 +71,26 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			true
 		);
 
-		for (let i = 0; i < this.plugin.settings.aiProviders.models.length; i++) {
+		for (
+			let i = 0;
+			i < this.plugin.settings.aiProviders.models.length;
+			i++
+		) {
 			this.displayModelByIndex(containerEl, i);
 		}
 
 		new Setting(containerEl)
 			.setName('Enable Plugin "AI Providers" integration')
-			.setDesc('Show models from the AI Providers plugin')
-			.addToggle((toggle) =>
+			.setDesc("Show models from the AI Providers plugin")
+			.addToggle(toggle =>
 				toggle
-					.setValue(this.plugin.settings.aiProviders.usePluginAIProviders || false)
-			.onChange(async (value) => {
-				this.plugin.settings.aiProviders.usePluginAIProviders = value;
+					.setValue(
+						this.plugin.settings.aiProviders.usePluginAIProviders ||
+							false
+					)
+					.onChange(async value => {
+						this.plugin.settings.aiProviders.usePluginAIProviders =
+							value;
 						await this.plugin.saveSettings();
 						await this.display();
 					})
@@ -122,16 +131,20 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		);
 
 		// Development mode toggle with special styling
-		const devModeContainer = containerEl.createDiv("ai-actions-dev-mode-container");
+		const devModeContainer = containerEl.createDiv(
+			"ai-actions-dev-mode-container"
+		);
 		devModeContainer.addClass("ai-actions-setting-item-highlighted");
-		
+
 		new Setting(devModeContainer)
 			.setName("Development mode")
-			.setDesc("Enable development options for plugin configuration and testing")
-			.addToggle((toggle) =>
+			.setDesc(
+				"Enable development options for plugin configuration and testing"
+			)
+			.addToggle(toggle =>
 				toggle
 					.setValue(this.plugin.settings.developmentMode)
-					.onChange(async (value) => {
+					.onChange(async value => {
 						this.plugin.settings.developmentMode = value;
 						await this.plugin.saveSettings();
 						// Refresh the display to show/hide development options
@@ -140,7 +153,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			);
 
 		// Development options container - only visible when developmentMode is enabled
-		const devOptionsContainer = containerEl.createDiv("ai-actions-dev-options-container");
+		const devOptionsContainer = containerEl.createDiv(
+			"ai-actions-dev-options-container"
+		);
 		if (!this.plugin.settings.developmentMode) {
 			devOptionsContainer.addClass("ai-actions-dev-options-hidden");
 		}
@@ -150,10 +165,10 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			.setDesc(
 				"Use testing mode to test custom action without calling AI APIs"
 			)
-			.addToggle((toggle) =>
+			.addToggle(toggle =>
 				toggle
 					.setValue(this.plugin.settings.testingMode)
-					.onChange(async (value) => {
+					.onChange(async value => {
 						this.plugin.settings.testingMode = value;
 						await this.plugin.saveSettings();
 					})
@@ -164,15 +179,14 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			.setDesc(
 				"Use Obsidian's native fetch to bypass CORS restrictions. Enable this if you encounter CORS errors with AI providers."
 			)
-			.addToggle((toggle) =>
+			.addToggle(toggle =>
 				toggle
 					.setValue(this.plugin.settings.useNativeFetch)
-					.onChange(async (value) => {
+					.onChange(async value => {
 						this.plugin.settings.useNativeFetch = value;
 						await this.plugin.saveSettings();
 					})
 			);
-
 	}
 
 	displayActionByIndex(containerEl: HTMLElement, index: number): void {
@@ -180,14 +194,17 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		if (userAction != undefined) {
 			new Setting(containerEl)
 				.setName(userAction.name)
-				.addButton((button) => {
+				.addButton(button => {
 					button.setButtonText("Clone").onClick(() => {
 						this.displayActionEditModalForCloneAction(userAction);
 					});
 				})
-				.addButton((button) => {
+				.addButton(button => {
 					button.setButtonText("Edit").onClick(() => {
-						this.displayActionEditModalByActionAndIndex(userAction, index);
+						this.displayActionEditModalByActionAndIndex(
+							userAction,
+							index
+						);
 					});
 				});
 		}
@@ -200,7 +217,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		onClickHandler: () => void,
 		cta = false
 	): void {
-		new Setting(containerEl).setName(name).addButton((button) => {
+		new Setting(containerEl).setName(name).addButton(button => {
 			button.setButtonText(buttonText).onClick(onClickHandler);
 			if (cta) {
 				button.setCta();
@@ -211,8 +228,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	private displayActionEditModalForNewAction() {
 		// Get first available model or empty string if none configured
 		const availableModels = this.plugin.settings.aiProviders?.models || [];
-		const defaultModelId = availableModels.length > 0 ? availableModels[0].id : "";
-		
+		const defaultModelId =
+			availableModels.length > 0 ? availableModels[0].id : "";
+
 		const DUMMY_ACTION: UserAction = {
 			name: "Action Name",
 			prompt: "Enter your prompt",
@@ -239,7 +257,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		// Create a copy of the source action with modified name
 		const clonedAction: UserAction = {
 			...sourceAction,
-			name: sourceAction.name + " (Copy)"
+			name: sourceAction.name + " (Copy)",
 		};
 		new ActionEditModal(
 			this.app,
@@ -293,9 +311,14 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	displayProviderByIndex(containerEl: HTMLElement, index: number): void {
 		const provider = this.plugin.settings.aiProviders.providers.at(index);
 		if (provider != undefined) {
-			this.createButton(containerEl, `${provider.name} (${provider.type})`, "Edit", () => {
-				this.displayProviderEditModalByIndex(provider, index);
-			});
+			this.createButton(
+				containerEl,
+				`${provider.name} (${provider.type})`,
+				"Edit",
+				() => {
+					this.displayProviderEditModalByIndex(provider, index);
+				}
+			);
 		}
 	}
 
@@ -305,7 +328,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			name: "New Provider",
 			type: "openai",
 			url: "",
-			apiKey: ""
+			apiKey: "",
 		};
 		new ProviderEditModal(
 			this.app,
@@ -320,21 +343,26 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		).open();
 	}
 
-	private displayProviderEditModalByIndex(provider: AIProvider, index: number) {
+	private displayProviderEditModalByIndex(
+		provider: AIProvider,
+		index: number
+	) {
 		new ProviderEditModal(
 			this.app,
 			this.plugin,
 			provider,
 			async (updatedProvider: AIProvider) => {
-				this.plugin.settings.aiProviders.providers[index] = updatedProvider;
+				this.plugin.settings.aiProviders.providers[index] =
+					updatedProvider;
 				await this.saveSettingsAndRefresh();
 			},
 			async () => {
 				this.plugin.settings.aiProviders.providers.splice(index, 1);
 				// Remove models that use this provider
-				this.plugin.settings.aiProviders.models = this.plugin.settings.aiProviders.models.filter(
-					m => m.providerId !== provider.id
-				);
+				this.plugin.settings.aiProviders.models =
+					this.plugin.settings.aiProviders.models.filter(
+						m => m.providerId !== provider.id
+					);
 				await this.saveSettingsAndRefresh();
 			}
 		).open();
@@ -344,11 +372,18 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	displayModelByIndex(containerEl: HTMLElement, index: number): void {
 		const model = this.plugin.settings.aiProviders.models.at(index);
 		if (model != undefined) {
-			const provider = this.plugin.settings.aiProviders.providers.find(p => p.id === model.providerId);
+			const provider = this.plugin.settings.aiProviders.providers.find(
+				p => p.id === model.providerId
+			);
 			const providerName = provider ? provider.name : "Unknown Provider";
-			this.createButton(containerEl, `${model.name} (${providerName})`, "Edit", () => {
-				this.displayModelEditModalByIndex(model, index);
-			});
+			this.createButton(
+				containerEl,
+				`${model.name} (${providerName})`,
+				"Edit",
+				() => {
+					this.displayModelEditModalByIndex(model, index);
+				}
+			);
 		}
 	}
 
@@ -362,7 +397,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			id: Date.now().toString(),
 			name: "New Model",
 			providerId: this.plugin.settings.aiProviders.providers[0].id,
-			modelName: ""
+			modelName: "",
 		};
 		new ModelEditModal(
 			this.app,
@@ -400,7 +435,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			this.app,
 			this.plugin,
 			this.plugin.settings.quickPrompt,
-			async (updatedAction) => {
+			async updatedAction => {
 				this.plugin.settings.quickPrompt = updatedAction;
 				await this.plugin.saveSettings();
 				await this.display();
@@ -413,41 +448,46 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		try {
 			// Check if AI Providers plugin is available with timeout
 			const aiResolver = await waitForAI();
-			
+
 			// Add timeout to prevent infinite waiting
 			const timeoutPromise = new Promise<never>((_, reject) => {
 				setTimeout(() => {
-					reject(new Error('AI Providers plugin timeout'));
+					reject(new Error("AI Providers plugin timeout"));
 				}, 1000); // 1 second timeout
 			});
-			
+
 			const aiProviders: IAIProvidersService = await Promise.race([
 				aiResolver.promise,
-				timeoutPromise
+				timeoutPromise,
 			]);
 
-			if (!aiProviders || !aiProviders.providers || aiProviders.providers.length === 0) {
+			if (
+				!aiProviders ||
+				!aiProviders.providers ||
+				aiProviders.providers.length === 0
+			) {
 				containerEl.createEl("p", {
 					text: "No AI providers available. Please configure providers in the AI Providers plugin.",
-					cls: "setting-item-description"
+					cls: "setting-item-description",
 				});
 				return;
 			}
 
 			// Display available providers as models using the same style as regular models
 			aiProviders.providers.forEach((provider: IAIProvider) => {
-const setting = new Setting(containerEl)
-	.setName(`${provider.name} (Plugin AI Providers)`);
-				
+				const setting = new Setting(containerEl).setName(
+					`${provider.name} (Plugin AI Providers)`
+				);
+
 				// Add a disabled button to show it's read-only
-				setting.addButton((button) => {
+				setting.addButton(button => {
 					button.setButtonText("Read-only").setDisabled(true);
 				});
 			});
 		} catch {
 			containerEl.createEl("p", {
 				text: "AI Providers plugin is not available or not loaded.",
-				cls: "setting-item-description"
+				cls: "setting-item-description",
 			});
 		}
 	}

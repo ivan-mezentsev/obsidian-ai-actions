@@ -66,7 +66,7 @@ export class StreamingProcessor {
 		this.state = {
 			isActive: false,
 			currentResult: "",
-			isCancelled: false
+			isCancelled: false,
 		};
 	}
 
@@ -85,16 +85,21 @@ export class StreamingProcessor {
 		this.state = {
 			isActive: true,
 			currentResult: "",
-			isCancelled: false
+			isCancelled: false,
 		};
 
 		let providerName = "Unknown Provider";
-		let spinner: { hideSpinner: () => void; onUpdate: (text: string) => void } | null = null;
+		let spinner: {
+			hideSpinner: () => void;
+			onUpdate: (text: string) => void;
+		} | null = null;
 
 		try {
 			// Get provider name for notice with error handling
 			try {
-				providerName = this.llmFactory.getProviderNameSync(config.action.model);
+				providerName = this.llmFactory.getProviderNameSync(
+					config.action.model
+				);
 			} catch {
 				providerName = "AI Provider";
 			}
@@ -113,7 +118,7 @@ export class StreamingProcessor {
 
 			// Create LLM instance and start streaming
 			const llm = this.llmFactory.create(config.action.model);
-			
+
 			await llm.autocomplete(
 				config.action.prompt,
 				config.input,
@@ -121,14 +126,16 @@ export class StreamingProcessor {
 					if (this.state.isCancelled) {
 						return; // Stop processing tokens if cancelled
 					}
-					
+
 					this.state.currentResult += token;
-					
+
 					try {
 						config.onToken(token);
-						
-						const displayResult = this.formatResultForDisplay(this.state.currentResult);
-						
+
+						const displayResult = this.formatResultForDisplay(
+							this.state.currentResult
+						);
+
 						// Update spinner with formatted result
 						spinner?.onUpdate(displayResult);
 					} catch {
@@ -149,13 +156,12 @@ export class StreamingProcessor {
 
 			// Streaming completed successfully
 			this.state.isActive = false;
-			
-			config.onComplete(this.state.currentResult);
 
+			config.onComplete(this.state.currentResult);
 		} catch (error) {
 			this.state.isActive = false;
 			const streamingError = error as Error;
-			
+
 			// Show user-friendly error notice
 			this.showErrorNotice(streamingError, providerName);
 
@@ -184,7 +190,7 @@ export class StreamingProcessor {
 				}
 				this.currentSpinnerHide = undefined;
 			}
-			
+
 			// Update workspace
 			if (this.app) {
 				try {
@@ -193,7 +199,6 @@ export class StreamingProcessor {
 					// Silently handle workspace update errors
 				}
 			}
-			
 		} catch {
 			// Silently handle any remaining errors
 		}
@@ -206,13 +211,10 @@ export class StreamingProcessor {
 		try {
 			// Clear result state
 			this.state.currentResult = "";
-			
 		} catch {
 			// Silently handle any remaining errors
 		}
 	}
-
-
 
 	/**
 	 * Cancel active streaming with complete cleanup
@@ -223,7 +225,7 @@ export class StreamingProcessor {
 			if (this.state.isActive) {
 				this.state.isCancelled = true;
 				this.state.isActive = false;
-				
+
 				// Perform comprehensive cleanup
 				this.clearResults();
 				this.performCleanup();
@@ -259,7 +261,8 @@ export class StreamingProcessor {
 				return null;
 			}
 
-			const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			const activeView =
+				this.app.workspace.getActiveViewOfType(MarkdownView);
 			if (!activeView) {
 				return null;
 			}
@@ -276,7 +279,7 @@ export class StreamingProcessor {
 			}
 
 			const hideSpinner = spinner.show(cursorPosition);
-			
+
 			const processText = (text: string) => {
 				try {
 					// Return text as-is without trimming to ensure uniform processing
@@ -298,7 +301,6 @@ export class StreamingProcessor {
 			};
 
 			return { hideSpinner, onUpdate };
-
 		} catch {
 			return null;
 		}
@@ -312,7 +314,11 @@ export class StreamingProcessor {
 			// Remove any existing handler first
 			if (this.escapeHandler) {
 				try {
-					document.removeEventListener("keydown", this.escapeHandler, true);
+					document.removeEventListener(
+						"keydown",
+						this.escapeHandler,
+						true
+					);
 				} catch {
 					// Silently handle removal errors
 				}
@@ -323,10 +329,10 @@ export class StreamingProcessor {
 					if (e.key === "Escape" && this.state.isActive) {
 						e.preventDefault();
 						e.stopPropagation();
-						
+
 						// Cancel streaming first
 						this.cancel();
-						
+
 						// Then call the callback
 						try {
 							onCancel();
@@ -340,7 +346,6 @@ export class StreamingProcessor {
 			};
 
 			document.addEventListener("keydown", this.escapeHandler, true);
-
 		} catch {
 			// Silently handle setup errors
 		}
@@ -358,16 +363,19 @@ export class StreamingProcessor {
 			try {
 				interface ObsidianAppWithCommands {
 					commands?: {
-						listCommands?: () => Array<{ id: string; name?: string }>;
+						listCommands?: () => Array<{
+							id: string;
+							name?: string;
+						}>;
 						executeCommandById?: (id: string) => void;
 					};
 				}
-		
+
 				const appWithCommands = this.app as ObsidianAppWithCommands;
 				if (!appWithCommands?.commands) {
 					return;
 				}
-		
+
 				// Check if the command exists before executing
 				let commands: Array<{ id: string; name?: string }> = [];
 				try {
@@ -375,18 +383,20 @@ export class StreamingProcessor {
 				} catch {
 					return;
 				}
-		
-				const keyboardCommand = commands.find((cmd) =>
-					cmd.id && (
-						cmd.id.includes('keyboard') ||
-						cmd.id.includes('toggle-keyboard') ||
-						cmd.id === 'app:toggle-keyboard'
-					)
+
+				const keyboardCommand = commands.find(
+					cmd =>
+						cmd.id &&
+						(cmd.id.includes("keyboard") ||
+							cmd.id.includes("toggle-keyboard") ||
+							cmd.id === "app:toggle-keyboard")
 				);
-				
+
 				if (keyboardCommand) {
 					try {
-						appWithCommands.commands.executeCommandById?.(keyboardCommand.id);
+						appWithCommands.commands.executeCommandById?.(
+							keyboardCommand.id
+						);
 					} catch {
 						// Silently handle execution errors
 					}
@@ -402,7 +412,7 @@ export class StreamingProcessor {
 	 */
 	private getActiveEditor(): Editor | undefined {
 		if (!this.app) return undefined;
-		
+
 		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
 		return activeView?.editor;
 	}
@@ -425,22 +435,29 @@ export class StreamingProcessor {
 	 */
 	private showErrorNotice(error: Error, providerName: string): void {
 		let errorMessage = `${providerName} error: ${error.message}`;
-		
+
 		// Handle common error types with user-friendly messages
-		if (error.message.includes('network') || error.message.includes('fetch')) {
+		if (
+			error.message.includes("network") ||
+			error.message.includes("fetch")
+		) {
 			errorMessage = `Network error connecting to ${providerName}. Please check your connection and try again.`;
-		} else if (error.message.includes('API key') || error.message.includes('authentication')) {
+		} else if (
+			error.message.includes("API key") ||
+			error.message.includes("authentication")
+		) {
 			errorMessage = `Authentication error with ${providerName}. Please check your API key in settings.`;
-		} else if (error.message.includes('rate limit') || error.message.includes('quota')) {
+		} else if (
+			error.message.includes("rate limit") ||
+			error.message.includes("quota")
+		) {
 			errorMessage = `Rate limit exceeded for ${providerName}. Please wait and try again.`;
-		} else if (error.message.includes('timeout')) {
+		} else if (error.message.includes("timeout")) {
 			errorMessage = `Request timeout for ${providerName}. Please try again.`;
 		}
 
 		new Notice(errorMessage, 8000); // Show for 8 seconds
 	}
-
-
 
 	/**
 	 * Perform comprehensive cleanup with error handling
@@ -450,7 +467,11 @@ export class StreamingProcessor {
 			// Remove escape key handler
 			if (this.escapeHandler) {
 				try {
-					document.removeEventListener("keydown", this.escapeHandler, true);
+					document.removeEventListener(
+						"keydown",
+						this.escapeHandler,
+						true
+					);
 				} catch {
 					// Silently handle event listener removal errors
 				}
@@ -471,7 +492,6 @@ export class StreamingProcessor {
 
 			// Restore editor focus
 			this.restoreEditorFocus();
-
 		} catch {
 			// Silently handle any remaining cleanup errors
 		}
@@ -499,22 +519,29 @@ export class StreamingProcessor {
 
 		try {
 			// Apply format template to the current result
-			const formattedResult = format.replace(/\{\{result\}\}/g, this.state.currentResult.trim());
-			
+			const formattedResult = format.replace(
+				/\{\{result\}\}/g,
+				this.state.currentResult.trim()
+			);
+
 			// Update the displayed result with formatted version
 			const displayResult = this.formatResultForDisplay(formattedResult);
-			
+
 			// Update spinner with formatted result if spinner is active
 			if (this.currentSpinnerHide) {
 				try {
-					const activeView = this.app?.workspace.getActiveViewOfType(MarkdownView);
+					const activeView =
+						this.app?.workspace.getActiveViewOfType(MarkdownView);
 					if (activeView) {
 						// @ts-expect-error, not typed
 						const editorView = activeView.editor.cm;
 						if (editorView) {
 							const spinner = editorView.plugin(spinnerPlugin);
 							if (spinner) {
-								spinner.processText(displayResult, (text: string) => text);
+								spinner.processText(
+									displayResult,
+									(text: string) => text
+								);
 								if (this.app) {
 									this.app.workspace.updateOptions();
 								}
@@ -529,7 +556,6 @@ export class StreamingProcessor {
 			// Silently handle formatting errors
 		}
 	}
-
 }
 
 /**
@@ -554,7 +580,7 @@ export class PromptProcessor {
 	 */
 	async processPrompt(config: PromptConfig): Promise<void> {
 		const { action, input, editor, userPrompt, outputMode } = config;
-	
+
 		let cursorPositionFrom: { line: number; ch: number };
 		let cursorPositionTo: { line: number; ch: number };
 		let cursorOffset: number;
@@ -600,7 +626,7 @@ export class PromptProcessor {
 					wasCancelled = true;
 					this.streamingProcessor.hideSpinner();
 					this.streamingProcessor.clearResults();
-				}
+				},
 			};
 
 			// Execute streaming
@@ -634,21 +660,32 @@ export class PromptProcessor {
 			if (isQuickPrompt || !shouldShowModal) {
 				// Direct mode: hide spinner, apply result immediately and clear
 				this.streamingProcessor.hideSpinner();
-				await this.handleDirectResult(accumulatedResult.trim(), config, cursorPositionFrom, cursorPositionTo);
+				await this.handleDirectResult(
+					accumulatedResult.trim(),
+					config,
+					cursorPositionFrom,
+					cursorPositionTo
+				);
 				this.streamingProcessor.clearResults();
 			} else {
 				// Modal mode: apply final formatting to display and show ActionResultManager panel
 				// Apply format template to the displayed result
-				this.streamingProcessor.applyFinalFormatToDisplay(action.format);
-				
+				this.streamingProcessor.applyFinalFormatToDisplay(
+					action.format
+				);
+
 				// Show ActionResultManager panel, keep result visible until user action
 				// Do NOT hide spinner or clear results here - they remain visible until user chooses action
-				await this.handleModalResult(accumulatedResult, config, cursorPositionFrom, cursorPositionTo);
+				await this.handleModalResult(
+					accumulatedResult,
+					config,
+					cursorPositionFrom,
+					cursorPositionTo
+				);
 			}
-
 		} catch (error) {
 			const promptError = error as Error;
-			
+
 			// Ensure cleanup on error
 			try {
 				this.streamingProcessor.hideSpinner();
@@ -682,9 +719,8 @@ export class PromptProcessor {
 		cursorPositionTo: { line: number; ch: number }
 	): Promise<void> {
 		const { action, editor, view } = config;
-		
-		try {
 
+		try {
 			const resultManager = this.plugin?.actionResultManager;
 			if (!resultManager) {
 				throw new Error("ActionResultManager not available");
@@ -694,13 +730,20 @@ export class PromptProcessor {
 			const onAccept = async (finalResult: string) => {
 				try {
 					// Apply format template
-					const formattedResult = this.formatResult(finalResult, action.format);
-					
+					const formattedResult = this.formatResult(
+						finalResult,
+						action.format
+					);
+
 					// Hide spinner and apply result based on location
 					this.streamingProcessor.hideSpinner();
-					
+
 					if (action.loc === Location.REPLACE_CURRENT) {
-						editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
+						editor.replaceRange(
+							formattedResult,
+							cursorPositionFrom,
+							cursorPositionTo
+						);
 					} else {
 						await this.actionHandler.addToNote(
 							action.loc,
@@ -710,7 +753,7 @@ export class PromptProcessor {
 							action.locationExtra
 						);
 					}
-					
+
 					// Clear streaming results only AFTER applying result
 					this.streamingProcessor.clearResults();
 				} catch (error) {
@@ -718,16 +761,26 @@ export class PromptProcessor {
 				}
 			};
 
-			const onLocationAction = async (finalResult: string, location: Location) => {
+			const onLocationAction = async (
+				finalResult: string,
+				location: Location
+			) => {
 				try {
 					// Apply format template
-					const formattedResult = this.formatResult(finalResult, action.format);
-					
+					const formattedResult = this.formatResult(
+						finalResult,
+						action.format
+					);
+
 					// Hide spinner and apply result based on specified location
 					this.streamingProcessor.hideSpinner();
-					
+
 					if (location === Location.REPLACE_CURRENT) {
-						editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
+						editor.replaceRange(
+							formattedResult,
+							cursorPositionFrom,
+							cursorPositionTo
+						);
 					} else {
 						await this.actionHandler.addToNote(
 							location,
@@ -737,7 +790,7 @@ export class PromptProcessor {
 							action.locationExtra
 						);
 					}
-					
+
 					// Clear streaming results only AFTER applying result
 					this.streamingProcessor.clearResults();
 				} catch (error) {
@@ -762,7 +815,8 @@ export class PromptProcessor {
 					null, // format function (we handle formatting in callbacks)
 					onAccept,
 					onLocationAction,
-					action.loc === Location.APPEND_TO_FILE && !!action.locationExtra?.fileName,
+					action.loc === Location.APPEND_TO_FILE &&
+						!!action.locationExtra?.fileName,
 					onCancel,
 					action.loc // Pass default location from action settings
 				);
@@ -770,7 +824,6 @@ export class PromptProcessor {
 			} catch {
 				return;
 			}
-
 		} catch {
 			return;
 		}
@@ -793,7 +846,11 @@ export class PromptProcessor {
 		// Apply result based on location
 		if (action.loc === Location.REPLACE_CURRENT) {
 			try {
-				editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
+				editor.replaceRange(
+					formattedResult,
+					cursorPositionFrom,
+					cursorPositionTo
+				);
 			} catch {
 				throw new Error("Failed to apply result to editor");
 			}
@@ -820,10 +877,10 @@ export class PromptProcessor {
 			if (!format || !format.trim()) {
 				return result;
 			}
-			
+
 			// Clean up the streaming result (remove extra newlines added for display)
 			const cleanResult = result.trim();
-			
+
 			// Apply the format template
 			return format.replace(/\{\{result\}\}/g, cleanResult);
 		} catch {
@@ -837,18 +894,23 @@ export class PromptProcessor {
 	 */
 	private showPromptErrorNotice(error: Error): void {
 		let errorMessage = `Prompt processing error: ${error.message}`;
-		
+
 		// Handle specific error types
-		if (error.message.includes('cursor') || error.message.includes('editor')) {
+		if (
+			error.message.includes("cursor") ||
+			error.message.includes("editor")
+		) {
 			errorMessage = "Editor error occurred. Please try again.";
-		} else if (error.message.includes('modal') || error.message.includes('result manager')) {
-			errorMessage = "Result display error. The operation completed but results may not be visible.";
+		} else if (
+			error.message.includes("modal") ||
+			error.message.includes("result manager")
+		) {
+			errorMessage =
+				"Result display error. The operation completed but results may not be visible.";
 		}
 
 		new Notice(errorMessage, 6000);
 	}
-
-
 }
 
 export class ActionHandler {
@@ -868,7 +930,7 @@ export class ActionHandler {
 			input,
 			undefined,
 			userAction.temperature,
-			userAction.maxOutputTokens,
+			userAction.maxOutputTokens
 		);
 		return result as string;
 	}
@@ -877,7 +939,7 @@ export class ActionHandler {
 		userAction: UserAction,
 		input: string,
 		onToken: (token: string) => void,
-		userPrompt?: string,
+		userPrompt?: string
 	): Promise<void> {
 		const llm = this.llmFactory.create(userAction.model);
 		await llm.autocomplete(
@@ -911,12 +973,15 @@ export class ActionHandler {
 					const clipboardContent = await this.readClipboardContent();
 					// Check if clipboard is empty or contains only whitespace
 					if (!clipboardContent || !clipboardContent.trim()) {
-						new Notice("Clipboard is empty or contains only whitespace.", 10000);
+						new Notice(
+							"Clipboard is empty or contains only whitespace.",
+							10000
+						);
 						throw "Clipboard is empty or contains only whitespace.";
 					}
 					return clipboardContent;
 				} catch (error) {
-					console.error('Failed to read clipboard:', error);
+					console.error("Failed to read clipboard:", error);
 					throw "Failed to read clipboard. Please ensure clipboard permissions are granted.";
 				}
 			default:
@@ -932,43 +997,55 @@ export class ActionHandler {
 	private async readClipboardContent(): Promise<string> {
 		try {
 			// Try to read rich content using the modern Clipboard API
-			const clipboardAPI = (globalThis as unknown as { navigator: { clipboard: { read(): Promise<unknown[]> } } }).navigator;
+			const clipboardAPI = (
+				globalThis as unknown as {
+					navigator: { clipboard: { read(): Promise<unknown[]> } };
+				}
+			).navigator;
 			const clipboardItems = await clipboardAPI.clipboard.read();
-			
-			for (const item of clipboardItems as unknown as Array<{ types: string[]; getType(type: string): Promise<{ text(): Promise<string> }> }>) {
+
+			for (const item of clipboardItems as unknown as Array<{
+				types: string[];
+				getType(type: string): Promise<{ text(): Promise<string> }>;
+			}>) {
 				// Priority order: HTML (for rich formatting), then plain text
-				if (item.types.includes('text/html')) {
-					const blob = await item.getType('text/html');
+				if (item.types.includes("text/html")) {
+					const blob = await item.getType("text/html");
 					const htmlContent = await blob.text();
-					
+
 					// Return HTML content as-is without any conversion
 					return htmlContent;
 				}
-				
-				if (item.types.includes('text/plain')) {
-					const blob = await item.getType('text/plain');
+
+				if (item.types.includes("text/plain")) {
+					const blob = await item.getType("text/plain");
 					return await blob.text();
 				}
 			}
-			
+
 			// If no text content found, return empty string
-			return '';
+			return "";
 		} catch (error) {
 			// Fallback to the old method if the modern API fails
-			console.warn('Modern clipboard API failed, falling back to readText():', error);
-			const clipboardAPI = (globalThis as unknown as { navigator: { clipboard: { readText(): Promise<string> } } }).navigator;
+			console.warn(
+				"Modern clipboard API failed, falling back to readText():",
+				error
+			);
+			const clipboardAPI = (
+				globalThis as unknown as {
+					navigator: { clipboard: { readText(): Promise<string> } };
+				}
+			).navigator;
 			return await clipboardAPI.clipboard.readText();
 		}
 	}
-
-
 
 	async addToNote(
 		location: Location,
 		text: string,
 		editor: Editor,
 		vault?: Vault,
-		locationExtra?: { fileName: string },
+		locationExtra?: { fileName: string }
 	) {
 		switch (location) {
 			case Location.INSERT_HEAD:
@@ -1001,7 +1078,7 @@ export class ActionHandler {
 	private async appendToFileInVault(
 		vault: Vault,
 		fileName: string,
-		text: string,
+		text: string
 	) {
 		let file: TFile = await getFile(vault, fileName);
 		vault.append(file, text);
@@ -1012,21 +1089,22 @@ export class ActionHandler {
 		settings: AIEditorSettings,
 		action: UserAction,
 		editor: Editor,
-		view: MarkdownView,
+		view: MarkdownView
 	) {
 		// Check if model is available and get user selection if not
-		const validatedModelId = await this.plugin?.modalManager?.validateAndSelectModel(action);
+		const validatedModelId =
+			await this.plugin?.modalManager?.validateAndSelectModel(action);
 		if (!validatedModelId) {
 			// User cancelled model selection
 			return;
 		}
-		
+
 		// Update action with validated model ID
 		action.model = validatedModelId;
-		
+
 		// Text input preparation
 		const text = await this.getTextInput(action.sel, editor);
-		
+
 		const promptProcessor = new PromptProcessor(settings, this.plugin);
 		await promptProcessor.processPrompt({
 			action,
@@ -1034,7 +1112,7 @@ export class ActionHandler {
 			editor,
 			view,
 			app,
-			plugin: this.plugin
+			plugin: this.plugin,
 		});
 	}
 }

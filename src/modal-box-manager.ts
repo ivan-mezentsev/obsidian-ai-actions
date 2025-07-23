@@ -30,7 +30,7 @@ class ModelSelectionModal extends Modal {
 		this.defaultModelId = plugin.settings.aiProviders?.defaultModelId || "";
 		this.onSubmit = onSubmit;
 		this.onCancel = onCancel;
-		
+
 		// Add CSS class for styling
 		this.modalEl.addClass("ai-actions-model-selection-modal");
 	}
@@ -41,29 +41,39 @@ class ModelSelectionModal extends Modal {
 
 		// Load models
 		try {
-			this.availableModels = await getAvailableModelsWithPluginAIProviders(this.plugin.settings);
-			this.availableProviders = this.plugin.settings.aiProviders?.providers || [];
+			this.availableModels =
+				await getAvailableModelsWithPluginAIProviders(
+					this.plugin.settings
+				);
+			this.availableProviders =
+				this.plugin.settings.aiProviders?.providers || [];
 		} catch (error) {
-			console.error('Failed to load models:', error);
+			console.error("Failed to load models:", error);
 			this.availableModels = [];
 			this.availableProviders = [];
 		}
 
 		// Set selected model if current is not available
-		const isCurrentModelAvailable = this.availableModels.some(m => m.id === this.selectedModelId);
+		const isCurrentModelAvailable = this.availableModels.some(
+			m => m.id === this.selectedModelId
+		);
 		if (!isCurrentModelAvailable) {
-			this.selectedModelId = this.defaultModelId || (this.availableModels[0]?.id || "");
+			this.selectedModelId =
+				this.defaultModelId || this.availableModels[0]?.id || "";
 		}
 
 		// Create message
 		const messageEl = contentEl.createDiv("ai-actions-modal-message");
-		messageEl.textContent = "The assigned model is unavailable. Select another model.";
+		messageEl.textContent =
+			"The assigned model is unavailable. Select another model.";
 
 		// Create controls container
 		const controlsEl = contentEl.createDiv("ai-actions-modal-controls");
 
 		// Create dropdown container
-		this.dropdownContainer = controlsEl.createDiv("ai-actions-modal-dropdown");
+		this.dropdownContainer = controlsEl.createDiv(
+			"ai-actions-modal-dropdown"
+		);
 
 		// Create buttons container
 		const buttonsEl = controlsEl.createDiv("ai-actions-modal-buttons");
@@ -71,13 +81,13 @@ class ModelSelectionModal extends Modal {
 		// Create Select button
 		const selectBtn = buttonsEl.createEl("button", {
 			text: "Select",
-			cls: "mod-cta"
+			cls: "mod-cta",
 		});
 		selectBtn.addEventListener("click", () => this.handleSubmit());
 
 		// Create Cancel button
 		const cancelBtn = buttonsEl.createEl("button", {
-			text: "Cancel"
+			text: "Cancel",
 		});
 		cancelBtn.addEventListener("click", () => this.handleCancel());
 
@@ -98,22 +108,24 @@ class ModelSelectionModal extends Modal {
 		if (this.availableModels.length === 0) return;
 
 		// Create options for the filterable dropdown
-		const options: FilterableDropdownOption[] = this.availableModels.map(model => {
-			const providerName = this.getProviderNameForModel(model);
-			const displayName = `${model.name} (${providerName})`;
-			return {
-				value: model.id,
-				label: displayName,
-				model: model
-			};
-		});
+		const options: FilterableDropdownOption[] = this.availableModels.map(
+			model => {
+				const providerName = this.getProviderNameForModel(model);
+				const displayName = `${model.name} (${providerName})`;
+				return {
+					value: model.id,
+					label: displayName,
+					model: model,
+				};
+			}
+		);
 
 		// Create the filterable dropdown
 		this.filterableDropdown = new FilterableDropdown(
 			this.dropdownContainer,
 			options,
 			this.selectedModelId || this.availableModels[0].id,
-			(value) => {
+			value => {
 				this.selectedModelId = value;
 			}
 		);
@@ -121,11 +133,13 @@ class ModelSelectionModal extends Modal {
 
 	private getProviderNameForModel(model: AIModel): string {
 		// Handle plugin AI providers
-		if (model.id.startsWith('plugin_ai_providers_')) {
+		if (model.id.startsWith("plugin_ai_providers_")) {
 			return "Plugin AI Providers";
 		}
 		// For internal providers, find by providerId
-		const provider = this.availableProviders.find(p => p.id === model.providerId);
+		const provider = this.availableProviders.find(
+			p => p.id === model.providerId
+		);
 		return provider ? provider.name : "Unknown Provider";
 	}
 
@@ -160,15 +174,19 @@ export class ModalBoxManager {
 	 * Check if a model is available in the current settings
 	 */
 	async isModelAvailable(modelId: string): Promise<boolean> {
-		const availableModels = await getAvailableModelsWithPluginAIProviders(this.plugin.settings);
+		const availableModels = await getAvailableModelsWithPluginAIProviders(
+			this.plugin.settings
+		);
 		return availableModels.some(model => model.id === modelId);
 	}
 
 	/**
 	 * Show modal for model selection
 	 */
-	async showModelSelectionModal(currentModelId: string): Promise<string | null> {
-		return new Promise((resolve) => {
+	async showModelSelectionModal(
+		currentModelId: string
+	): Promise<string | null> {
+		return new Promise(resolve => {
 			const modal = new ModelSelectionModal(
 				this.plugin.app,
 				this.plugin,
@@ -180,37 +198,39 @@ export class ModalBoxManager {
 		});
 	}
 
-
-
 	/**
 	 * Check if action model is available and show modal if not
 	 * Returns the model ID to use (either original or newly selected)
 	 */
 	async validateAndSelectModel(action: UserAction): Promise<string | null> {
 		const isAvailable = await this.isModelAvailable(action.model);
-		
+
 		if (isAvailable) {
 			// Model is available, return original model ID
 			return action.model;
 		}
-		
+
 		// Model is not available, show selection modal
-		const selectedModelId = await this.showModelSelectionModal(action.model);
-		
+		const selectedModelId = await this.showModelSelectionModal(
+			action.model
+		);
+
 		if (selectedModelId) {
 			// Update the action's model ID
 			action.model = selectedModelId;
-			
+
 			// Save the updated action to settings
-			const actionIndex = this.plugin.settings.customActions.findIndex(a => a.name === action.name);
+			const actionIndex = this.plugin.settings.customActions.findIndex(
+				a => a.name === action.name
+			);
 			if (actionIndex !== -1) {
 				this.plugin.settings.customActions[actionIndex] = action;
 				await this.plugin.saveSettings();
 			}
-			
+
 			return selectedModelId;
 		}
-		
+
 		// User cancelled, return null
 		return null;
 	}

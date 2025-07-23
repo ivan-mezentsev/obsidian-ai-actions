@@ -31,10 +31,10 @@ const DEFAULT_SETTINGS: AIEditorSettings = {
 	aiProviders: {
 		providers: [],
 		models: [],
-		usePluginAIProviders: false
+		usePluginAIProviders: false,
 	},
 	useNativeFetch: false,
-	developmentMode: false
+	developmentMode: false,
 };
 
 export default class AIEditor extends Plugin {
@@ -66,7 +66,7 @@ export default class AIEditor extends Plugin {
 
 		// Register Quick Prompt command
 		this.addCommand({
-			id: 'quick-prompt',
+			id: "quick-prompt",
 			name: this.settings.quickPrompt.name,
 			editorCallback: async (editor: Editor, view: MarkdownView) => {
 				await this.quickPromptManager.showQuickPrompt(editor, view);
@@ -75,34 +75,39 @@ export default class AIEditor extends Plugin {
 	}
 
 	async onload() {
-		initAI(this.app, this, async () => {
-			await this.loadSettings();
-			
-			// Initialize QuickPromptManager
-			this.quickPromptManager = new QuickPromptManager(this);
-			
-			// Initialize ActionResultManager
-			this.actionResultManager = new ActionResultManager(this);
-			
-			// Initialize ModalManager
-			this.modalManager = new ModalBoxManager(this);
-			
-			this.addCommand({
-				id: "reload",
-				name: "Reload commands",
-				callback: () => {
-					this.registerActions();
-				},
-			});
-			this.registerActions();
+		initAI(
+			this.app,
+			this,
+			async () => {
+				await this.loadSettings();
 
-			// Register the spinner plugin for loading animations
-			this.registerEditorExtension(spinnerPlugin);
+				// Initialize QuickPromptManager
+				this.quickPromptManager = new QuickPromptManager(this);
 
-			// This adds a settings tab so the user can configure various aspects of the plugin
-			this.addSettingTab(new AIEditorSettingTab(this.app, this));
-			this.initializeDefaultModels();
-		}, { disableFallback: true });
+				// Initialize ActionResultManager
+				this.actionResultManager = new ActionResultManager(this);
+
+				// Initialize ModalManager
+				this.modalManager = new ModalBoxManager(this);
+
+				this.addCommand({
+					id: "reload",
+					name: "Reload commands",
+					callback: () => {
+						this.registerActions();
+					},
+				});
+				this.registerActions();
+
+				// Register the spinner plugin for loading animations
+				this.registerEditorExtension(spinnerPlugin);
+
+				// This adds a settings tab so the user can configure various aspects of the plugin
+				this.addSettingTab(new AIEditorSettingTab(this.app, this));
+				this.initializeDefaultModels();
+			},
+			{ disableFallback: true }
+		);
 	}
 
 	onunload() {
@@ -116,18 +121,14 @@ export default class AIEditor extends Plugin {
 
 	async loadSettings() {
 		const loadedData = await this.loadData();
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			loadedData
-		);
-		
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+
 		// Ensure aiProviders is properly initialized
 		if (!this.settings.aiProviders) {
 			this.settings.aiProviders = {
 				providers: [],
 				models: [],
-				usePluginAIProviders: false
+				usePluginAIProviders: false,
 			};
 		}
 		if (!this.settings.aiProviders.providers) {
@@ -153,7 +154,7 @@ export default class AIEditor extends Plugin {
 		}
 
 		const defaultModelId = availableModels[0].id;
-		
+
 		// Update preset actions with first available model if they don't have one
 		this.settings.customActions.forEach(action => {
 			if (!action.model || action.model === "") {
@@ -162,10 +163,11 @@ export default class AIEditor extends Plugin {
 		});
 
 		// Update quick prompt with first available model if it doesn't have one
-		if (!this.settings.quickPrompt.model || this.settings.quickPrompt.model === "") {
+		if (
+			!this.settings.quickPrompt.model ||
+			this.settings.quickPrompt.model === ""
+		) {
 			this.settings.quickPrompt.model = defaultModelId;
 		}
 	}
-
-
 }

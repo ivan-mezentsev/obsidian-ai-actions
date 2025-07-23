@@ -35,7 +35,15 @@ export abstract class LLM {
 			callback(text);
 		}
 
-		let promise = this.autocomplete(prompt, content, callback_wrapper, temperature, maxOutputTokens, userPrompt, true);
+		let promise = this.autocomplete(
+			prompt,
+			content,
+			callback_wrapper,
+			temperature,
+			maxOutputTokens,
+			userPrompt,
+			true
+		);
 		return new Promise<void>((resolve, reject) => {
 			const intervalId = globalThis.setInterval(() => {
 				let now = new Date().getTime();

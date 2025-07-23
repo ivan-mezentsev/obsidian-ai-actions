@@ -16,7 +16,6 @@ export enum Location {
 	REPLACE_CURRENT = "REPLACE_CURRENT",
 }
 
-
 export interface UserAction {
 	name: string;
 	prompt: string;
@@ -53,50 +52,64 @@ export function getAvailableModels(settings: AIEditorSettings): AIModel[] {
 }
 
 // Function to get available models including plugin AI providers
-export async function getAvailableModelsWithPluginAIProviders(settings: AIEditorSettings): Promise<AIModel[]> {
+export async function getAvailableModelsWithPluginAIProviders(
+	settings: AIEditorSettings
+): Promise<AIModel[]> {
 	const internalModels = getAvailableModels(settings);
-	
+
 	// If plugin AI providers are not enabled, return only internal models
 	if (!settings.aiProviders?.usePluginAIProviders) {
 		return internalModels;
 	}
-	
+
 	try {
 		const aiProvidersWaiter = await waitForAI();
 		const aiProvidersResponse = await aiProvidersWaiter.promise;
-		
+
 		// Convert plugin AI providers to AIModel format
-		const pluginAIModels: AIModel[] = aiProvidersResponse.providers.map(provider => ({
-			id: `plugin_ai_providers_${provider.id}`, // Prefix to distinguish from internal models
-			name: provider.model ? `${provider.name} ~ ${provider.model}` : provider.name,
-			modelName: provider.model || provider.name, // Model name for display
-			providerId: `plugin_ai_providers_${provider.id}`,
-			type: 'openai' as AIProviderType, // Default type for plugin AI providers
-			pluginAIProviderId: provider.id // Store original provider ID for execution
-		}));
-		
+		const pluginAIModels: AIModel[] = aiProvidersResponse.providers.map(
+			provider => ({
+				id: `plugin_ai_providers_${provider.id}`, // Prefix to distinguish from internal models
+				name: provider.model
+					? `${provider.name} ~ ${provider.model}`
+					: provider.name,
+				modelName: provider.model || provider.name, // Model name for display
+				providerId: `plugin_ai_providers_${provider.id}`,
+				type: "openai" as AIProviderType, // Default type for plugin AI providers
+				pluginAIProviderId: provider.id, // Store original provider ID for execution
+			})
+		);
+
 		return [...internalModels, ...pluginAIModels];
 	} catch (error) {
-		console.error('Failed to load plugin AI providers:', error);
+		console.error("Failed to load plugin AI providers:", error);
 		return internalModels;
 	}
 }
 
 export function locationDictionary(): { [key: string]: string } {
-	return Object.values(Location).reduce((obj, value) => {
-		obj[value] = LOCATION_SETTING[value];
-		return obj;
-	}, {} as { [key: string]: string });
+	return Object.values(Location).reduce(
+		(obj, value) => {
+			obj[value] = LOCATION_SETTING[value];
+			return obj;
+		},
+		{} as { [key: string]: string }
+	);
 }
 
 export function selectionDictionary(): { [key: string]: string } {
-	return Object.values(Selection).reduce((obj, value) => {
-		obj[value] = SELECTION_SETTING[value];
-		return obj;
-	}, {} as { [key: string]: string });
+	return Object.values(Selection).reduce(
+		(obj, value) => {
+			obj[value] = SELECTION_SETTING[value];
+			return obj;
+		},
+		{} as { [key: string]: string }
+	);
 }
 
-export function modelDictionary(settings: AIEditorSettings): Record<string, string> {
+export function modelDictionary(
+	settings: AIEditorSettings
+): Record<string, string> {
 	const dictionary: Record<string, string> = {};
 	const models = getAvailableModels(settings);
 	for (const model of models) {

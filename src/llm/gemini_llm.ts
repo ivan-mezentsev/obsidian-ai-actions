@@ -30,27 +30,29 @@ export class GeminiLLM extends BaseProviderLLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false,
+		streaming: boolean = false
 	): Promise<string | void> {
 		try {
 			// Check if model supports system instructions (avoid for Gemma models)
-			const supportsSystemInstruction = !this.modelName.toLowerCase().includes('gemma');
-			
-			const contents = userPrompt 
-				? (supportsSystemInstruction
+			const supportsSystemInstruction = !this.modelName
+				.toLowerCase()
+				.includes("gemma");
+
+			const contents = userPrompt
+				? supportsSystemInstruction
 					? [
-						{ role: "user", parts: [{ text: userPrompt }] },
-						{ role: "user", parts: [{ text: content }] },
-					]
+							{ role: "user", parts: [{ text: userPrompt }] },
+							{ role: "user", parts: [{ text: content }] },
+						]
 					: [
-						{ role: "user", parts: [{ text: prompt }] },
-						{ role: "user", parts: [{ text: userPrompt }] },
-						{ role: "user", parts: [{ text: content }] },
-					])
+							{ role: "user", parts: [{ text: prompt }] },
+							{ role: "user", parts: [{ text: userPrompt }] },
+							{ role: "user", parts: [{ text: content }] },
+						]
 				: [
-					{ role: "user", parts: [{ text: prompt }] },
-					{ role: "user", parts: [{ text: content }] },
-				];
+						{ role: "user", parts: [{ text: prompt }] },
+						{ role: "user", parts: [{ text: content }] },
+					];
 
 			const config: {
 				temperature: number;
@@ -90,20 +92,21 @@ export class GeminiLLM extends BaseProviderLLM {
 					contents,
 					config,
 				});
-	
+
 				// Gemini SDK returns candidates[0].content.parts[0].text
-				const result = response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-				
+				const result =
+					response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
 				// Call callback with the full result if provided
 				if (callback && result) {
 					callback(result);
 				}
-				
+
 				return result;
 			}
 		} catch (error) {
 			throw new Error(
-				`Gemini SDK error: ${error instanceof Error ? error.message : "Unknown error"}`,
+				`Gemini SDK error: ${error instanceof Error ? error.message : "Unknown error"}`
 			);
 		}
 	}

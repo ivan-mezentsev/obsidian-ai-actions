@@ -15,7 +15,7 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 ): (...args: Parameters<T>) => void {
 	let timeout: NodeJS.Timeout | null = null;
 	return function executedFunction(...args: Parameters<T>) {
-		const later = function() {
+		const later = function () {
 			timeout = null;
 			if (!immediate) func(...args);
 		};

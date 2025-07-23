@@ -1,6 +1,6 @@
 
 # vscode
-.vscode 
+#.vscode # needs in git for codes-style and linting
 
 # Intellij
 *.iml

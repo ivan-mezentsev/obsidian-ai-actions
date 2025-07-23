@@ -6,10 +6,7 @@ import {
 	ViewUpdate,
 	WidgetType,
 } from "@codemirror/view";
-import type {
-	DecorationSet,
-	PluginValue,
-} from "@codemirror/view";
+import type { DecorationSet, PluginValue } from "@codemirror/view";
 
 class LoaderWidget extends WidgetType {
 	static readonly element: HTMLSpanElement = document.createElement("span");
@@ -116,7 +113,7 @@ export class SpinnerPlugin implements PluginValue {
 	processText(
 		text: string,
 		processFunc?: (text: string) => string,
-		position?: number,
+		position?: number
 	) {
 		const result = this.processThinkingTags(text);
 
@@ -149,7 +146,7 @@ export class SpinnerPlugin implements PluginValue {
 
 		// Check if we have a complete thinking tag
 		const thinkingMatch = text.match(
-			/^<think>([\s\S]*?)(<\/think>\s*([\s\S]*))?$/,
+			/^<think>([\s\S]*?)(<\/think>\s*([\s\S]*))?$/
 		);
 
 		if (!thinkingMatch) {
@@ -178,7 +175,7 @@ export class SpinnerPlugin implements PluginValue {
 	show(position: number): () => void {
 		const isEndOfLine = this.isPositionAtEndOfLine(
 			this.editorView.state,
-			position,
+			position
 		);
 		this.positions.set(position, {
 			isEndOfLine,
@@ -269,7 +266,7 @@ export class SpinnerPlugin implements PluginValue {
 				Decoration.widget({
 					widget: data.widget,
 					side: data.isEndOfLine ? 1 : -1,
-				}),
+				})
 			);
 		});
 		this.decorations = builder.finish();
@@ -278,12 +275,12 @@ export class SpinnerPlugin implements PluginValue {
 
 	private isPositionAtEndOfLine(
 		state: EditorState,
-		position: number,
+		position: number
 	): boolean {
 		return position === state.doc.lineAt(position).to;
 	}
 }
 
 export const spinnerPlugin = ViewPlugin.fromClass(SpinnerPlugin, {
-	decorations: (v) => v.decorations,
+	decorations: v => v.decorations,
 });

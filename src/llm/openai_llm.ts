@@ -36,30 +36,37 @@ export class OpenAILLM extends LLM {
 		streaming: boolean = false
 	): Promise<string | void> {
 		try {
-			const messages = userPrompt 
+			const messages = userPrompt
 				? [
-					{ role: "system" as const, content: prompt },
-					{ role: "user" as const, content: userPrompt },
-					{ role: "user" as const, content: content }
-				]
+						{ role: "system" as const, content: prompt },
+						{ role: "user" as const, content: userPrompt },
+						{ role: "user" as const, content: content },
+					]
 				: [
-					{ role: "system" as const, content: prompt },
-					{ role: "user" as const, content: content }
-				];
-			
+						{ role: "system" as const, content: prompt },
+						{ role: "user" as const, content: content },
+					];
+
 			const baseRequestData = {
 				model: this.model,
 				messages: messages,
-				max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
+				max_tokens:
+					maxOutputTokens && maxOutputTokens > 0
+						? maxOutputTokens
+						: 4000,
 				temperature: temperature !== undefined ? temperature : 0.7,
 			};
-	
+
 			if (streaming && callback) {
 				// Streaming mode
 				const requestData = { ...baseRequestData, stream: true };
-				const stream = await this.openai.chat.completions.create(requestData as Parameters<typeof this.openai.chat.completions.create>[0]);
-	
-				if ('stream' in requestData && requestData.stream) {
+				const stream = await this.openai.chat.completions.create(
+					requestData as Parameters<
+						typeof this.openai.chat.completions.create
+					>[0]
+				);
+
+				if ("stream" in requestData && requestData.stream) {
 					for await (const chunk of stream as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>) {
 						const content = chunk.choices[0]?.delta?.content;
 						if (content) {
@@ -70,14 +77,20 @@ export class OpenAILLM extends LLM {
 				return;
 			} else {
 				// Non-streaming mode
-				const response = await this.openai.chat.completions.create(baseRequestData as Parameters<typeof this.openai.chat.completions.create>[0]);
-				const result = (response as OpenAI.Chat.Completions.ChatCompletion).choices[0]?.message?.content || "";
-				
+				const response = await this.openai.chat.completions.create(
+					baseRequestData as Parameters<
+						typeof this.openai.chat.completions.create
+					>[0]
+				);
+				const result =
+					(response as OpenAI.Chat.Completions.ChatCompletion)
+						.choices[0]?.message?.content || "";
+
 				// Call callback with the full result if provided
 				if (callback && result) {
 					callback(result);
 				}
-				
+
 				return result;
 			}
 		} catch (error) {

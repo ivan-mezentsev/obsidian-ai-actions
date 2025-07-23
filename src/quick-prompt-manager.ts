@@ -51,7 +51,7 @@ export class QuickPromptManager {
 			this.plugin.settings.quickPrompt?.model ||
 			this.plugin.settings.aiProviders?.defaultModelId ||
 			"";
-	
+
 		const promptBox = new QuickPromptBox({
 			target: targetEl,
 			props: {
@@ -62,7 +62,10 @@ export class QuickPromptManager {
 				availableProviders: availableProviders,
 				selectedModelId: defaultModelId,
 				defaultModelId: defaultModelId,
-				loadModelsAsync: () => getAvailableModelsWithPluginAIProviders(this.plugin.settings),
+				loadModelsAsync: () =>
+					getAvailableModelsWithPluginAIProviders(
+						this.plugin.settings
+					),
 			},
 		});
 
@@ -100,7 +103,7 @@ export class QuickPromptManager {
 	 * Hide all active prompt boxes
 	 */
 	private hideAllPromptBoxes() {
-		this.promptBoxCache.forEach((promptBox) => {
+		this.promptBoxCache.forEach(promptBox => {
 			if (promptBox) {
 				promptBox.hide();
 			}
@@ -123,7 +126,7 @@ export class QuickPromptManager {
 
 		if (coords) {
 			const promptBoxEl = view.containerEl.querySelector(
-				".quick-prompt-box",
+				".quick-prompt-box"
 			) as HTMLElement;
 			if (promptBoxEl) {
 				// Get editor container position for relative positioning
@@ -135,11 +138,11 @@ export class QuickPromptManager {
 				const relativeTop = coords.bottom - editorRect.top;
 
 				// Add CSS class for positioning
-			promptBoxEl.classList.add("ai-actions-quick-prompt-box");
+				promptBoxEl.classList.add("ai-actions-quick-prompt-box");
 
-			// Position slightly below and to the right of cursor/selection
-			promptBoxEl.style.setProperty("left", `${relativeLeft + 10}px`);
-			promptBoxEl.style.setProperty("top", `${relativeTop + 10}px`);
+				// Position slightly below and to the right of cursor/selection
+				promptBoxEl.style.setProperty("left", `${relativeLeft + 10}px`);
+				promptBoxEl.style.setProperty("top", `${relativeTop + 10}px`);
 
 				// Ensure it doesn't go off screen
 				const rect = promptBoxEl.getBoundingClientRect();
@@ -149,15 +152,15 @@ export class QuickPromptManager {
 				if (rect.right > viewportWidth) {
 					const newLeft = Math.max(
 						10,
-						relativeLeft - rect.width - 10,
+						relativeLeft - rect.width - 10
 					);
-				promptBoxEl.style.setProperty("left", `${newLeft}px`);
-			}
-	
-			if (rect.bottom > viewportHeight) {
-				const newTop = Math.max(10, relativeTop - rect.height - 20);
-				promptBoxEl.style.setProperty("top", `${newTop}px`);
-			}
+					promptBoxEl.style.setProperty("left", `${newLeft}px`);
+				}
+
+				if (rect.bottom > viewportHeight) {
+					const newTop = Math.max(10, relativeTop - rect.height - 20);
+					promptBoxEl.style.setProperty("top", `${newTop}px`);
+				}
 			}
 		}
 	}
@@ -167,13 +170,22 @@ export class QuickPromptManager {
 	 */
 	private registerPromptBoxEvents(
 		mountEl: HTMLElement,
-		promptBox: QuickPromptBox,
+		promptBox: QuickPromptBox
 	) {
 		// Handle submit event
-		promptBox.$on("submit", async (event: CustomEvent<{ prompt: string; modelId: string; outputMode: string }>) => {
-			const { prompt, modelId, outputMode } = event.detail;
-			await this.processPrompt(prompt, modelId, outputMode);
-		});
+		promptBox.$on(
+			"submit",
+			async (
+				event: CustomEvent<{
+					prompt: string;
+					modelId: string;
+					outputMode: string;
+				}>
+			) => {
+				const { prompt, modelId, outputMode } = event.detail;
+				await this.processPrompt(prompt, modelId, outputMode);
+			}
+		);
 
 		// Handle close event
 		promptBox.$on("close", () => {
@@ -181,10 +193,10 @@ export class QuickPromptManager {
 		});
 
 		// Handle escape key globally
-		this.plugin.registerDomEvent(mountEl, "keydown", (e) => {
+		this.plugin.registerDomEvent(mountEl, "keydown", e => {
 			if (e.key === "Escape") {
 				const promptBoxEl = mountEl.querySelector(
-					".quick-prompt-box--active",
+					".quick-prompt-box--active"
 				);
 				if (promptBoxEl) {
 					promptBox.hide();
@@ -199,9 +211,10 @@ export class QuickPromptManager {
 	private async processPrompt(
 		userPrompt: string,
 		modelId?: string,
-		outputMode: string = "replace",
+		outputMode: string = "replace"
 	) {
-		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+		const view =
+			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
 
 		const editor = view.editor;
@@ -211,14 +224,20 @@ export class QuickPromptManager {
 		const quickPromptAction = {
 			...this.plugin.settings.quickPrompt,
 			model: modelId || this.plugin.settings.quickPrompt.model,
-			loc: outputMode === "append" ? Location.APPEND_CURRENT : Location.REPLACE_CURRENT,
-			showModalWindow: false // Quick prompts never show modal
+			loc:
+				outputMode === "append"
+					? Location.APPEND_CURRENT
+					: Location.REPLACE_CURRENT,
+			showModalWindow: false, // Quick prompts never show modal
 		};
 
 		// Get text input based on selection mode
 		const text = await handler.getTextInput(quickPromptAction.sel, editor);
-		
-		const promptProcessor = new PromptProcessor(this.plugin.settings, this.plugin);
+
+		const promptProcessor = new PromptProcessor(
+			this.plugin.settings,
+			this.plugin
+		);
 		await promptProcessor.processPrompt({
 			action: quickPromptAction,
 			input: text,
@@ -227,7 +246,7 @@ export class QuickPromptManager {
 			app: this.plugin.app,
 			userPrompt,
 			outputMode,
-			plugin: this.plugin
+			plugin: this.plugin,
 		});
 	}
 
