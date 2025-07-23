@@ -19,6 +19,7 @@ export class ActionEditModal extends Modal {
 	plugin: AIEditor;
 	onSave: (userAction: UserAction) => void;
 	onDelete?: () => void;
+	private modelDropdown?: FilterableDropdown;
 
 	constructor(
 		app: App,
@@ -99,7 +100,7 @@ async onOpen() {
 			const currentModelId = this.action.model || availableModels[0].id;
 			
 			// Create the filterable dropdown
-			const dropdown = new FilterableDropdown(
+			this.modelDropdown = new FilterableDropdown(
 				modelSettingControl,
 				options,
 				currentModelId,
@@ -263,6 +264,12 @@ async onOpen() {
 	}
 
 	onClose() {
+		// Clean up the filterable dropdown
+		if (this.modelDropdown) {
+			this.modelDropdown.destroy();
+			this.modelDropdown = undefined;
+		}
+		
 		let { contentEl } = this;
 		contentEl.empty();
 	}
