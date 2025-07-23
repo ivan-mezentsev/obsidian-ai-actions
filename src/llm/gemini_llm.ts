@@ -52,7 +52,11 @@ export class GeminiLLM extends BaseProviderLLM {
 					{ role: "user", parts: [{ text: content }] },
 				];
 
-			const config: any = {
+			const config: {
+				temperature: number;
+				maxOutputTokens: number;
+				systemInstruction?: string;
+			} = {
 				temperature: temperature !== undefined ? temperature : 0.7,
 				maxOutputTokens:
 					maxOutputTokens && maxOutputTokens > 0

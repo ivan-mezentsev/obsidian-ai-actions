@@ -10,8 +10,7 @@ import { AnthropicLLM } from "./anthropic_llm";
 import { PluginAIProvidersLLM } from "./plugin_ai_providers_llm";
 import { OpenAIModel } from "./openai_llm";
 import type { AIEditorSettings } from "../settings";
-import type { Model } from "./models";
-import type { AIModel, AIProvider } from "../types";
+import type { AIModel } from "../types";
 
 export class LLMFactory {
 	private settings: AIEditorSettings;
@@ -29,7 +28,7 @@ export class LLMFactory {
 				const aiProvidersWaiter = await waitForAI();
 				const aiProviders = await aiProvidersWaiter.promise;
 				
-				const provider = aiProviders.providers.find((p: any) => p.id === pluginAIProviderId);
+				const provider = aiProviders.providers.find((p: { id: string; name: string; model?: string }) => p.id === pluginAIProviderId);
 				if (provider) {
 					return provider.model ? `${provider.name} ~ ${provider.model}` : provider.name;
 				}

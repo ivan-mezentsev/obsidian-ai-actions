@@ -1,7 +1,6 @@
 import { LLM } from "./base";
 import type { AIProvider } from "../types";
 import { nativeFetch, standardFetch } from "../utils/fetch";
-import type { AIEditorSettings } from "../settings";
 
 export abstract class BaseProviderLLM extends LLM {
     protected provider: AIProvider;
@@ -15,7 +14,7 @@ export abstract class BaseProviderLLM extends LLM {
         this.useNativeFetch = useNativeFetch;
     }
 
-    protected getFetch(): typeof fetch {
+    protected getFetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
         return this.useNativeFetch ? nativeFetch : standardFetch;
     }
 
@@ -37,22 +36,18 @@ export abstract class BaseProviderLLM extends LLM {
         return headers;
     }
 
-    protected async makeRequest(endpoint: string, body: any): Promise<Response> {
+    protected async makeRequest(endpoint: string, body: Record<string, unknown>): Promise<Response> {
         const url = `${this.getBaseUrl()}${endpoint}`;
         const fetchFn = this.getFetch();
         const headers = this.getHeaders();
         const requestBody = JSON.stringify(body);
         
-        try {
-            const response = await fetchFn(url, {
-                method: 'POST',
-                headers: headers,
-                body: requestBody,
-            });
-            
-            return response;
-        } catch (error) {
-            throw error;
-        }
+        const response = await fetchFn(url, {
+            method: 'POST',
+            headers: headers,
+            body: requestBody,
+        });
+        
+        return response;
     }
 }

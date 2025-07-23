@@ -91,7 +91,7 @@ export class AnthropicLLM extends BaseProviderLLM {
 
                 let result = '';
                 if (message.content && message.content.length > 0) {
-                    const textBlock = message.content.find((block: any) => block.type === 'text');
+                    const textBlock = message.content.find((block: { type: string; text?: string }) => block.type === 'text');
                     if (textBlock && 'text' in textBlock) {
                         result = textBlock.text;
                     }

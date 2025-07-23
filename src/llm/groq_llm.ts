@@ -67,7 +67,7 @@ export class GroqLLM extends BaseProviderLLM {
                 throw new Error('No response body reader available');
             }
 
-            const decoder = new TextDecoder();
+            const decoder = new (globalThis as any).TextDecoder();
             let buffer = '';
 
             try {
@@ -92,7 +92,7 @@ export class GroqLLM extends BaseProviderLLM {
                                         callback(content);
                                     }
                                 }
-                            } catch (e) {
+                            } catch {
                                 // Skip invalid JSON lines
                             }
                         }

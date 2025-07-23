@@ -12,7 +12,11 @@ export class OpenAILLM extends LLM {
 	constructor(model: OpenAIModel, apiKey: string, baseURL?: string) {
 		super();
 		this.model = model;
-		const config: any = {
+		const config: {
+			apiKey: string;
+			dangerouslyAllowBrowser: boolean;
+			baseURL?: string;
+		} = {
 			apiKey: apiKey,
 			dangerouslyAllowBrowser: true,
 		};
@@ -43,19 +47,19 @@ export class OpenAILLM extends LLM {
 					{ role: "user" as const, content: content }
 				];
 			
-			const requestData: any = {
+			const baseRequestData = {
 				model: this.model,
 				messages: messages,
 				max_tokens: maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 4000,
 				temperature: temperature !== undefined ? temperature : 0.7,
 			};
-
+	
 			if (streaming && callback) {
 				// Streaming mode
-				requestData.stream = true;
-				const stream: any = await this.openai.chat.completions.create(requestData);
-
-				for await (const chunk of stream) {
+				const requestData = { ...baseRequestData, stream: true };
+				const stream = await this.openai.chat.completions.create(requestData as Parameters<typeof this.openai.chat.completions.create>[0]);
+	
+				for await (const chunk of stream as any) {
 					const content = chunk.choices[0]?.delta?.content;
 					if (content) {
 						callback(content);
@@ -64,8 +68,8 @@ export class OpenAILLM extends LLM {
 				return;
 			} else {
 				// Non-streaming mode
-				const response = await this.openai.chat.completions.create(requestData);
-				const result = response.choices[0]?.message?.content || "";
+				const response = await this.openai.chat.completions.create(baseRequestData as Parameters<typeof this.openai.chat.completions.create>[0]);
+				const result = (response as any).choices[0]?.message?.content || "";
 				
 				// Call callback with the full result if provided
 				if (callback && result) {
