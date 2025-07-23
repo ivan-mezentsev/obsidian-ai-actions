@@ -1,9 +1,10 @@
-import { StreamingProcessor } from "./handler";
+import { PromptProcessor, StreamingProcessor } from "./handler";
 import type { StreamingConfig } from "./handler";
 import { LLMFactory } from "./llm/factory";
 import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
 import type { AIEditorSettings } from "./settings";
+import { App } from "obsidian";
 
 // Mock dependencies
 jest.mock("./llm/factory");
@@ -25,8 +26,30 @@ jest.mock("./spinnerPlugin", () => ({
 describe("StreamingProcessor", () => {
 	let streamingProcessor: StreamingProcessor;
 	let mockSettings: AIEditorSettings;
-	let mockApp: any;
-	let mockLLM: any;
+	let mockApp: {
+		workspace: {
+			updateOptions: jest.Mock<void, []>;
+			getActiveViewOfType: jest.Mock<any, []>;
+		};
+		commands: {
+			listCommands: jest.Mock<any[], []>;
+			executeCommandById: jest.Mock<void, [string]>;
+		};
+	};
+	let mockLLM: {
+		autocomplete: jest.Mock<
+			Promise<void>,
+			[
+				string,
+				string,
+				(token: string) => void,
+				number,
+				number,
+				string | undefined,
+				boolean,
+			]
+		>;
+	};
 	let mockLLMFactory: jest.Mocked<LLMFactory>;
 
 	beforeEach(() => {
@@ -66,7 +89,7 @@ describe("StreamingProcessor", () => {
 				listCommands: jest.fn(() => []),
 				executeCommandById: jest.fn(),
 			},
-		};
+		} as unknown as jest.Mocked<App>;
 
 		// Mock LLM
 		mockLLM = {
@@ -87,7 +110,10 @@ describe("StreamingProcessor", () => {
 			() => mockLLMFactory
 		);
 
-		streamingProcessor = new StreamingProcessor(mockSettings, mockApp);
+		streamingProcessor = new StreamingProcessor(
+			mockSettings,
+			mockApp as jest.Mocked<App>
+		);
 	});
 
 	afterEach(() => {
@@ -127,7 +153,11 @@ describe("StreamingProcessor", () => {
 		it("should process streaming successfully", async () => {
 			// Mock successful streaming
 			mockLLM.autocomplete.mockImplementation(
-				async (prompt: any, input: any, onToken: any) => {
+				async (
+					prompt: string,
+					input: string,
+					onToken: (token: string) => void
+				) => {
 					// Simulate streaming tokens
 					onToken("Hello");
 					onToken(" world");
@@ -189,10 +219,16 @@ describe("StreamingProcessor", () => {
 
 			// Mock streaming that we can control
 			mockLLM.autocomplete.mockImplementation(
-				async (prompt: any, input: any, onToken: any) => {
+				async (
+					prompt: string,
+					input: string,
+					onToken: (token: string) => void
+				) => {
 					tokenCallback = onToken;
 					// Simulate a long-running operation
-					return new Promise(resolve => setTimeout(resolve, 1000));
+					return new Promise<void>(resolve =>
+						setTimeout(resolve, 1000)
+					);
 				}
 			);
 
@@ -201,7 +237,7 @@ describe("StreamingProcessor", () => {
 				streamingProcessor.processStreaming(mockConfig);
 
 			// Wait a bit for streaming to start
-			await new Promise(resolve => setTimeout(resolve, 10));
+			await new Promise<void>(resolve => setTimeout(resolve, 10));
 
 			// Cancel streaming
 			streamingProcessor.cancel();
@@ -220,10 +256,13 @@ describe("StreamingProcessor", () => {
 
 		it("should accumulate tokens correctly", async () => {
 			const tokens = ["Hello", " ", "world", "!"];
-			let tokenIndex = 0;
 
 			mockLLM.autocomplete.mockImplementation(
-				async (prompt: any, input: any, onToken: any) => {
+				async (
+					prompt: string,
+					input: string,
+					onToken: (token: string) => void
+				) => {
 					for (const token of tokens) {
 						onToken(token);
 					}
@@ -383,7 +422,7 @@ describe("StreamingProcessor", () => {
 				streamingProcessor.processStreaming(mockConfig);
 
 			// Wait for streaming to start
-			await new Promise(resolve => setTimeout(resolve, 10));
+			await new Promise<void>(resolve => setTimeout(resolve, 10));
 
 			// Simulate escape key press
 			if (escapeHandler) {
@@ -436,7 +475,7 @@ describe("StreamingProcessor", () => {
 			await streamingProcessor.processStreaming(mockConfig);
 
 			// Wait for the timeout
-			await new Promise(resolve => setTimeout(resolve, 1100));
+			await new Promise<void>(resolve => setTimeout(resolve, 1100));
 
 			expect(mockApp.commands.executeCommandById).toHaveBeenCalledWith(
 				"app:toggle-keyboard"
@@ -576,7 +615,8 @@ describe("StreamingProcessor", () => {
 			await streamingProcessor.processStreaming(mockConfig);
 
 			// Verify Notice was called (mocked in beforeEach)
-			expect(require("obsidian").Notice).toHaveBeenCalledWith(
+			const { Notice } = jest.requireMock("obsidian");
+			expect(Notice).toHaveBeenCalledWith(
 				expect.stringContaining("Network error"),
 				8000
 			);
@@ -616,14 +656,19 @@ describe("StreamingProcessor", () => {
 });
 
 describe("PromptProcessor", () => {
-	let promptProcessor: any;
+	let promptProcessor: PromptProcessor;
 	let mockSettings: AIEditorSettings;
-	let mockPlugin: any;
-	let mockStreamingProcessor: any;
-	let mockActionHandler: any;
-	let mockEditor: any;
-	let mockView: any;
-	let mockApp: any;
+	let mockPlugin: { app: any; actionResultManager: any };
+	let mockStreamingProcessor: jest.Mocked<StreamingProcessor>;
+	let mockActionHandler: { addToNote: jest.Mock<any, any> };
+	let mockEditor: {
+		getCursor: jest.Mock<any, any>;
+		posToOffset: jest.Mock<any, any>;
+		focus: jest.Mock<any, any>;
+		replaceRange: jest.Mock<any, any>;
+	};
+	let mockView: { file: { vault: {} } };
+	let mockApp: { workspace: { updateOptions: jest.Mock<any, any> } };
 
 	beforeEach(() => {
 		jest.clearAllMocks();
@@ -685,7 +730,12 @@ describe("PromptProcessor", () => {
 		};
 
 		// Mock StreamingProcessor
+		mockStreamingProcessor = new StreamingProcessor(
+			mockSettings,
+			mockApp as unknown as App
+		) as jest.Mocked<StreamingProcessor>;
 		mockStreamingProcessor = {
+			...mockStreamingProcessor,
 			processStreaming: jest.fn(),
 			clearResults: jest.fn(),
 			hideSpinner: jest.fn(),
@@ -700,7 +750,6 @@ describe("PromptProcessor", () => {
 		};
 
 		// Import PromptProcessor and create instance
-		const { PromptProcessor } = require("./handler");
 		promptProcessor = new PromptProcessor(mockSettings, mockPlugin);
 
 		// Replace internal dependencies with mocks
@@ -1221,7 +1270,6 @@ describe("ActionHandler Integration Tests", () => {
 			};
 
 			// Mock PromptProcessor constructor
-			const { PromptProcessor } = require("./handler");
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
