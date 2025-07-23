@@ -4,7 +4,14 @@ import { LLMFactory } from "./llm/factory";
 import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
 import type { AIEditorSettings } from "./settings";
-import { App } from "obsidian";
+import {
+	App,
+	Command,
+	MarkdownView,
+	type EditorPosition,
+	type EditorRange,
+	type EditorSelection,
+} from "obsidian";
 
 // Mock dependencies
 jest.mock("./llm/factory");
@@ -29,10 +36,10 @@ describe("StreamingProcessor", () => {
 	let mockApp: {
 		workspace: {
 			updateOptions: jest.Mock<void, []>;
-			getActiveViewOfType: jest.Mock<any, []>;
+			getActiveViewOfType: jest.Mock<MarkdownView | null, []>;
 		};
 		commands: {
-			listCommands: jest.Mock<any[], []>;
+			listCommands: jest.Mock<Command[], []>;
 			executeCommandById: jest.Mock<void, [string]>;
 		};
 	};
@@ -541,7 +548,11 @@ describe("StreamingProcessor", () => {
 			});
 
 			mockLLM.autocomplete.mockImplementation(
-				async (prompt: any, input: any, onToken: any) => {
+				async (
+					prompt: string,
+					input: string,
+					onToken: (token: string) => void
+				) => {
 					onToken("token1");
 					onToken("token2");
 				}
@@ -561,7 +572,11 @@ describe("StreamingProcessor", () => {
 			});
 
 			mockLLM.autocomplete.mockImplementation(
-				async (prompt: any, input: any, onToken: any) => {
+				async (
+					prompt: string,
+					input: string,
+					onToken: (token: string) => void
+				) => {
 					onToken("test result");
 				}
 			);
@@ -658,17 +673,52 @@ describe("StreamingProcessor", () => {
 describe("PromptProcessor", () => {
 	let promptProcessor: PromptProcessor;
 	let mockSettings: AIEditorSettings;
-	let mockPlugin: { app: any; actionResultManager: any };
+	let mockPlugin: { app: App; actionResultManager: unknown };
 	let mockStreamingProcessor: jest.Mocked<StreamingProcessor>;
-	let mockActionHandler: { addToNote: jest.Mock<any, any> };
-	let mockEditor: {
-		getCursor: jest.Mock<any, any>;
-		posToOffset: jest.Mock<any, any>;
-		focus: jest.Mock<any, any>;
-		replaceRange: jest.Mock<any, any>;
+	let mockActionHandler: {
+		addToNote: jest.Mock<void, [string, string, string | undefined]>;
 	};
-	let mockView: { file: { vault: {} } };
-	let mockApp: { workspace: { updateOptions: jest.Mock<any, any> } };
+	let mockEditor: {
+		getCursor: jest.Mock<EditorPosition, []>;
+		posToOffset: jest.Mock<number, [EditorPosition]>;
+		focus: jest.Mock<void, []>;
+		replaceRange: jest.Mock<
+			void,
+			[string, EditorPosition, EditorPosition?]
+		>;
+		getDoc: jest.Mock<MarkdownView, []>;
+		refresh: jest.Mock<void, []>;
+		getValue: jest.Mock<string, []>;
+		setValue: jest.Mock<void, [string]>;
+		getLine: jest.Mock<string, [number]>;
+		lineCount: jest.Mock<number, []>;
+		getSelection: jest.Mock<string, []>;
+		setSelection: jest.Mock<
+			void,
+			[{ line: number; ch: number }, { line: number; ch: number }]
+		>;
+		getRange: jest.Mock<string, [EditorPosition, EditorPosition]>;
+		replaceSelection: jest.Mock<void, [string]>;
+		setLine: jest.Mock<void, [number, string]>;
+		getScrollInfo: jest.Mock<{ top: number; left: number }, []>;
+		scrollTo: jest.Mock<void, [number, number]>;
+		scrollIntoView: jest.Mock<void, [EditorRange]>;
+		undo: jest.Mock<void, []>;
+		redo: jest.Mock<void, []>;
+		exec: jest.Mock<void, [string]>;
+		transaction: jest.Mock<void, [{ changes: unknown[] }]>;
+		wordAt: jest.Mock<
+			{ from: EditorPosition; to: EditorPosition } | null,
+			[EditorPosition]
+		>;
+		listSelections: jest.Mock<EditorSelection[], []>;
+		setSelections: jest.Mock<void, [EditorSelection[]]>;
+		addHighlights: jest.Mock<string[], [EditorRange[], string]>;
+		removeHighlights: jest.Mock<void, [string[]]>;
+		cm: unknown;
+	};
+	let mockView: { file: { vault: object } };
+	let mockApp: { workspace: { updateOptions: jest.Mock<void, []> } };
 
 	beforeEach(() => {
 		jest.clearAllMocks();
