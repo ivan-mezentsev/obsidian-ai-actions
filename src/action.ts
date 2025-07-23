@@ -1,5 +1,3 @@
-import type { Model } from "./llm/models";
-import { OpenAIModel } from "./llm/openai_llm";
 import type { AIModel, AIProviderType } from "./types";
 import type { AIEditorSettings } from "./settings";
 import { waitForAI } from "@obsidian-ai-providers/sdk";

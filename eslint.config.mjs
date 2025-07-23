@@ -12,13 +12,18 @@ export default [
       sourceType: 'module',
       globals: {
         node: true,
+        console: 'readonly',
         document: 'readonly',
         window: 'readonly',
         HTMLElement: 'readonly',
+        HTMLInputElement: 'readonly',
         KeyboardEvent: 'readonly',
         Event: 'readonly',
         Element: 'readonly',
-        CustomEvent: 'readonly'
+        Node: 'readonly',
+        CustomEvent: 'readonly',
+        setTimeout: 'readonly',
+        clearInterval: 'readonly'
       }
     },
     plugins: {

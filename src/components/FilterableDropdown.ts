@@ -1,4 +1,3 @@
-import { Setting } from "obsidian";
 import type { AIModel } from "../types";
 
 export interface FilterableDropdownOption {
