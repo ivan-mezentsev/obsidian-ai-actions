@@ -1,6 +1,5 @@
 import { App, Modal, Setting } from "obsidian";
 import {
-	getAvailableModels,
 	getAvailableModelsWithPluginAIProviders
 } from "../action";
 import type {

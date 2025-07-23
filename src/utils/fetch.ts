@@ -18,18 +18,14 @@ export async function nativeFetch(url: string, options: RequestInit = {}): Promi
         requestParams.body = options.body as string;
     }
 
-    try {
-        const obsidianResponse = await requestUrl(requestParams);
-        
-        const responseInit: ResponseInit = {
-            status: obsidianResponse.status,
-            headers: obsidianResponse.headers,
-        };
+    const obsidianResponse = await requestUrl(requestParams);
+    
+    const responseInit: ResponseInit = {
+        status: obsidianResponse.status,
+        headers: obsidianResponse.headers,
+    };
 
-        return new Response(obsidianResponse.text, responseInit);
-    } catch (error) {
-        throw error;
-    }
+    return new Response(obsidianResponse.text, responseInit);
 }
 
 // Standard fetch for environments that support it

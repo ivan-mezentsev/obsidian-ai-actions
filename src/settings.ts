@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting, Notice } from "obsidian";
 import {
-	modelDictionary,
 	Location,
 	Selection,
 } from "src/action";
@@ -8,11 +7,9 @@ import type {
 	UserAction,
 } from "src/action";
 import AIEditor from "src/main";
-import type { Model } from "./llm/models";
-import { OpenAIModel } from "./llm/openai_llm";
 import { ActionEditModal } from "./modals/action_editor";
 import { QuickPromptEditModal } from "./modals/quick_prompt_editor";
-import type { AIProvider, AIModel, AIProvidersSettings, AIProviderType } from "./types";
+import type { AIProvider, AIModel, AIProvidersSettings } from "./types";
 import { ProviderEditModal } from "./modals/provider_editor";
 import { ModelEditModal } from "./modals/model_editor";
 import { waitForAI } from "@obsidian-ai-providers/sdk";
@@ -181,7 +178,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	displayActionByIndex(containerEl: HTMLElement, index: number): void {
 		const userAction = this.plugin.settings.customActions.at(index);
 		if (userAction != undefined) {
-			const setting = new Setting(containerEl)
+			new Setting(containerEl)
 				.setName(userAction.name)
 				.addButton((button) => {
 					button.setButtonText("Clone").onClick(() => {
@@ -447,7 +444,7 @@ const setting = new Setting(containerEl)
 					button.setButtonText("Read-only").setDisabled(true);
 				});
 			});
-		} catch (error) {
+		} catch {
 			containerEl.createEl("p", {
 				text: "AI Providers plugin is not available or not loaded.",
 				cls: "setting-item-description"

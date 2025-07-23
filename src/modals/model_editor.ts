@@ -1,4 +1,4 @@
-import { App, Modal, Setting, Notice } from "obsidian";
+import { App, Modal, Setting, Notice, TextComponent, DropdownComponent } from "obsidian";
 import type { AIModel, AIProvider } from "../types";
 import AIEditor from "../main";
 import Anthropic from '@anthropic-ai/sdk';
@@ -123,11 +123,11 @@ export class ModelEditModal extends Modal {
         this.updateAvailableModels();
     }
 
-    private providerDropdown: any;
-    private modelNameText: any;
+    private providerDropdown: DropdownComponent | null = null;
+    private modelNameText: TextComponent | null = null;
     private modelNameSetting: Setting;
     private refreshButton: Setting;
-    private displayNameText: any;
+    private displayNameText: TextComponent | null = null;
     private filterableDropdown: FilterableDropdown | null = null;
 
     private updateAvailableModels() {
@@ -245,10 +245,10 @@ export class ModelEditModal extends Modal {
         
         if (provider.type === 'gemini') {
             // Gemini API returns models in a different format
-            return data.models?.map((model: any) => model.name.replace('models/', '')) || [];
+            return data.models?.map((model: { name: string }) => model.name.replace('models/', '')) || [];
         } else {
             // OpenAI-compatible format
-            return data.data?.map((model: any) => model.id) || [];
+            return data.data?.map((model: { id: string }) => model.id) || [];
         }
     }
 

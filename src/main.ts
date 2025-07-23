@@ -1,9 +1,7 @@
-import { Editor, MarkdownView, Plugin, Notice } from "obsidian";
+import { Editor, MarkdownView, Plugin } from "obsidian";
 import { AIEditorSettingTab } from "src/settings";
 import type { AIEditorSettings } from "src/settings";
 import { DEFAULT_ACTIONS } from "src/preset";
-import { DEFAULT_MODEL } from "./llm/models";
-import type { AIProvidersSettings } from "./types";
 import { Selection, Location } from "./action";
 import { ActionHandler } from "./handler";
 import { QuickPromptManager } from "./quick-prompt-manager";

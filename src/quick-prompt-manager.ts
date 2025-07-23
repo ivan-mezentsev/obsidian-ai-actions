@@ -1,10 +1,8 @@
-import { App, Editor, MarkdownView, Notice } from "obsidian";
+import { Editor, MarkdownView } from "obsidian";
 import QuickPromptBox from "./components/QuickPromptBox.svelte";
 import AIEditor from "./main";
 import { ActionHandler, PromptProcessor } from "./handler";
-import { generateUniqueId } from "./utils/common";
 import { Location, getAvailableModelsWithPluginAIProviders } from "./action";
-import type { AIModel } from "./types";
 
 export class QuickPromptManager {
 	plugin: AIEditor;
@@ -172,7 +170,7 @@ export class QuickPromptManager {
 		promptBox: QuickPromptBox,
 	) {
 		// Handle submit event
-		promptBox.$on("submit", async (event: any) => {
+		promptBox.$on("submit", async (event: CustomEvent<{ prompt: string; modelId: string; outputMode: string }>) => {
 			const { prompt, modelId, outputMode } = event.detail;
 			await this.processPrompt(prompt, modelId, outputMode);
 		});

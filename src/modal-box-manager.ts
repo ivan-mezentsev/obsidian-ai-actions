@@ -1,4 +1,4 @@
-import { App, Editor, MarkdownView, Notice, Modal } from "obsidian";
+import { App, Modal } from "obsidian";
 import AIEditor from "./main";
 import { getAvailableModelsWithPluginAIProviders } from "./action";
 import type { UserAction } from "./action";

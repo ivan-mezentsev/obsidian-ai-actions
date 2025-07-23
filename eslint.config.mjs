@@ -30,7 +30,11 @@ export default [
         Response: 'readonly',
         fetch: 'readonly',
         TextDecoder: 'readonly',
-        setInterval: 'readonly'
+        setInterval: 'readonly',
+        HTMLSpanElement: 'readonly',
+        NodeJS: 'readonly',
+        clearTimeout: 'readonly',
+        ResponseInit: 'readonly'
       }
     },
     plugins: {

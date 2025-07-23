@@ -1,4 +1,4 @@
-import { App, Modal, Setting, Notice } from "obsidian";
+import { App, Modal, Setting, Notice, TextComponent } from "obsidian";
 import type { AIProvider, AIProviderType } from "../types";
 import AIEditor from "../main";
 
@@ -122,8 +122,8 @@ export class ProviderEditModal extends Modal {
         this.updateUrlPlaceholder();
     }
 
-    private urlText: any;
-    private nameText: any;
+    private urlText: TextComponent | null = null;
+    private nameText: TextComponent | null = null;
 
     private getDefaultUrls(): Record<AIProviderType, string> {
         return {

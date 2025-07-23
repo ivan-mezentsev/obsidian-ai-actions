@@ -2,8 +2,6 @@ import { App, Modal, Setting } from "obsidian";
 import {
 	selectionDictionary,
 	locationDictionary,
-	modelDictionary,
-	getAvailableModels,
 	getAvailableModelsWithPluginAIProviders,
 	Selection,
 	Location
@@ -11,7 +9,6 @@ import {
 import type {
 	UserAction
 } from "../action";
-import type { AIModel } from "../types";
 import { DeletionModal } from "./deletion";
 import AIEditor from "src/main";
 import { FilterableDropdown } from "../components/FilterableDropdown";
