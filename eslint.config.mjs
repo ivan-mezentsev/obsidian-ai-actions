@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import eslintConfigPrettier from 'eslint-config-prettier';
 
 export default [
   js.configs.recommended,
@@ -50,6 +51,8 @@ export default [
       '@typescript-eslint/no-empty-function': 'off'
     }
   },
+  // Prettier integration - must be last to override conflicting rules
+  eslintConfigPrettier,
   {
     ignores: [
       'node_modules/',
