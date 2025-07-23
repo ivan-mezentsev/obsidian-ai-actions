@@ -6,6 +6,841 @@ import { Selection, Location } from "./action";
 import { spinnerPlugin } from "./spinnerPlugin";
 import type { ActionResultManager } from "./action-result-manager";
 
+// StreamingProcessor interfaces
+export interface StreamingConfig {
+	action: UserAction;
+	input: string;
+	cursorPosition: number;
+	userPrompt?: string;
+	onToken: (token: string) => void;
+	onComplete: (result: string) => void;
+	onError: (error: Error) => void;
+	onCancel: () => void;
+}
+
+export interface StreamingState {
+	isActive: boolean;
+	currentResult: string;
+	isCancelled: boolean;
+}
+
+// PromptProcessor interfaces
+export interface PromptConfig {
+	action: UserAction;
+	input: string;
+	editor: Editor;
+	view: MarkdownView;
+	app: App;
+	userPrompt?: string;
+	outputMode?: string;
+	plugin?: any; // Reference to main plugin
+}
+
+/**
+ * StreamingProcessor handles unified streaming operations with consistent behavior
+ * across all plugin features. It manages LLM streaming, spinner animations,
+ * mobile keyboard handling, escape key cancellation, and error handling.
+ */
+export class StreamingProcessor {
+	private state: StreamingState;
+	private llmFactory: LLMFactory;
+	private settings: AIEditorSettings;
+	private currentSpinnerHide?: () => void;
+	private escapeHandler?: (e: KeyboardEvent) => void;
+	private app?: App;
+	private activeEditor?: Editor; // Track active editor for focus restoration
+
+	constructor(settings: AIEditorSettings, app?: App) {
+		this.settings = settings;
+		this.llmFactory = new LLMFactory(settings);
+		this.app = app;
+		this.state = {
+			isActive: false,
+			currentResult: "",
+			isCancelled: false
+		};
+	}
+
+	/**
+	 * Process streaming with unified logic for all plugin features
+	 */
+	async processStreaming(config: StreamingConfig): Promise<void> {
+		if (this.state.isActive) {
+			throw new Error("Streaming is already active");
+		}
+
+		// Store active editor for focus restoration
+		this.activeEditor = this.getActiveEditor();
+
+		// Reset state
+		this.state = {
+			isActive: true,
+			currentResult: "",
+			isCancelled: false
+		};
+
+		let providerName = "Unknown Provider";
+		let spinner: { hideSpinner: () => void; onUpdate: (text: string) => void } | null = null;
+
+		try {
+			// Get provider name for notice with error handling
+			try {
+				providerName = this.llmFactory.getProviderNameSync(config.action.model);
+			} catch (error) {
+				providerName = "AI Provider";
+			}
+
+			new Notice(`Querying ${providerName} API...`);
+
+			// Hide mobile keyboard with error handling
+			this.hideMobileKeyboard();
+
+			// Setup spinner with error handling
+			spinner = this.setupSpinner(config.cursorPosition);
+			this.currentSpinnerHide = spinner?.hideSpinner;
+
+			// Setup escape key handler
+			this.setupEscapeHandler(config.onCancel);
+
+			// Create LLM instance and start streaming
+			const llm = this.llmFactory.create(config.action.model);
+			
+			await llm.autocomplete(
+				config.action.prompt,
+				config.input,
+				(token: string) => {
+					if (this.state.isCancelled) {
+						return; // Stop processing tokens if cancelled
+					}
+					
+					this.state.currentResult += token;
+					
+					try {
+						config.onToken(token);
+						
+						const displayResult = this.formatResultForDisplay(this.state.currentResult);
+						
+						// Update spinner with formatted result
+						spinner?.onUpdate(displayResult);
+					} catch (error) {
+						// Continue streaming despite callback errors
+					}
+				},
+				config.action.temperature,
+				config.action.maxOutputTokens,
+				config.userPrompt,
+				true // streaming enabled
+			);
+
+			// Check if cancelled during streaming
+			if (this.state.isCancelled) {
+				config.onCancel();
+				return;
+			}
+
+			// Streaming completed successfully
+			this.state.isActive = false;
+			
+			try {
+				config.onComplete(this.state.currentResult);
+			} catch (error) {
+				// Treat callback error as streaming error
+				throw error;
+			}
+
+		} catch (error) {
+			this.state.isActive = false;
+			const streamingError = error as Error;
+			
+			// Show user-friendly error notice
+			this.showErrorNotice(streamingError, providerName);
+
+			try {
+				config.onError(streamingError);
+			} catch (callbackError) {
+				// Don't throw callback errors to avoid masking original error
+			}
+		} finally {
+			// Guaranteed cleanup with error handling
+			this.performCleanup();
+		}
+	}
+
+	/**
+	 * Hide spinner without clearing results - for modal mode where results should remain visible
+	 */
+	hideSpinner(): void {
+		try {
+			// Hide spinner if active
+			if (this.currentSpinnerHide) {
+				try {
+					this.currentSpinnerHide();
+				} catch (error) {
+					// Silently handle spinner hide errors
+				}
+				this.currentSpinnerHide = undefined;
+			}
+			
+			// Update workspace
+			if (this.app) {
+				try {
+					this.app.workspace.updateOptions();
+				} catch (error) {
+					// Silently handle workspace update errors
+				}
+			}
+			
+		} catch (error) {
+			// Silently handle any remaining errors
+		}
+	}
+
+	/**
+	 * Explicitly clear streaming results - separate from spinner hiding
+	 */
+	clearResults(): void {
+		try {
+			// Clear result state
+			this.state.currentResult = "";
+			
+		} catch (error) {
+			// Silently handle any remaining errors
+		}
+	}
+
+
+
+	/**
+	 * Cancel active streaming with complete cleanup
+	 */
+
+	cancel(): void {
+		try {
+			if (this.state.isActive) {
+				this.state.isCancelled = true;
+				this.state.isActive = false;
+				
+				// Perform comprehensive cleanup
+				this.clearResults();
+				this.performCleanup();
+			}
+		} catch (error) {
+			// Force state reset even if cleanup fails
+			this.state.isActive = false;
+			this.state.isCancelled = true;
+			this.state.currentResult = "";
+		}
+	}
+
+	/**
+	 * Get current streaming result
+	 */
+	getCurrentResult(): string {
+		return this.state.currentResult;
+	}
+
+	/**
+	 * Check if streaming is currently active
+	 */
+	isStreaming(): boolean {
+		return this.state.isActive;
+	}
+
+	/**
+	 * Setup spinner at cursor position with error handling
+	 */
+	private setupSpinner(cursorPosition: number) {
+		try {
+			if (!this.app) {
+				return null;
+			}
+
+			const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+			if (!activeView) {
+				return null;
+			}
+
+			// @ts-expect-error, not typed
+			const editorView = activeView.editor.cm;
+			if (!editorView) {
+				return null;
+			}
+
+			const spinner = editorView.plugin(spinnerPlugin);
+			if (!spinner) {
+				return null;
+			}
+
+			const hideSpinner = spinner.show(cursorPosition);
+			
+			const processText = (text: string) => {
+				try {
+					// Return text as-is without trimming to ensure uniform processing
+					return text;
+				} catch (error) {
+					return text; // Return original text as fallback
+				}
+			};
+
+			const onUpdate = (updatedString: string) => {
+				try {
+					spinner.processText(updatedString, processText);
+					if (this.app) {
+						this.app.workspace.updateOptions();
+					}
+				} catch (error) {
+					// Silently handle spinner update errors
+				}
+			};
+
+			return { hideSpinner, onUpdate };
+
+		} catch (error) {
+			return null;
+		}
+	}
+
+	/**
+	 * Setup escape key cancellation handler with error handling
+	 */
+	private setupEscapeHandler(onCancel: () => void): void {
+		try {
+			// Remove any existing handler first
+			if (this.escapeHandler) {
+				try {
+					document.removeEventListener("keydown", this.escapeHandler, true);
+				} catch (error) {
+					// Silently handle removal errors
+				}
+			}
+
+			this.escapeHandler = (e: KeyboardEvent) => {
+				try {
+					if (e.key === "Escape" && this.state.isActive) {
+						e.preventDefault();
+						e.stopPropagation();
+						
+						// Cancel streaming first
+						this.cancel();
+						
+						// Then call the callback
+						try {
+							onCancel();
+						} catch (error) {
+							// Silently handle callback errors
+						}
+					}
+				} catch (error) {
+					// Silently handle handler errors
+				}
+			};
+
+			document.addEventListener("keydown", this.escapeHandler, true);
+
+		} catch (error) {
+			// Silently handle setup errors
+		}
+	}
+
+	/**
+	 * Hide mobile keyboard with delay and comprehensive error handling
+	 */
+	private hideMobileKeyboard(): void {
+		if (!this.app) {
+			return;
+		}
+
+		setTimeout(() => {
+			try {
+				if (!this.app || !(this.app as any).commands) {
+					return;
+				}
+
+				// Check if the command exists before executing
+				let commands: any[] = [];
+				try {
+					commands = (this.app as any).commands.listCommands ? (this.app as any).commands.listCommands() : [];
+				} catch (error) {
+					return;
+				}
+
+				const keyboardCommand = commands.find((cmd: any) => 
+					cmd.id && (
+						cmd.id.includes('keyboard') || 
+						cmd.id.includes('toggle-keyboard') ||
+						cmd.id === 'app:toggle-keyboard'
+					)
+				);
+				
+				if (keyboardCommand) {
+					try {
+						(this.app as any).commands.executeCommandById(keyboardCommand.id);
+					} catch (error) {
+						// Silently handle execution errors
+					}
+				}
+			} catch (error) {
+				// Silently handle any errors
+			}
+		}, 1000);
+	}
+
+	/**
+	 * Get active editor for focus restoration
+	 */
+	private getActiveEditor(): Editor | undefined {
+		if (!this.app) return undefined;
+		
+		const activeView = this.app.workspace.getActiveViewOfType(MarkdownView);
+		return activeView?.editor;
+	}
+
+	/**
+	 * Restore editor focus if possible
+	 */
+	private restoreEditorFocus(): void {
+		try {
+			if (this.activeEditor) {
+				this.activeEditor.focus();
+			}
+		} catch (error) {
+			// Silently handle focus restoration errors
+		}
+	}
+
+	/**
+	 * Show user-friendly error notice
+	 */
+	private showErrorNotice(error: Error, providerName: string): void {
+		let errorMessage = `${providerName} error: ${error.message}`;
+		
+		// Handle common error types with user-friendly messages
+		if (error.message.includes('network') || error.message.includes('fetch')) {
+			errorMessage = `Network error connecting to ${providerName}. Please check your connection and try again.`;
+		} else if (error.message.includes('API key') || error.message.includes('authentication')) {
+			errorMessage = `Authentication error with ${providerName}. Please check your API key in settings.`;
+		} else if (error.message.includes('rate limit') || error.message.includes('quota')) {
+			errorMessage = `Rate limit exceeded for ${providerName}. Please wait and try again.`;
+		} else if (error.message.includes('timeout')) {
+			errorMessage = `Request timeout for ${providerName}. Please try again.`;
+		}
+
+		new Notice(errorMessage, 8000); // Show for 8 seconds
+	}
+
+
+
+	/**
+	 * Perform comprehensive cleanup with error handling
+	 */
+	private performCleanup(): void {
+		try {
+			// Remove escape key handler
+			if (this.escapeHandler) {
+				try {
+					document.removeEventListener("keydown", this.escapeHandler, true);
+				} catch (error) {
+					// Silently handle event listener removal errors
+				}
+				this.escapeHandler = undefined;
+			}
+
+			// DON'T hide spinner here automatically - it should be hidden explicitly when needed
+			// This allows modal mode to keep results visible while hiding spinner separately
+
+			// Update workspace
+			if (this.app) {
+				try {
+					this.app.workspace.updateOptions();
+				} catch (error) {
+					// Silently handle workspace update errors
+				}
+			}
+
+			// Restore editor focus
+			this.restoreEditorFocus();
+
+		} catch (error) {
+			// Silently handle any remaining cleanup errors
+		}
+	}
+
+	/**
+	 * Format result for display during streaming
+	 */
+	private formatResultForDisplay(result: string): string {
+		if (!result.trim()) {
+			return "";
+		}
+		// Always format with empty lines like APPEND_CURRENT for consistent streaming display
+		return ["\n", result.trim(), "\n"].join("");
+	}
+
+	/**
+	 * Apply final formatting to displayed result after streaming completion
+	 * This applies the action.format template to the final result for display
+	 */
+	applyFinalFormatToDisplay(format?: string): void {
+		if (!format || !this.state.currentResult.trim()) {
+			return;
+		}
+
+		try {
+			// Apply format template to the current result
+			const formattedResult = format.replace(/\{\{result\}\}/g, this.state.currentResult.trim());
+			
+			// Update the displayed result with formatted version
+			const displayResult = this.formatResultForDisplay(formattedResult);
+			
+			// Update spinner with formatted result if spinner is active
+			if (this.currentSpinnerHide) {
+				try {
+					const activeView = this.app?.workspace.getActiveViewOfType(MarkdownView);
+					if (activeView) {
+						// @ts-expect-error, not typed
+						const editorView = activeView.editor.cm;
+						if (editorView) {
+							const spinner = editorView.plugin(spinnerPlugin);
+							if (spinner) {
+								spinner.processText(displayResult, (text: string) => text);
+								if (this.app) {
+									this.app.workspace.updateOptions();
+								}
+							}
+						}
+					}
+				} catch (error) {
+					// Silently handle spinner update errors
+				}
+			}
+		} catch (error) {
+			// Silently handle formatting errors
+		}
+	}
+
+}
+
+/**
+ * PromptProcessor coordinates between streaming and result application with mode-specific behavior.
+ * It orchestrates streaming via StreamingProcessor and manages modal window display logic.
+ */
+export class PromptProcessor {
+	private streamingProcessor: StreamingProcessor;
+	private actionHandler: ActionHandler;
+	private settings: AIEditorSettings;
+	private plugin?: any;
+
+	constructor(settings: AIEditorSettings, plugin?: any) {
+		this.settings = settings;
+		this.plugin = plugin;
+		this.streamingProcessor = new StreamingProcessor(settings, plugin?.app);
+		this.actionHandler = new ActionHandler(settings, plugin);
+	}
+
+	/**
+	 * Process prompt with coordinated streaming and result application
+	 */
+	async processPrompt(config: PromptConfig): Promise<void> {
+		const { action, input, editor, view, app, userPrompt, outputMode } = config;
+
+		let cursorPositionFrom: any;
+		let cursorPositionTo: any;
+		let cursorOffset: number;
+
+		try {
+			// Prepare cursor positions for result application with error handling
+			try {
+				cursorPositionFrom = editor.getCursor("from");
+				cursorPositionTo = editor.getCursor("to");
+				cursorOffset = editor.posToOffset(cursorPositionTo);
+			} catch (error) {
+				throw new Error("Failed to get editor cursor position");
+			}
+
+			// Ensure editor has focus for streaming visibility
+			try {
+				editor.focus();
+			} catch (error) {
+				// Continue without focus - not critical
+			}
+
+			let accumulatedResult = "";
+			let streamingError: Error | null = null;
+			let wasCancelled = false;
+
+			// Create streaming configuration
+			const streamingConfig: StreamingConfig = {
+				action,
+				input,
+				cursorPosition: cursorOffset,
+				userPrompt,
+				onToken: (token: string) => {
+					accumulatedResult += token;
+				},
+				onComplete: (result: string) => {
+					accumulatedResult = result;
+				},
+				onError: (error: Error) => {
+					streamingError = error;
+				},
+				onCancel: () => {
+					// Streaming was cancelled, hide spinner and clear results
+					wasCancelled = true;
+					this.streamingProcessor.hideSpinner();
+					this.streamingProcessor.clearResults();
+				}
+			};
+
+			// Execute streaming
+			await this.streamingProcessor.processStreaming(streamingConfig);
+
+			// Check if streaming was cancelled
+			if (wasCancelled) {
+				return;
+			}
+
+			// Check if streaming had an error
+			if (streamingError) {
+				throw streamingError;
+			}
+
+			if (!accumulatedResult.trim()) {
+				return;
+			}
+
+			// Ensure editor maintains focus after streaming
+			try {
+				editor.focus();
+			} catch (error) {
+				// Continue without focus - not critical
+			}
+
+			// Determine result handling mode
+			const shouldShowModal = action.showModalWindow ?? true;
+			const isQuickPrompt = outputMode !== undefined; // Quick prompt mode
+
+			if (isQuickPrompt || !shouldShowModal) {
+				// Direct mode: hide spinner, apply result immediately and clear
+				this.streamingProcessor.hideSpinner();
+				await this.handleDirectResult(accumulatedResult.trim(), config, cursorPositionFrom, cursorPositionTo);
+				this.streamingProcessor.clearResults();
+			} else {
+				// Modal mode: apply final formatting to display and show ActionResultManager panel
+				// Apply format template to the displayed result
+				this.streamingProcessor.applyFinalFormatToDisplay(action.format);
+				
+				// Show ActionResultManager panel, keep result visible until user action
+				// Do NOT hide spinner or clear results here - they remain visible until user chooses action
+				await this.handleModalResult(accumulatedResult, config, cursorPositionFrom, cursorPositionTo);
+			}
+
+		} catch (error) {
+			const promptError = error as Error;
+			
+			// Ensure cleanup on error
+			try {
+				this.streamingProcessor.hideSpinner();
+				this.streamingProcessor.clearResults();
+			} catch (cleanupError) {
+				// Silently handle cleanup errors
+			}
+
+			// Show user-friendly error notice
+			this.showPromptErrorNotice(promptError);
+
+			// Ensure editor maintains focus even on error
+			try {
+				editor.focus();
+			} catch (focusError) {
+				// Silently handle focus errors
+			}
+
+			// Re-throw to allow caller to handle if needed
+			throw promptError;
+		}
+	}
+
+	/**
+	 * Handle modal result display and user interaction
+	 */
+	private async handleModalResult(
+		result: string,
+		config: PromptConfig,
+		cursorPositionFrom: any,
+		cursorPositionTo: any
+	): Promise<void> {
+		const { action, editor, view } = config;
+		
+		try {
+
+			const resultManager = this.plugin.actionResultManager as ActionResultManager;
+
+			// Create callbacks for result application with error handling
+			const onAccept = async (finalResult: string) => {
+				try {
+					// Apply format template
+					const formattedResult = this.formatResult(finalResult, action.format);
+					
+					// Hide spinner and apply result based on location
+					this.streamingProcessor.hideSpinner();
+					
+					if (action.loc === Location.REPLACE_CURRENT) {
+						editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
+					} else {
+						await this.actionHandler.addToNote(
+							action.loc,
+							formattedResult,
+							editor,
+							view.file?.vault,
+							action.locationExtra
+						);
+					}
+					
+					// Clear streaming results only AFTER applying result
+					this.streamingProcessor.clearResults();
+				} catch (error) {
+					this.showPromptErrorNotice(error as Error);
+				}
+			};
+
+			const onLocationAction = async (finalResult: string, location: Location) => {
+				try {
+					// Apply format template
+					const formattedResult = this.formatResult(finalResult, action.format);
+					
+					// Hide spinner and apply result based on specified location
+					this.streamingProcessor.hideSpinner();
+					
+					if (location === Location.REPLACE_CURRENT) {
+						editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
+					} else {
+						await this.actionHandler.addToNote(
+							location,
+							formattedResult,
+							editor,
+							view.file?.vault,
+							action.locationExtra
+						);
+					}
+					
+					// Clear streaming results only AFTER applying result
+					this.streamingProcessor.clearResults();
+				} catch (error) {
+					this.showPromptErrorNotice(error as Error);
+				}
+			};
+
+			const onCancel = () => {
+				try {
+					// Hide spinner and clear streaming results when modal is cancelled
+					this.streamingProcessor.hideSpinner();
+					this.streamingProcessor.clearResults();
+				} catch (error) {
+					// Silently handle cancel errors
+				}
+			};
+
+			// Show result panel - result remains visible in spinner until user action
+			try {
+				await resultManager.showResultPanel(
+					result.trim(),
+					null, // format function (we handle formatting in callbacks)
+					onAccept,
+					onLocationAction,
+					action.loc === Location.APPEND_TO_FILE && !!action.locationExtra?.fileName,
+					onCancel,
+					action.loc // Pass default location from action settings
+				);
+				// Note: Do NOT clear results here - they remain visible in spinner until user chooses action
+			} catch (error) {
+				return;
+			}
+
+		} catch (error) {
+			return;
+		}
+	}
+
+	/**
+	 * Handle direct result application without modal
+	 */
+	private async handleDirectResult(
+		result: string,
+		config: PromptConfig,
+		cursorPositionFrom: any,
+		cursorPositionTo: any
+	): Promise<void> {
+		const { action, editor, view } = config;
+
+		try {
+			// Apply format template (result should already be trimmed by caller)
+			const formattedResult = this.formatResult(result, action.format);
+
+			// Apply result based on location
+			if (action.loc === Location.REPLACE_CURRENT) {
+				try {
+					editor.replaceRange(formattedResult, cursorPositionFrom, cursorPositionTo);
+				} catch (error) {
+					throw new Error("Failed to apply result to editor");
+				}
+			} else {
+				try {
+					await this.actionHandler.addToNote(
+						action.loc,
+						formattedResult,
+						editor,
+						view.file?.vault,
+						action.locationExtra
+					);
+				} catch (error) {
+					throw new Error("Failed to add result to note");
+				}
+			}
+
+		} catch (error) {
+			throw error; // Re-throw to allow caller to handle
+		}
+	}
+
+	/**
+	 * Apply format template to result with error handling
+	 */
+	private formatResult(result: string, format?: string): string {
+		try {
+			if (!format || !format.trim()) {
+				return result;
+			}
+			
+			// Clean up the streaming result (remove extra newlines added for display)
+			const cleanResult = result.trim();
+			
+			// Apply the format template
+			return format.replace(/\{\{result\}\}/g, cleanResult);
+		} catch (error) {
+			// Return original result as fallback
+			return result;
+		}
+	}
+
+	/**
+	 * Show user-friendly error notice for prompt processing
+	 */
+	private showPromptErrorNotice(error: Error): void {
+		let errorMessage = `Prompt processing error: ${error.message}`;
+		
+		// Handle specific error types
+		if (error.message.includes('cursor') || error.message.includes('editor')) {
+			errorMessage = "Editor error occurred. Please try again.";
+		} else if (error.message.includes('modal') || error.message.includes('result manager')) {
+			errorMessage = "Result display error. The operation completed but results may not be visible.";
+		}
+
+		new Notice(errorMessage, 6000);
+	}
+
+
+}
+
 export class ActionHandler {
 	private llmFactory: LLMFactory;
 	private plugin: any; // Reference to the main plugin
@@ -176,188 +1011,18 @@ export class ActionHandler {
 		// Update action with validated model ID
 		action.model = validatedModelId;
 		
-		// @ts-expect-error, not typed
-		const editorView = editor.cm;
-
-		const selection = editor.getSelection();
-		let selectedText = selection || editor.getValue();
-		const cursorPositionFrom = editor.getCursor("from");
-		const cursorPositionTo = editor.getCursor("to");
-
+		// Text input preparation
 		const text = await this.getTextInput(action.sel, editor);
-		const providerName = this.llmFactory.getProviderNameSync(action.model);
-		new Notice(`Querying ${providerName} API...`);
-
-		// Try to hide virtual keyboard on mobile devices with delay
-		setTimeout(() => {
-			if (app && (app as any).commands) {
-				// Check if the command exists before executing
-				const commands = (app as any).commands.listCommands ? (app as any).commands.listCommands() : [];
-				const keyboardCommand = commands.find((cmd: any) => 
-					cmd.id && (
-						cmd.id.includes('keyboard') || 
-						cmd.id.includes('toggle-keyboard') ||
-						cmd.id === 'app:toggle-keyboard'
-					)
-				);
-				
-				if (keyboardCommand) {
-					try {
-						(app as any).commands.executeCommandById(keyboardCommand.id);
-					} catch (error) {
-						// Silently handle errors
-					}
-				}
-			}
-		}, 1000);
-
-		// Ensure editor has focus for streaming visibility
-		editor.focus();
-
-		// Get spinner plugin and show loading animation at cursor position
-		const spinner = editorView.plugin(spinnerPlugin) || undefined;
-		const hideSpinner = spinner?.show(editor.posToOffset(cursorPositionTo));
-		app.workspace.updateOptions();
-
-		const processText = (text: string, selectedText: string) => {
-			if (!text.trim()) {
-				return "";
-			}
-			// For replace mode, return the text as is
-			if (action.loc === Location.REPLACE_CURRENT) {
-				return text.trim();
-			}
-			// For other modes, format as needed
-			return ["\n", text.trim(), "\n"].join("");
-		};
-
-		const onUpdate = (updatedString: string) => {
-			spinner?.processText(updatedString, (text: string) =>
-				processText(text, selectedText),
-			);
-			app.workspace.updateOptions();
-		};
-
-		const shouldShowPanel = action.showModalWindow ?? true;
-		let resultManager: ActionResultManager | null = null;
-
-		if (shouldShowPanel) {
-			resultManager = this.plugin.actionResultManager;
-		}
-
-		let accumulatedText = "";
-		let streamingComplete = false;
-
-		// Create callbacks for the result panel
-		const onAccept = async (result: string) => {
-			// Use saved cursor positions for replacement
-			if (action.loc === Location.REPLACE_CURRENT) {
-				editor.replaceRange(
-					result,
-					cursorPositionFrom,
-					cursorPositionTo,
-				);
-			} else {
-				await this.addToNote(
-					action.loc,
-					result,
-					editor,
-					view.file?.vault,
-					action.locationExtra,
-				);
-			}
-		};
-
-		const onLocationAction = async (result: string, location: Location) => {
-			if (location === Location.REPLACE_CURRENT) {
-				editor.replaceRange(
-					result,
-					cursorPositionFrom,
-					cursorPositionTo,
-				);
-			} else {
-				await this.addToNote(
-					location,
-					result,
-					editor,
-					view.file?.vault,
-					action.locationExtra,
-				);
-			}
-		};
-
-		try {
-			await this.autocompleteStreaming(action, text, (token) => {
-				accumulatedText += token;
-				onUpdate(accumulatedText);
-			});
-
-			// Mark streaming as complete
-			streamingComplete = true;
-
-			// Ensure editor maintains focus after streaming
-			editor.focus();
-
-			// If panel should be shown, show it after streaming is complete
-			if (shouldShowPanel && accumulatedText.trim() && resultManager) {
-				// Show result panel and pass hideSpinner callback to be called when action is taken
-				await resultManager.showResultPanel(
-					accumulatedText.trim(),
-					null,
-					async (result: string) => {
-						// Apply format template and hide spinner before applying result
-						const finalText = action.format.replace("{{result}}", result);
-						hideSpinner && hideSpinner();
-						app.workspace.updateOptions();
-						await onAccept(finalText);
-					},
-					async (result: string, location: Location) => {
-						// Apply format template and hide spinner before applying result
-						const finalText = action.format.replace("{{result}}", result);
-						hideSpinner && hideSpinner();
-						app.workspace.updateOptions();
-						await onLocationAction(finalText, location);
-					},
-					action.loc === Location.APPEND_TO_FILE && !!action.locationExtra?.fileName,
-					() => {
-						// Hide spinner when panel is cancelled
-						hideSpinner && hideSpinner();
-						app.workspace.updateOptions();
-					}
-				);
-			} else if (!shouldShowPanel && accumulatedText.trim()) {
-				// Hide spinner when not showing panel
-				hideSpinner && hideSpinner();
-				app.workspace.updateOptions();
-				// If panel is not shown, directly apply the result
-				const finalText = action.format.replace(
-					"{{result}}",
-					accumulatedText.trim(),
-				);
-				if (action.loc === Location.REPLACE_CURRENT) {
-					editor.replaceRange(
-						finalText,
-						cursorPositionFrom,
-						cursorPositionTo,
-					);
-				} else {
-					await this.addToNote(
-						action.loc,
-						finalText,
-						editor,
-						view.file?.vault,
-						action.locationExtra,
-					);
-				}
-			}
-		} catch (error) {
-			console.log(error);
-			new Notice(`Autocomplete error:\n${error}`);
-			hideSpinner && hideSpinner();
-			app.workspace.updateOptions();
-			// Ensure editor maintains focus even on error
-			editor.focus();
-		}
+		
+		const promptProcessor = new PromptProcessor(settings, this.plugin);
+		await promptProcessor.processPrompt({
+			action,
+			input: text,
+			editor,
+			view,
+			app,
+			plugin: this.plugin
+		});
 	}
 }
 

@@ -432,6 +432,7 @@
 /* Modal styles for model selection */
 .modal.ai-actions-model-selection-modal {
   width: 300px !important;
+  border: 1px solid var(--background-modifier-border);
 }
 
 .modal.ai-actions-model-selection-modal .modal-content {

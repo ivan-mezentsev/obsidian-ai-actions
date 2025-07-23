@@ -1,5 +1,16 @@
 ## Changelog
 
+### 0.5.5 - 2025-07-22
+- feat: add applyFinalFormatToDisplay method for result formatting after streaming
+- feat: add default location parameter to action result handling and update panel behavior
+- feat(ui): add touch event support for mobile devices in action panel
+- feat: enhance ESLint configuration with additional global variables and improve type safety in action event handling
+- build(eslint): extend typescript eslint rules
+- build: migrate eslint config to flat config format
+- refactor: centralize streaming logic with improved error handling
+- feat(README): update clipboard paste description and add Quick Prompt command section
+- feat(styles): add border to model selection modal for improved visibility
+
 ### 0.5.4 - 2025-07-20
 - feat(FilterableDropdown): add position monitoring for mobile devices during dropdown interactions
 

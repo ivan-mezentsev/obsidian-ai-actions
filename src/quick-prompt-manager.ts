@@ -1,9 +1,8 @@
 import { App, Editor, MarkdownView, Notice } from "obsidian";
 import QuickPromptBox from "./components/QuickPromptBox.svelte";
 import AIEditor from "./main";
-import { ActionHandler } from "./handler";
+import { ActionHandler, PromptProcessor } from "./handler";
 import { generateUniqueId } from "./utils/common";
-import { spinnerPlugin } from "./spinnerPlugin";
 import { Location, getAvailableModelsWithPluginAIProviders } from "./action";
 import type { AIModel } from "./types";
 
@@ -197,147 +196,41 @@ export class QuickPromptManager {
 	}
 
 	/**
-	 * Process the submitted prompt
+	 * Process the submitted prompt using PromptProcessor
 	 */
 	private async processPrompt(
 		userPrompt: string,
 		modelId?: string,
 		outputMode: string = "replace",
 	) {
-		const view =
-			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
 
 		const editor = view.editor;
-		// @ts-expect-error, not typed
-		const editorView = editor.cm;
+		const handler = new ActionHandler(this.plugin.settings, this.plugin);
 
-		// Ensure editor has focus for streaming visibility
-		editor.focus();
-
-		const handler = new ActionHandler(this.plugin.settings);
-
-		// Keep the original quick prompt action settings but use selected model and output mode
+		// Prepare quick prompt action (existing logic)
 		const quickPromptAction = {
 			...this.plugin.settings.quickPrompt,
 			model: modelId || this.plugin.settings.quickPrompt.model,
-			loc:
-				outputMode === "append"
-					? Location.APPEND_CURRENT
-					: Location.REPLACE_CURRENT,
+			loc: outputMode === "append" ? Location.APPEND_CURRENT : Location.REPLACE_CURRENT,
+			showModalWindow: false // Quick prompts never show modal
 		};
 
-		// Save cursor positions before processing
-		const selection = editor.getSelection();
-		let selectedText = selection || editor.getValue();
-		const cursorPositionFrom = editor.getCursor("from");
-		const cursorPositionTo = editor.getCursor("to");
-
-		try {
-			// Get provider name for the model (including plugin AI providers)
-			const availableModels = await getAvailableModelsWithPluginAIProviders(this.plugin.settings);
-			const model = availableModels.find(
-				(m) => m.id === quickPromptAction.model,
-			);
-			
-			let providerName = "AI";
-			if (model?.pluginAIProviderId) {
-				// For plugin AI providers, use the model name as provider display
-				providerName = model.name;
-			} else {
-				const provider = this.plugin.settings.aiProviders?.providers.find(
-					(p) => p.id === model?.providerId,
-				);
-				providerName = provider?.name || "AI";
-			}
-
-			// Show processing notice
-			const notice = new Notice(`Querying ${providerName} API...`, 0);
-
-			// Get spinner plugin and show loading animation at cursor position
-			const spinner = editorView.plugin(spinnerPlugin) || undefined;
-			const hideSpinner = spinner?.show(
-				editor.posToOffset(cursorPositionTo),
-			);
-			this.plugin.app.workspace.updateOptions();
-
-			const processText = (text: string, selectedText: string) => {
-				if (!text.trim()) {
-					return "";
-				}
-				// For replace mode, return the text as is
-				if (quickPromptAction.loc === Location.REPLACE_CURRENT) {
-					return text.trim();
-				}
-				// For other modes, format as needed
-				return ["\n\n", text.trim(), "\n"].join("");
-			};
-
-			const onUpdate = (updatedString: string) => {
-				spinner?.processText(updatedString, (text: string) =>
-					processText(text, selectedText),
-				);
-				this.plugin.app.workspace.updateOptions();
-			};
-
-			// Get text input based on selection mode
-			const text = await handler.getTextInput(quickPromptAction.sel, editor);
-
-			let result = "";
-			// Use the streaming method with optional user prompt
-			await handler.autocompleteStreaming(
-				quickPromptAction,
-				await text,
-				(token) => {
-					result += token;
-					onUpdate(result);
-				},
-				userPrompt,
-			);
-
-			// Hide spinner when done
-			hideSpinner && hideSpinner();
-			this.plugin.app.workspace.updateOptions();
-
-			// Ensure editor maintains focus after streaming
-			editor.focus();
-
-			// Apply result using saved cursor positions
-			const formattedResult = quickPromptAction.format.replace(
-				"{{result}}",
-				result,
-			);
-
-			if (quickPromptAction.loc === Location.REPLACE_CURRENT) {
-				editor.replaceRange(
-					formattedResult,
-					cursorPositionFrom,
-					cursorPositionTo,
-				);
-			} else {
-				await handler.addToNote(
-					quickPromptAction.loc,
-					formattedResult,
-					editor,
-					view.file?.vault,
-					quickPromptAction.locationExtra,
-				);
-			}
-
-			notice.hide();
-		} catch (error) {
-			console.error("Quick Prompt error:", error);
-			new Notice(`Quick Prompt error: ${error}`);
-
-			// Hide spinner on error
-			const spinner = editorView.plugin(spinnerPlugin) || undefined;
-			const hideSpinner = spinner?.hide;
-			hideSpinner && hideSpinner(editor.posToOffset(cursorPositionTo));
-			this.plugin.app.workspace.updateOptions();
-
-			// Ensure editor maintains focus even on error
-			editor.focus();
-		}
+		// Get text input based on selection mode
+		const text = await handler.getTextInput(quickPromptAction.sel, editor);
+		
+		const promptProcessor = new PromptProcessor(this.plugin.settings, this.plugin);
+		await promptProcessor.processPrompt({
+			action: quickPromptAction,
+			input: text,
+			editor,
+			view,
+			app: this.plugin.app,
+			userPrompt,
+			outputMode,
+			plugin: this.plugin
+		});
 	}
 
 	/**
