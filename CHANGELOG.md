@@ -1,5 +1,7 @@
 ## Changelog
 
+### 0.5.6 - 2025-07-23
+
 ### 0.5.5 - 2025-07-22
 - feat: add applyFinalFormatToDisplay method for result formatting after streaming
 - feat: add default location parameter to action result handling and update panel behavior
