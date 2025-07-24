@@ -1,5 +1,5 @@
 import { ActionHandler, PromptProcessor, StreamingProcessor } from "./handler";
-import type { StreamingConfig } from "./handler";
+import type { StreamingConfig, PromptConfig, PluginInterface } from "./handler";
 import { LLMFactory } from "./llm/factory";
 import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
@@ -8,6 +8,7 @@ import {
 	App,
 	Command,
 	MarkdownView,
+	Editor,
 	type EditorPosition,
 	type EditorRange,
 	type EditorSelection,
@@ -808,7 +809,7 @@ describe("PromptProcessor", () => {
 	});
 
 	describe("processPrompt", () => {
-		let mockConfig: any;
+		let mockConfig: PromptConfig;
 		let mockAction: UserAction;
 
 		beforeEach(() => {
@@ -843,7 +844,7 @@ describe("PromptProcessor", () => {
 
 			// Mock successful streaming
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: any) => {
+				async (config: StreamingConfig) => {
 					config.onComplete(testResult);
 				}
 			);
@@ -881,7 +882,7 @@ describe("PromptProcessor", () => {
 
 			// Mock streaming error
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: any) => {
+				async (config: StreamingConfig) => {
 					config.onError(testError);
 					throw testError;
 				}
@@ -903,7 +904,7 @@ describe("PromptProcessor", () => {
 		it("should handle empty streaming result", async () => {
 			// Mock empty result
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: any) => {
+				async (config: StreamingConfig) => {
 					config.onComplete("   "); // whitespace only
 				}
 			);
@@ -921,6 +922,7 @@ describe("PromptProcessor", () => {
 
 			// Mock successful streaming
 			mockStreamingProcessor.processStreaming.mockImplementation(
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				async (config: any) => {
 					config.onComplete("result");
 				}
@@ -963,15 +965,17 @@ describe("PromptProcessor", () => {
 			};
 
 			// Mock streaming to capture the modal callbacks
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 			let onAcceptCallback: any;
 			mockPlugin.actionResultManager.showResultPanel.mockImplementation(
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				async (result: any, format: any, onAccept: any) => {
 					onAcceptCallback = onAccept;
 				}
 			);
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: any) => {
+				async (config: StreamingConfig) => {
 					config.onComplete(testResult);
 				}
 			);
@@ -1026,20 +1030,26 @@ describe("PromptProcessor", () => {
 			};
 
 			// Mock streaming to capture the modal callbacks
-			let onLocationActionCallback: any;
+			let onLocationActionCallback: (
+				result: string,
+				location: Location
+			) => Promise<void>;
 			mockPlugin.actionResultManager.showResultPanel.mockImplementation(
 				async (
-					result: any,
-					format: any,
-					onAccept: any,
-					onLocationAction: any
+					result: string,
+					format: string | null,
+					onAccept: (result: string) => Promise<void>,
+					onLocationAction: (
+						result: string,
+						location: Location
+					) => Promise<void>
 				) => {
 					onLocationActionCallback = onLocationAction;
 				}
 			);
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: any) => {
+				async (config: StreamingConfig) => {
 					config.onComplete(testResult);
 				}
 			);
@@ -1096,22 +1106,25 @@ describe("PromptProcessor", () => {
 			};
 
 			// Mock streaming to capture the modal callbacks
-			let onCancelCallback: any;
+			let onCancelCallback: () => void;
 			mockPlugin.actionResultManager.showResultPanel.mockImplementation(
 				async (
-					result: any,
-					format: any,
-					onAccept: any,
-					onLocationAction: any,
-					hasFileOutput: any,
-					onCancel: any
+					result: string,
+					format: string | null,
+					onAccept: (result: string) => Promise<void>,
+					onLocationAction: (
+						result: string,
+						location: Location
+					) => Promise<void>,
+					hasFileOutput: boolean,
+					onCancel: () => void
 				) => {
 					onCancelCallback = onCancel;
 				}
 			);
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: any) => {
+				async (config: StreamingConfig) => {
 					config.onComplete(testResult);
 				}
 			);
@@ -1163,7 +1176,7 @@ describe("PromptProcessor", () => {
 			};
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: any) => {
+				async (config: StreamingConfig) => {
 					config.onComplete(testResult);
 				}
 			);
@@ -1207,13 +1220,15 @@ describe("PromptProcessor", () => {
 });
 
 describe("ActionHandler Integration Tests", () => {
-	let actionHandler: any;
+	let actionHandler: ActionHandler;
 	let mockSettings: AIEditorSettings;
-	let mockPlugin: any;
-	let mockEditor: any;
-	let mockView: any;
-	let mockApp: any;
-	let mockModalManager: any;
+	let mockPlugin: PluginInterface;
+	let mockEditor: Editor;
+	let mockView: MarkdownView;
+	let mockApp: App;
+	let mockModalManager: {
+		validateAndSelectModel: jest.Mock<Promise<string | null>, [UserAction]>;
+	};
 
 	beforeEach(() => {
 		jest.clearAllMocks();

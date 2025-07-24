@@ -7,7 +7,7 @@ import { spinnerPlugin } from "./spinnerPlugin";
 import type { ActionResultManager } from "./action-result-manager";
 
 // Plugin interface
-interface PluginInterface {
+export interface PluginInterface {
 	app?: App;
 	actionResultManager?: ActionResultManager;
 	modalManager?: {
