@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.5.7 - 2025-07-25
+
+
 ### 0.5.6 - 2025-07-24
 - chore: update dependencies
 - refactor: improve type safety and test coverage in handler
