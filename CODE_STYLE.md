@@ -5,6 +5,7 @@ This project uses **Prettier** for code formatting and **ESLint** for code linti
 ## Configuration
 
 ### Prettier Configuration (`.prettierrc`)
+
 - **Tabs**: Uses tabs for indentation (4 spaces wide) to match Obsidian's style
 - **Semicolons**: Always uses semicolons
 - **Quotes**: Uses double quotes by default
@@ -13,11 +14,13 @@ This project uses **Prettier** for code formatting and **ESLint** for code linti
 - **Print width**: 80 characters
 
 ### ESLint Configuration (`eslint.config.mjs`)
+
 - **TypeScript support**: Full TypeScript linting with `@typescript-eslint`
 - **Prettier integration**: Uses `eslint-config-prettier` to disable conflicting rules
 - **Obsidian compatibility**: Follows Obsidian plugin development standards
 
 ### EditorConfig (`.editorconfig`)
+
 - **Tabs**: 4-space wide tabs
 - **Line endings**: LF
 - **Final newline**: Always insert
@@ -26,15 +29,17 @@ This project uses **Prettier** for code formatting and **ESLint** for code linti
 ## Available Scripts
 
 ### Code Style (Prettier)
+
 ```bash
 # Check code style issues
 npm run cs
 
-# Fix code style issues automatically  
+# Fix code style issues automatically
 npm run cs:fix
 ```
 
 ### Linting (ESLint)
+
 ```bash
 # Check for linting issues
 npm run lint
@@ -44,6 +49,7 @@ npm run lint:fix
 ```
 
 ### Combined
+
 ```bash
 # Fix both linting and formatting issues
 npm run format
@@ -52,6 +58,7 @@ npm run format
 ## VS Code Integration
 
 The project includes VS Code settings (`.vscode/settings.json`) that:
+
 - **Format on save**: Automatically formats files when saved
 - **ESLint auto-fix**: Runs ESLint fixes on save
 - **Tab settings**: Uses tabs with 4-space width
@@ -59,13 +66,16 @@ The project includes VS Code settings (`.vscode/settings.json`) that:
 - **Trim whitespace**: Removes trailing whitespace
 
 ### Required VS Code Extensions
+
 For full functionality, install:
+
 - **ESLint**: `ms-vscode.vscode-eslint`
 - **Prettier**: `esbenp.prettier-vscode` (optional, can use CLI)
 
 ## File Exclusions
 
 ### Prettier (`.prettierignore`)
+
 - `node_modules/`
 - `main.js` (build output)
 - `references/` (external code)
@@ -73,6 +83,7 @@ For full functionality, install:
 - Package files (`package-lock.json`, `versions.json`)
 
 ### ESLint (`eslint.config.mjs`)
+
 - Test files and mocks
 - Build outputs
 - External references
@@ -80,6 +91,7 @@ For full functionality, install:
 ## Compatibility
 
 This setup is designed to be compatible with:
+
 - **Obsidian plugin guidelines**: Follows official style recommendations
 - **TypeScript**: Full support with proper typing
 - **Svelte**: Component formatting support
@@ -94,15 +106,18 @@ This setup is designed to be compatible with:
 ## Troubleshooting
 
 ### Prettier not working in VS Code
+
 - Ensure the Prettier extension is installed
 - Check that `.prettierrc` exists in project root
 - Verify `"prettier.requireConfig": true` in VS Code settings
 
 ### ESLint conflicts with Prettier
+
 - Configuration includes `eslint-config-prettier` to prevent conflicts
 - If issues persist, check that it's listed last in the ESLint extends array
 
 ### Files not being formatted
+
 - Check if file is listed in `.prettierignore`
 - Verify file extension is supported
 - For new file types, add parser configuration to `.prettierrc`
