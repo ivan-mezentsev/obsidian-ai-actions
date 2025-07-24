@@ -1,7 +1,7 @@
 import type { AIModel } from "../types";
 import { OpenAIModel } from "./openai_llm";
 
-export type Model = OpenAIModel | AIModel | {};
+export type Model = OpenAIModel | AIModel | Record<string, never>;
 
 // Legacy default model for backward compatibility
 export const DEFAULT_MODEL = OpenAIModel.GPT_4O_MINI;

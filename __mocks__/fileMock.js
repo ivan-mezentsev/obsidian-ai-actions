@@ -1,2 +1,2 @@
 // Mock for asset files
-module.exports = 'test-file-stub';
+module.exports = "test-file-stub";

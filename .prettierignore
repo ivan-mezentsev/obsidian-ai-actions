@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+main.js
+*.js.map
+
+# Test coverage
+coverage/
+
+# VS Code settings (we'll configure this separately)
+.vscode/
+
+# Documentation and assets
+docs/
+*.md
+*.yml
+CHANGELOG.md
+README.md
+
+# Package files
+package-lock.json
+versions.json
+
+# Config files that shouldn't be formatted
+manifest.json
+
+# Reference projects (external code)
+references/

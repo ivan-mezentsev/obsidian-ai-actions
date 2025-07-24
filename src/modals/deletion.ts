@@ -19,7 +19,7 @@ export class DeletionModal extends Modal {
 		});
 
 		new Setting(contentEl)
-			.addButton((button) => {
+			.addButton(button => {
 				button
 					.setButtonText("Back to safety")
 					.setCta()
@@ -27,7 +27,7 @@ export class DeletionModal extends Modal {
 						this.close();
 					});
 			})
-			.addButton((button) => {
+			.addButton(button => {
 				button
 					.setButtonText("Delete")
 					.setWarning()

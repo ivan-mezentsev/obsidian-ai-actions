@@ -1,5 +1,18 @@
 ## Changelog
 
+### 0.5.6 - 2025-07-24
+- chore: update dependencies
+- refactor: improve type safety and test coverage in handler
+- feat: integrate Prettier and ESLint with configuration and scripts for code formatting and linting
+- refactor: add modelDropdown property and cleanup in ActionEditModal and QuickPromptEditModal
+- refactor: clean up imports and improve type usage across multiple files
+- refactor: improve code readability and remove 'any' type usage in LLM classes
+- refactor: replace 'any' types with specific types across multiple LLM classes
+- Replace 'any' types with proper interfaces for plugin and clipboard handling
+- Add type safety for Obsidian app commands and error handling
+- Improve error handling consistency by removing redundant try-catch blocks
+- feat: update ESLint config and clean imports in action and FilterableDropdown components
+
 ### 0.5.5 - 2025-07-22
 - feat: add applyFinalFormatToDisplay method for result formatting after streaming
 - feat: add default location parameter to action result handling and update panel behavior
@@ -90,7 +103,7 @@
 - refactor(ui): improve textarea styling and auto-resize logic
 - feat(quick-prompt): improve textarea auto-resize and positioning
 - chore: update dependencies to fix deprecation warnings
-- feat: add spinner based on the example project [obsidian-local-gpt](https://github.com/pfrankov/obsidian-local-gpt) by [Pavel Frankov](https://github.com/pfrankov) 
+- feat: add spinner based on the example project [obsidian-local-gpt](https://github.com/pfrankov/obsidian-local-gpt) by [Pavel Frankov](https://github.com/pfrankov)
 - feat: add quick prompt feature with svelte UI
 - refactor: update type imports to use verbatimModuleSyntax
 - perf: implement streaming with user prompt for all LLM providers

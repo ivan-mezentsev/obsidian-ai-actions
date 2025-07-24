@@ -9,7 +9,10 @@ export class ActionResultManager {
 	private currentResult: string = "";
 	private currentFormat: ((text: string) => string) | null = null;
 	private onAcceptCallback?: (result: string) => Promise<void>;
-	private onLocationActionCallback?: (result: string, location: Location) => Promise<void>;
+	private onLocationActionCallback?: (
+		result: string,
+		location: Location
+	) => Promise<void>;
 	private onCancelCallback?: () => void;
 	private globalKeyHandler?: (e: KeyboardEvent) => void;
 
@@ -22,7 +25,8 @@ export class ActionResultManager {
 	 * Get or create a result panel for the current view
 	 */
 	getResultPanel(): ActionResultPanel {
-		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+		const view =
+			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) {
 			throw new Error("No active MarkdownView found");
 		}
@@ -56,8 +60,8 @@ export class ActionResultManager {
 			props: {
 				visible: false,
 				cid: cid,
-				hasFileOutput: false
-			}
+				hasFileOutput: false,
+			},
 		});
 
 		// Register event handlers
@@ -76,7 +80,10 @@ export class ActionResultManager {
 		result: string,
 		format: ((text: string) => string) | null,
 		onAccept: (result: string) => Promise<void>,
-		onLocationAction?: (result: string, location: Location) => Promise<void>,
+		onLocationAction?: (
+			result: string,
+			location: Location
+		) => Promise<void>,
 		hasFileOutput: boolean = false,
 		onCancel?: () => void,
 		defaultLocation: Location = Location.REPLACE_CURRENT
@@ -92,7 +99,7 @@ export class ActionResultManager {
 		this.onCancelCallback = onCancel;
 
 		const panel = this.getResultPanel();
-		
+
 		// Update panel props
 		panel.$set({ hasFileOutput, defaultLocation });
 
@@ -105,7 +112,7 @@ export class ActionResultManager {
 	 * Hide all result panels
 	 */
 	hideAllPanels() {
-		this.panelCache.forEach((panel) => {
+		this.panelCache.forEach(panel => {
 			panel.hide();
 		});
 	}
@@ -114,11 +121,14 @@ export class ActionResultManager {
 	 * Position the result panel at fixed position (top-left)
 	 */
 	private positionResultPanel() {
-		const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
+		const view =
+			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) return;
 
 		const targetEl = view.containerEl;
-		const panelEl = targetEl.querySelector(".action-result-panel") as HTMLElement;
+		const panelEl = targetEl.querySelector(
+			".action-result-panel"
+		) as HTMLElement;
 
 		if (panelEl) {
 			// Set fixed position at top-left (mirrored from reference project)
@@ -135,20 +145,30 @@ export class ActionResultManager {
 		panel: ActionResultPanel
 	) {
 		// Handle action event (location-based actions)
-		panel.$on("action", async (event: CustomEvent<{ location: Location }>) => {
-			const { location } = event.detail;
-			if (this.onLocationActionCallback && this.currentResult) {
-				const formattedResult = this.currentFormat ? this.currentFormat(this.currentResult) : this.currentResult;
-				await this.onLocationActionCallback(formattedResult, location);
+		panel.$on(
+			"action",
+			async (event: CustomEvent<{ location: Location }>) => {
+				const { location } = event.detail;
+				if (this.onLocationActionCallback && this.currentResult) {
+					const formattedResult = this.currentFormat
+						? this.currentFormat(this.currentResult)
+						: this.currentResult;
+					await this.onLocationActionCallback(
+						formattedResult,
+						location
+					);
+				}
 			}
-		});
+		);
 
 		// Handle edit event
 		panel.$on("edit", async () => {
 			if (this.onAcceptCallback && this.currentResult) {
 				// For edit, we'll need to implement a text editor modal
 				// For now, just accept the current result
-				const formattedResult = this.currentFormat ? this.currentFormat(this.currentResult) : this.currentResult;
+				const formattedResult = this.currentFormat
+					? this.currentFormat(this.currentResult)
+					: this.currentResult;
 				await this.onAcceptCallback(formattedResult);
 			}
 		});
@@ -169,7 +189,9 @@ export class ActionResultManager {
 		this.globalKeyHandler = (e: KeyboardEvent) => {
 			if (e.key === "Escape") {
 				// Check if any result panel is currently active
-				const activePanelEl = document.querySelector(".action-result-panel--active");
+				const activePanelEl = document.querySelector(
+					".action-result-panel--active"
+				);
 				if (activePanelEl) {
 					const cid = activePanelEl.getAttribute("data-cid");
 					if (cid) {
@@ -188,7 +210,11 @@ export class ActionResultManager {
 		};
 
 		// Register global keydown event
-		this.plugin.registerDomEvent(document, "keydown", this.globalKeyHandler);
+		this.plugin.registerDomEvent(
+			document,
+			"keydown",
+			this.globalKeyHandler
+		);
 	}
 
 	/**

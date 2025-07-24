@@ -2,16 +2,11 @@ import { App, Modal, Setting } from "obsidian";
 import {
 	selectionDictionary,
 	locationDictionary,
-	modelDictionary,
-	getAvailableModels,
 	getAvailableModelsWithPluginAIProviders,
 	Selection,
-	Location
+	Location,
 } from "../action";
-import type {
-	UserAction
-} from "../action";
-import type { AIModel } from "../types";
+import type { UserAction } from "../action";
 import { DeletionModal } from "./deletion";
 import AIEditor from "src/main";
 import { FilterableDropdown } from "../components/FilterableDropdown";
@@ -22,6 +17,7 @@ export class ActionEditModal extends Modal {
 	plugin: AIEditor;
 	onSave: (userAction: UserAction) => void;
 	onDelete?: () => void;
+	private modelDropdown?: FilterableDropdown;
 
 	constructor(
 		app: App,
@@ -36,18 +32,18 @@ export class ActionEditModal extends Modal {
 		this.onSave = onSave;
 		this.onDelete = onDelete;
 	}
-async onOpen() {
-	const { contentEl } = this;
-	contentEl.empty();
+	async onOpen() {
+		const { contentEl } = this;
+		contentEl.empty();
 
-	contentEl.createEl("h1", { text: "Edit Action" });
+		contentEl.createEl("h1", { text: "Edit Action" });
 
 		this.createTextSetting(
 			contentEl,
 			"Action Name",
 			"",
 			this.action.name,
-			async (value) => {
+			async value => {
 				this.action.name = value;
 			}
 		);
@@ -55,20 +51,24 @@ async onOpen() {
 		new Setting(contentEl)
 			.setName("LLM Model")
 			.setDesc("The LLM model to use for this action")
-			.addButton((button) => {
+			.addButton(button => {
 				// This is a placeholder button that we'll replace with our custom dropdown
 				button.setButtonText("Select Model");
 				button.onClick(() => {
 					// This will be replaced by our custom dropdown functionality
 				});
 			});
-	
+
 		// Replace the button with our custom filterable dropdown
 		const modelSetting = contentEl.lastElementChild as HTMLElement;
-		const modelSettingControl = modelSetting.querySelector('.setting-item-control') as HTMLElement;
+		const modelSettingControl = modelSetting.querySelector(
+			".setting-item-control"
+		) as HTMLElement;
 		modelSettingControl.empty();
-	
-		const availableModels = await getAvailableModelsWithPluginAIProviders(this.plugin.settings);
+
+		const availableModels = await getAvailableModelsWithPluginAIProviders(
+			this.plugin.settings
+		);
 		if (availableModels.length === 0) {
 			const noModelsText = modelSettingControl.createDiv();
 			noModelsText.textContent = "No models configured";
@@ -76,37 +76,44 @@ async onOpen() {
 			noModelsText.style.fontStyle = "italic";
 		} else {
 			// Create options for the filterable dropdown
-			const options: FilterableDropdownOption[] = availableModels.map(model => {
-				let providerName = "Unknown Provider";
-				
-				// Handle plugin AI providers
-				if (model.id.startsWith('plugin_ai_providers_')) {
-					// For plugin AI providers, the name already includes provider info
-					providerName = "Plugin AI Providers";
-				} else {
-					// For internal providers, find by providerId
-					const provider = this.plugin.settings.aiProviders.providers.find(p => p.id === model.providerId);
-					providerName = provider ? provider.name : "Unknown Provider";
+			const options: FilterableDropdownOption[] = availableModels.map(
+				model => {
+					let providerName = "Unknown Provider";
+
+					// Handle plugin AI providers
+					if (model.id.startsWith("plugin_ai_providers_")) {
+						// For plugin AI providers, the name already includes provider info
+						providerName = "Plugin AI Providers";
+					} else {
+						// For internal providers, find by providerId
+						const provider =
+							this.plugin.settings.aiProviders.providers.find(
+								p => p.id === model.providerId
+							);
+						providerName = provider
+							? provider.name
+							: "Unknown Provider";
+					}
+
+					// Use a better format for long names with line break
+					const displayName = `${model.name}\n(${providerName})`;
+					return {
+						value: model.id,
+						label: displayName,
+						model: model,
+					};
 				}
-				
-				// Use a better format for long names with line break
-				const displayName = `${model.name}\n(${providerName})`;
-				return {
-					value: model.id,
-					label: displayName,
-					model: model
-				};
-			});
-	
+			);
+
 			// Set current value or default to first model
 			const currentModelId = this.action.model || availableModels[0].id;
-			
+
 			// Create the filterable dropdown
-			const dropdown = new FilterableDropdown(
+			this.modelDropdown = new FilterableDropdown(
 				modelSettingControl,
 				options,
 				currentModelId,
-				(value) => {
+				value => {
 					this.action.model = value;
 				}
 			);
@@ -117,7 +124,7 @@ async onOpen() {
 			"Prompt",
 			"Prompt for LLM to process your input",
 			this.action.prompt,
-			async (value) => {
+			async value => {
 				this.action.prompt = value;
 			}
 		);
@@ -126,34 +133,37 @@ async onOpen() {
 			"Output Format",
 			"Format your LLM output. Use {{result}} as placeholder.",
 			this.action.format,
-			async (value) => {
+			async value => {
 				this.action.format = value;
 			}
 		);
 
 		new Setting(contentEl)
 			.setName("Temperature")
-			.setDesc("Controls randomness in AI responses. Higher values make output more creative, lower values more focused.")
-			.addDropdown((dropdown) => {
+			.setDesc(
+				"Controls randomness in AI responses. Higher values make output more creative, lower values more focused."
+			)
+			.addDropdown(dropdown => {
 				const temperatureOptions = {
-					"none": "None",
+					none: "None",
 					"0.2": "Low",
 					"0.7": "Medium",
-					"1": "Max"
+					"1": "Max",
 				};
-				
+
 				dropdown.addOptions(temperatureOptions);
-				
+
 				// Set current value or default to "none"
 				let currentValue = "none";
 				if (this.action.temperature !== undefined) {
 					if (this.action.temperature === 0.2) currentValue = "0.2";
-					else if (this.action.temperature === 0.7) currentValue = "0.7";
+					else if (this.action.temperature === 0.7)
+						currentValue = "0.7";
 					else if (this.action.temperature === 1) currentValue = "1";
 				}
-				
+
 				dropdown.setValue(currentValue);
-				dropdown.onChange((value) => {
+				dropdown.onChange(value => {
 					if (value === "none") {
 						this.action.temperature = undefined;
 					} else {
@@ -164,11 +174,15 @@ async onOpen() {
 
 		new Setting(contentEl)
 			.setName("Max Output Tokens")
-			.setDesc("Maximum number of tokens to generate (leave empty or 0 for default)")
-			.addText((text) => {
+			.setDesc(
+				"Maximum number of tokens to generate (leave empty or 0 for default)"
+			)
+			.addText(text => {
 				text.setPlaceholder("10000")
-					.setValue(this.action.maxOutputTokens?.toString() || "10000")
-					.onChange((value) => {
+					.setValue(
+						this.action.maxOutputTokens?.toString() || "10000"
+					)
+					.onChange(value => {
 						const numValue = parseInt(value);
 						if (isNaN(numValue) || numValue <= 0) {
 							this.action.maxOutputTokens = undefined;
@@ -181,10 +195,10 @@ async onOpen() {
 		new Setting(contentEl)
 			.setName("Show Modal Window")
 			.setDesc("Display window with results")
-			.addToggle((toggle) => {
+			.addToggle(toggle => {
 				toggle
 					.setValue(this.action.showModalWindow ?? true)
-					.onChange((value) => {
+					.onChange(value => {
 						this.action.showModalWindow = value;
 					});
 			});
@@ -192,14 +206,14 @@ async onOpen() {
 		new Setting(contentEl)
 			.setName("Input selection")
 			.setDesc("What input would be sent to LLM?")
-			.addDropdown((dropdown) => {
+			.addDropdown(dropdown => {
 				if (this.action.sel == undefined) {
 					this.action.sel = Selection.ALL;
 				}
 				dropdown
 					.addOptions(selectionDictionary())
 					.setValue(this.action.sel.toString())
-					.onChange((value) => {
+					.onChange(value => {
 						this.action.sel = value as Selection;
 					});
 			});
@@ -208,14 +222,14 @@ async onOpen() {
 			.setDesc(
 				"Where do you to put the generated output after formatting?"
 			)
-			.addDropdown((dropdown) => {
+			.addDropdown(dropdown => {
 				if (this.action.loc == undefined) {
 					this.action.loc = Location.INSERT_HEAD;
 				}
 				dropdown
 					.addOptions(locationDictionary())
 					.setValue(this.action.loc)
-					.onChange((value) => {
+					.onChange(value => {
 						this.action.loc = value as Location;
 						this.onOpen();
 					});
@@ -224,10 +238,10 @@ async onOpen() {
 			new Setting(contentEl)
 				.setName("File name")
 				.setDesc("File name to append to")
-				.addText((text) => {
+				.addText(text => {
 					text.setPlaceholder("Enter file name")
 						.setValue(this.action.locationExtra?.fileName || "")
-						.onChange(async (value) => {
+						.onChange(async value => {
 							this.action.locationExtra = {
 								fileName: value,
 							};
@@ -236,7 +250,7 @@ async onOpen() {
 		}
 
 		new Setting(contentEl)
-			.addButton((button) => {
+			.addButton(button => {
 				if (this.onDelete) {
 					let onDelete = this.onDelete;
 					button
@@ -254,7 +268,7 @@ async onOpen() {
 					});
 				}
 			})
-			.addButton((button) => {
+			.addButton(button => {
 				button
 					.setButtonText("Save")
 					.setCta()
@@ -266,6 +280,12 @@ async onOpen() {
 	}
 
 	onClose() {
+		// Clean up the filterable dropdown
+		if (this.modelDropdown) {
+			this.modelDropdown.destroy();
+			this.modelDropdown = undefined;
+		}
+
 		let { contentEl } = this;
 		contentEl.empty();
 	}
@@ -280,8 +300,8 @@ async onOpen() {
 		new Setting(containerEl)
 			.setName(name)
 			.setDesc(desc)
-			.addTextArea((text) => {
-				text.setValue(value).onChange(async (newValue) => {
+			.addTextArea(text => {
+				text.setValue(value).onChange(async newValue => {
 					await onSave(newValue);
 				});
 			});

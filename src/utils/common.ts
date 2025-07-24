@@ -8,14 +8,14 @@ export function generateUniqueId(): string {
 /**
  * Debounce function to limit the rate of function calls
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
 	func: T,
 	wait: number,
 	immediate?: boolean
 ): (...args: Parameters<T>) => void {
 	let timeout: NodeJS.Timeout | null = null;
 	return function executedFunction(...args: Parameters<T>) {
-		const later = function() {
+		const later = function () {
 			timeout = null;
 			if (!immediate) func(...args);
 		};
