@@ -1,4 +1,4 @@
-import { PromptProcessor, StreamingProcessor } from "./handler";
+import { ActionHandler, PromptProcessor, StreamingProcessor } from "./handler";
 import type { StreamingConfig } from "./handler";
 import { LLMFactory } from "./llm/factory";
 import type { UserAction } from "./action";
@@ -1292,7 +1292,6 @@ describe("ActionHandler Integration Tests", () => {
 		};
 
 		// Import ActionHandler and create instance
-		const { ActionHandler } = require("./handler");
 		actionHandler = new ActionHandler(mockSettings, mockPlugin);
 	});
 
@@ -1360,7 +1359,7 @@ describe("ActionHandler Integration Tests", () => {
 			const mockPromptProcessor = {
 				processPrompt: jest.fn(),
 			};
-			const { PromptProcessor } = require("./handler");
+
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
@@ -1390,7 +1389,7 @@ describe("ActionHandler Integration Tests", () => {
 			const mockPromptProcessor = {
 				processPrompt: jest.fn(),
 			};
-			const { PromptProcessor } = require("./handler");
+
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
@@ -1437,7 +1436,7 @@ describe("ActionHandler Integration Tests", () => {
 			const mockPromptProcessor = {
 				processPrompt: jest.fn(),
 			};
-			const { PromptProcessor } = require("./handler");
+
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
