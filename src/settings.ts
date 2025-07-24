@@ -190,7 +190,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	}
 
 	displayActionByIndex(containerEl: HTMLElement, index: number): void {
-		const userAction = this.plugin.settings.customActions.at(index);
+		const userAction = this.plugin.settings.customActions[index];
 		if (userAction != undefined) {
 			new Setting(containerEl)
 				.setName(userAction.name)
@@ -289,7 +289,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	}
 
 	private async deleteUserActionAndRefresh(index: number) {
-		const actionToDelete = this.plugin.settings.customActions.at(index);
+		const actionToDelete = this.plugin.settings.customActions[index];
 		if (actionToDelete != undefined) {
 			this.plugin.settings.customActions.remove(actionToDelete);
 			await this.saveSettingsAndRefresh();
@@ -309,7 +309,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 	// Provider management methods
 	displayProviderByIndex(containerEl: HTMLElement, index: number): void {
-		const provider = this.plugin.settings.aiProviders.providers.at(index);
+		const provider = this.plugin.settings.aiProviders.providers[index];
 		if (provider != undefined) {
 			this.createButton(
 				containerEl,
@@ -370,7 +370,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 	// Model management methods
 	displayModelByIndex(containerEl: HTMLElement, index: number): void {
-		const model = this.plugin.settings.aiProviders.models.at(index);
+		const model = this.plugin.settings.aiProviders.models[index];
 		if (model != undefined) {
 			const provider = this.plugin.settings.aiProviders.providers.find(
 				p => p.id === model.providerId
