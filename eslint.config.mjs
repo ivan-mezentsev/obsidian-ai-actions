@@ -47,9 +47,12 @@ export default [
 			...tseslint.configs.recommended.rules,
 			...tseslint.configs["eslint-recommended"].rules,
 			"no-unused-vars": "off",
-			"@typescript-eslint/no-unused-vars": ["error", {
-				"argsIgnorePattern": "^_",
-			}],
+			"@typescript-eslint/no-unused-vars": [
+				"error",
+				{
+					argsIgnorePattern: "^_",
+				},
+			],
 			"@typescript-eslint/ban-ts-comment": "error",
 			"no-prototype-builtins": "error",
 			"@typescript-eslint/no-empty-function": "off",
