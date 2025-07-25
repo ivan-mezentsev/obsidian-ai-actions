@@ -97,23 +97,16 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
-			.setName("Custom actions")
+			.setName("Actions")
 			.setHeading()
 			.addButton(button => {
-				button.setButtonText("New").onClick(() => {
+				button.setButtonText("Add").onClick(() => {
 					this.displayActionEditModalForNewAction();
 				});
 				button.setCta();
 			});
 
-		for (let i = 0; i < this.plugin.settings.customActions.length; i++) {
-			this.displayActionByIndex(containerEl, i);
-		}
-
-		// General Section - moved to the bottom
-		new Setting(containerEl).setName("General").setHeading();
-
-		// Quick Prompt Section
+		// Quick Prompt as first element in Actions
 		this.createButton(
 			containerEl,
 			'"Quick Prompt"',
@@ -123,6 +116,10 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			},
 			false
 		);
+
+		for (let i = 0; i < this.plugin.settings.customActions.length; i++) {
+			this.displayActionByIndex(containerEl, i);
+		}
 
 		// Development mode toggle with special styling
 		const devModeContainer = containerEl.createDiv(

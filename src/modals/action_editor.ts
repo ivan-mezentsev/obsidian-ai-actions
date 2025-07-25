@@ -263,7 +263,7 @@ export class ActionEditModal extends Modal {
 							}).open();
 						});
 				} else {
-					button.setButtonText("Ignore").onClick(() => {
+					button.setButtonText("Cancel").onClick(() => {
 						this.close();
 					});
 				}
