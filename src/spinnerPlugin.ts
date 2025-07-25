@@ -7,6 +7,7 @@ import {
 	WidgetType,
 } from "@codemirror/view";
 import type { DecorationSet, PluginValue } from "@codemirror/view";
+import { processThinkingTags } from "./utils/thinking-tags";
 
 class LoaderWidget extends WidgetType {
 	static readonly element: HTMLSpanElement = document.createElement("span");
@@ -79,17 +80,6 @@ class ContentWidget extends WidgetType {
 	}
 }
 
-/**
- * Processed result of handling text with thinking tags
- */
-interface ProcessedThinkingResult {
-	// Whether we're in thinking mode
-	isThinking: boolean;
-
-	// The text to display (without thinking content)
-	displayText: string;
-}
-
 export class SpinnerPlugin implements PluginValue {
 	decorations: DecorationSet;
 	private positions: Map<
@@ -115,7 +105,7 @@ export class SpinnerPlugin implements PluginValue {
 		processFunc?: (text: string) => string,
 		position?: number
 	) {
-		const result = this.processThinkingTags(text);
+		const result = processThinkingTags(text);
 
 		// Update thinking state
 		this.showThinking(result.isThinking, position);
@@ -127,31 +117,6 @@ export class SpinnerPlugin implements PluginValue {
 				: result.displayText;
 			this.updateContent(displayText, position);
 		}
-	}
-
-	/**
-	 * Process text with potential <think> tags
-	 *
-	 * @param text Raw text that may contain <think> tags
-	 * @returns Object with parsed thinking state and display text
-	 */
-	private processThinkingTags(text: string): ProcessedThinkingResult {
-		let displayText = text;
-		let isThinking = false;
-		let start = displayText.indexOf("<think>");
-		while (start !== -1) {
-			const end = displayText.indexOf("</think>", start + 7);
-			if (end === -1) {
-				displayText = displayText.slice(0, start).trim();
-				isThinking = true;
-				break;
-			} else {
-				displayText =
-					displayText.slice(0, start) + displayText.slice(end + 8);
-			}
-			start = displayText.indexOf("<think>", start);
-		}
-		return { isThinking, displayText };
 	}
 
 	show(position: number): () => void {

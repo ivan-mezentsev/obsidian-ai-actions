@@ -5,6 +5,7 @@ import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
 import { spinnerPlugin } from "./spinnerPlugin";
 import type { ActionResultManager } from "./action-result-manager";
+import { stripThinkingTags } from "./utils/thinking-tags";
 
 // Plugin interface
 export interface PluginInterface {
@@ -872,31 +873,15 @@ export class PromptProcessor {
 	/**
 	 * Apply format template to result with error handling
 	 */
-	private stripThinkingTags(text: string): string {
-		let displayText = text;
-		let start = displayText.indexOf("<think>");
-		while (start !== -1) {
-			const end = displayText.indexOf("</think>", start + 7);
-			if (end === -1) {
-				displayText = displayText.slice(0, start).trim();
-				break;
-			} else {
-				displayText =
-					displayText.slice(0, start) + displayText.slice(end + 8);
-			}
-			start = displayText.indexOf("<think>", start);
-		}
-		return displayText;
-	}
 
 	private formatResult(result: string, format?: string): string {
 		try {
 			if (!format || !format.trim()) {
-				return this.stripThinkingTags(result);
+				return stripThinkingTags(result);
 			}
 
 			// Clean up the streaming result by stripping thinking tags
-			const cleanResult = this.stripThinkingTags(result).trim();
+			const cleanResult = stripThinkingTags(result).trim();
 
 			// Apply the format template
 			return format.replace(/\{\{result\}\}/g, cleanResult);
