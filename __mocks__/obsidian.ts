@@ -75,7 +75,7 @@ export class Modal {
 }
 
 export class Notice {
-	constructor(message: string, timeout?: number) {}
+	constructor(_message: string, _timeout?: number) {}
 }
 
 export const Platform = {

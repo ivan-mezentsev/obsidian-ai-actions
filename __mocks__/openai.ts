@@ -41,7 +41,7 @@ export default class OpenAI {
 		};
 	};
 
-	constructor(config: {
+	constructor(_config: {
 		apiKey: string;
 		dangerouslyAllowBrowser: boolean;
 		baseURL?: string;

@@ -15,7 +15,7 @@ class LoaderWidget extends WidgetType {
 		this.element.addClasses(["ai-actions-loading", "ai-actions-dots"]);
 	}
 
-	toDOM(view: EditorView): HTMLElement {
+	toDOM(_view: EditorView): HTMLElement {
 		return LoaderWidget.element.cloneNode(true) as HTMLElement;
 	}
 }
@@ -37,7 +37,7 @@ class ThinkingWidget extends WidgetType {
 		return container;
 	}
 
-	toDOM(view: EditorView): HTMLElement {
+	toDOM(_view: EditorView): HTMLElement {
 		return ThinkingWidget.createDOMStructure();
 	}
 }
@@ -69,7 +69,7 @@ class ContentWidget extends WidgetType {
 		}
 	}
 
-	toDOM(view: EditorView): HTMLElement {
+	toDOM(_view: EditorView): HTMLElement {
 		if (!this.dom) {
 			this.dom = document.createElement("div");
 			this.dom.addClass("ai-actions-content");
