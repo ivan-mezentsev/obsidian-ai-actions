@@ -36,11 +36,11 @@ export class ActionEditModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl("h1", { text: "Edit Action" });
+		contentEl.createEl("h1", { text: "Edit action" });
 
 		this.createTextSetting(
 			contentEl,
-			"Action Name",
+			"Action name",
 			"",
 			this.action.name,
 			async value => {
@@ -49,11 +49,11 @@ export class ActionEditModal extends Modal {
 		);
 
 		new Setting(contentEl)
-			.setName("LLM Model")
-			.setDesc("The LLM model to use for this action")
+			.setName("LLM")
+			.setDesc("The large language model to use for this action")
 			.addButton(button => {
 				// This is a placeholder button that we'll replace with our custom dropdown
-				button.setButtonText("Select Model");
+				button.setButtonText("Select model");
 				button.onClick(() => {
 					// This will be replaced by our custom dropdown functionality
 				});
@@ -78,7 +78,7 @@ export class ActionEditModal extends Modal {
 			// Create options for the filterable dropdown
 			const options: FilterableDropdownOption[] = availableModels.map(
 				model => {
-					let providerName = "Unknown Provider";
+					let providerName = "Unknown provider";
 
 					// Handle plugin AI providers
 					if (model.id.startsWith("plugin_ai_providers_")) {
@@ -92,7 +92,7 @@ export class ActionEditModal extends Modal {
 							);
 						providerName = provider
 							? provider.name
-							: "Unknown Provider";
+							: "Unknown provider";
 					}
 
 					// Use a better format for long names with line break
@@ -130,7 +130,7 @@ export class ActionEditModal extends Modal {
 		);
 		this.createTextSetting(
 			contentEl,
-			"Output Format",
+			"Output format",
 			"Format your LLM output. Use {{result}} as placeholder.",
 			this.action.format,
 			async value => {
@@ -173,7 +173,7 @@ export class ActionEditModal extends Modal {
 			});
 
 		new Setting(contentEl)
-			.setName("Max Output Tokens")
+			.setName("Max output tokens")
 			.setDesc(
 				"Maximum number of tokens to generate (leave empty or 0 for default)"
 			)
@@ -193,7 +193,7 @@ export class ActionEditModal extends Modal {
 			});
 
 		new Setting(contentEl)
-			.setName("Show Modal Window")
+			.setName("Show modal window")
 			.setDesc("Display window with results")
 			.addToggle(toggle => {
 				toggle
@@ -263,7 +263,7 @@ export class ActionEditModal extends Modal {
 							}).open();
 						});
 				} else {
-					button.setButtonText("Ignore").onClick(() => {
+					button.setButtonText("Cancel").onClick(() => {
 						this.close();
 					});
 				}

@@ -1,4 +1,4 @@
-name: Release Obsidian Plugin
+name: Release Obsidian plugin
 on:
   push:
     # Sequence of patterns matched against refs/tags
@@ -33,7 +33,7 @@ jobs:
     - name: Package
       run: |
         mkdir ${{ github.event.repository.name }}
-        cp main.js manifest.json styles.css README.md ${{ github.event.repository.name }}
+        cp main.js manifest.json styles.css README.md CHANGELOG.md ${{ github.event.repository.name }}
         zip -r ${{ github.event.repository.name }}.zip ${{ github.event.repository.name }}
     # Create the release and upload assets
     - name: Create Release

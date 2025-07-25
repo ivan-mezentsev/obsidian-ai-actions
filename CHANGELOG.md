@@ -1,5 +1,12 @@
 ## Changelog
 
+### 0.5.7 - 2025-07-25
+- refactor: update QuickPromptBox to use Platform for OS detection and improve dynamic placeholder logic
+- refactor: update button labels and section names for clarity in settings
+- refactor: replace header elements with Setting components for improved UI consistency
+- fix: standardize capitalization in UI labels and messages
+- feat: add OpenAI test implementation
+
 ### 0.5.6 - 2025-07-24
 - chore: update dependencies
 - refactor: improve type safety and test coverage in handler

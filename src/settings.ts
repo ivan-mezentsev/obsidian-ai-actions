@@ -37,18 +37,16 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		// AI Providers Section
-		containerEl.createEl("h1", { text: "AI Providers" });
-
-		this.createButton(
-			containerEl,
-			"Add new AI provider",
-			"Add Provider",
-			() => {
-				this.displayProviderEditModalForNew();
-			},
-			true
-		);
+		// Providers Section
+		new Setting(containerEl)
+			.setName("Providers")
+			.setHeading()
+			.addButton(button => {
+				button.setButtonText("Add").onClick(() => {
+					this.displayProviderEditModalForNew();
+				});
+				button.setCta();
+			});
 
 		for (
 			let i = 0;
@@ -59,17 +57,15 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		// AI Models Section
-		containerEl.createEl("h1", { text: "AI Models" });
-
-		this.createButton(
-			containerEl,
-			"Add new AI model",
-			"Add Model",
-			() => {
-				this.displayModelEditModalForNew();
-			},
-			true
-		);
+		new Setting(containerEl)
+			.setName("Models")
+			.setHeading()
+			.addButton(button => {
+				button.setButtonText("Add").onClick(() => {
+					this.displayModelEditModalForNew();
+				});
+				button.setCta();
+			});
 
 		for (
 			let i = 0;
@@ -80,7 +76,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
-			.setName('Enable Plugin "AI Providers" integration')
+			.setName('Enable plugin "AI Providers" integration')
 			.setDesc("Show models from the AI Providers plugin")
 			.addToggle(toggle =>
 				toggle
@@ -100,35 +96,30 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			await this.displayPluginAIProviders(containerEl);
 		}
 
-		containerEl.createEl("h1", { text: "Custom actions" });
+		new Setting(containerEl)
+			.setName("Actions")
+			.setHeading()
+			.addButton(button => {
+				button.setButtonText("Add").onClick(() => {
+					this.displayActionEditModalForNewAction();
+				});
+				button.setCta();
+			});
 
+		// Quick Prompt as first element in Actions
 		this.createButton(
 			containerEl,
-			"Create custom action",
-			"New",
-			() => {
-				this.displayActionEditModalForNewAction();
-			},
-			true
-		);
-
-		for (let i = 0; i < this.plugin.settings.customActions.length; i++) {
-			this.displayActionByIndex(containerEl, i);
-		}
-
-		// General Section - moved to the bottom
-		containerEl.createEl("h1", { text: "General" });
-
-		// Quick Prompt Section
-		this.createButton(
-			containerEl,
-			"Quick Prompt",
+			'"Quick Prompt"',
 			"Edit",
 			() => {
 				this.displayQuickPromptEditModal();
 			},
 			false
 		);
+
+		for (let i = 0; i < this.plugin.settings.customActions.length; i++) {
+			this.displayActionByIndex(containerEl, i);
+		}
 
 		// Development mode toggle with special styling
 		const devModeContainer = containerEl.createDiv(
@@ -232,7 +223,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			availableModels.length > 0 ? availableModels[0].id : "";
 
 		const DUMMY_ACTION: UserAction = {
-			name: "Action Name",
+			name: "Action name",
 			prompt: "Enter your prompt",
 			sel: Selection.ALL,
 			loc: Location.INSERT_HEAD,
@@ -325,7 +316,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	private displayProviderEditModalForNew() {
 		const newProvider: AIProvider = {
 			id: Date.now().toString(),
-			name: "New Provider",
+			name: "New provider",
 			type: "openai",
 			url: "",
 			apiKey: "",
@@ -395,7 +386,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		const newModel: AIModel = {
 			id: Date.now().toString(),
-			name: "New Model",
+			name: "New model",
 			providerId: this.plugin.settings.aiProviders.providers[0].id,
 			modelName: "",
 		};

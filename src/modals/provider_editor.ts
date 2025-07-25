@@ -30,14 +30,14 @@ export class ProviderEditModal extends Modal {
 		contentEl.empty();
 
 		contentEl.createEl("h2", {
-			text: this.isNew ? "Add AI Provider" : "Edit AI Provider",
+			text: this.isNew ? "Add provider" : "Edit provider",
 		});
 
 		new Setting(contentEl)
-			.setName("Provider Name")
+			.setName("Provider name")
 			.setDesc("Enter a name for this provider")
 			.addText(text => {
-				text.setPlaceholder("My Provider")
+				text.setPlaceholder("My provider")
 					.setValue(this.provider.name)
 					.onChange(value => {
 						this.provider.name = value;
@@ -46,7 +46,7 @@ export class ProviderEditModal extends Modal {
 			});
 
 		new Setting(contentEl)
-			.setName("Provider Type")
+			.setName("Provider type")
 			.setDesc("Select the type of AI provider")
 			.addDropdown(dropdown => {
 				const providerTypes: Record<AIProviderType, string> = {
@@ -81,7 +81,7 @@ export class ProviderEditModal extends Modal {
 			});
 
 		new Setting(contentEl)
-			.setName("API Key")
+			.setName("API key")
 			.setDesc("Enter your API key (if required)")
 			.addText(text => {
 				text.setPlaceholder("sk-...")

@@ -27,7 +27,7 @@ export class QuickPromptEditModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl("h1", { text: "Edit Quick Prompt" });
+		contentEl.createEl("h1", { text: 'Edit "Quick Prompt"' });
 
 		this.createTextSetting(
 			contentEl,
@@ -40,11 +40,11 @@ export class QuickPromptEditModal extends Modal {
 		);
 
 		new Setting(contentEl)
-			.setName("LLM Model")
-			.setDesc("The LLM model to use for this action")
+			.setName("LLM")
+			.setDesc("The large language model to use for this action")
 			.addButton(button => {
 				// This is a placeholder button that we'll replace with our custom dropdown
-				button.setButtonText("Select Model");
+				button.setButtonText("Select model");
 				button.onClick(() => {
 					// This will be replaced by our custom dropdown functionality
 				});
@@ -69,7 +69,7 @@ export class QuickPromptEditModal extends Modal {
 			// Create options for the filterable dropdown
 			const options: FilterableDropdownOption[] = availableModels.map(
 				model => {
-					let providerName = "Unknown Provider";
+					let providerName = "Unknown provider";
 
 					// Handle plugin AI providers
 					if (model.id.startsWith("plugin_ai_providers_")) {
@@ -83,7 +83,7 @@ export class QuickPromptEditModal extends Modal {
 							);
 						providerName = provider
 							? provider.name
-							: "Unknown Provider";
+							: "Unknown provider";
 					}
 
 					// Use a better format for long names with line break
@@ -155,7 +155,7 @@ export class QuickPromptEditModal extends Modal {
 			});
 
 		new Setting(contentEl)
-			.setName("Max Output Tokens")
+			.setName("Max output tokens")
 			.setDesc(
 				"Maximum number of tokens to generate (leave empty or 0 for default)"
 			)

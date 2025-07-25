@@ -43,11 +43,11 @@ export class ModelEditModal extends Modal {
 		contentEl.empty();
 
 		contentEl.createEl("h2", {
-			text: this.isNew ? "Add AI Model" : "Edit AI Model",
+			text: this.isNew ? "Add model" : "Edit model",
 		});
 
 		new Setting(contentEl)
-			.setName("Model Name")
+			.setName("Model name")
 			.setDesc("Enter a display name for this model")
 			.addText(text => {
 				text.setPlaceholder("GPT-4")
@@ -79,7 +79,7 @@ export class ModelEditModal extends Modal {
 			});
 
 		this.modelNameSetting = new Setting(contentEl)
-			.setName("Model Name (API)")
+			.setName("Model name (API)")
 			.setDesc("Enter the exact model name as used by the API")
 			.addText(text => {
 				text.setPlaceholder("gpt-4")
@@ -91,10 +91,10 @@ export class ModelEditModal extends Modal {
 			});
 
 		this.refreshButton = new Setting(contentEl)
-			.setName("Available Models")
+			.setName("Available models")
 			.setDesc("Refresh the list of available models from the provider")
 			.addButton(button => {
-				button.setButtonText("Refresh Models").onClick(async () => {
+				button.setButtonText("Refresh models").onClick(async () => {
 					await this.refreshModels();
 				});
 			});

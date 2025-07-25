@@ -8,6 +8,7 @@ module.exports = {
 		"\\.svelte$": "<rootDir>/__mocks__/svelteMock.js",
 		"^obsidian$": "<rootDir>/__mocks__/obsidian.ts",
 		"^@google/genai$": "<rootDir>/__mocks__/google-genai.ts",
+		"^openai$": "<rootDir>/__mocks__/openai.ts",
 	},
 	setupFiles: ["<rootDir>/jest.setup.js"],
 	testPathIgnorePatterns: ["/node_modules/", "/dist/", "/references/"],
