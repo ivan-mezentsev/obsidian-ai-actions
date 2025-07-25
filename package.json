@@ -52,5 +52,10 @@
 		"@google/genai": "^1.11.0",
 		"@obsidian-ai-providers/sdk": "^1.2.0",
 		"openai": "^5.10.2"
+	},
+	"overrides": {
+		"glob": "^10.4.5",
+		"inflight": "^1.0.6",
+		"test-exclude": "^7.0.1"
 	}
 }
