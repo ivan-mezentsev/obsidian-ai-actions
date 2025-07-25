@@ -108,7 +108,7 @@ export class FilterableDropdown {
 		});
 
 		// Blur - close dropdown if clicking outside
-		this.inputEl.addEventListener("blur", e => {
+		this.inputEl.addEventListener("blur", () => {
 			// Delay to allow option click to register
 			setTimeout(() => {
 				this.closeDropdown();

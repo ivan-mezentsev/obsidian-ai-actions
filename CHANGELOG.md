@@ -1,5 +1,19 @@
 ## Changelog
 
+### 0.5.8 - 2025-07-26
+- style(eslint): format eslint config for better readability
+- refactor(thinking-tags): extract thinking tags logic to utils module
+- refactor(thinking-tags): improve thinking tags processing logic
+- refactor: rename unused parameters with underscore prefix
+- fix(eslint): update rules for no-unused-vars and ban-ts-comment
+- test(OllamaLLM): add comprehensive tests for OllamaLLM functionality
+- test(LMStudioLLM): add comprehensive tests for LMStudioLLM functionality
+- test(AnthropicLLM): add comprehensive tests for AnthropicLLM functionality
+- test(PluginAIProvidersLLM): add comprehensive tests for PluginAIProvidersLLM functionality
+- test(GroqLLM): add comprehensive unit tests for GroqLLM functionality
+- test(OpenRouterLLM): add comprehensive unit tests for OpenRouterLLM functionality
+- chore: add overrides for glob inflight and test-exclude dependencies in package.json
+
 ### 0.5.7 - 2025-07-25
 - refactor: update QuickPromptBox to use Platform for OS detection and improve dynamic placeholder logic
 - refactor: update button labels and section names for clarity in settings

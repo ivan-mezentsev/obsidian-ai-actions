@@ -7,6 +7,7 @@ import {
 	WidgetType,
 } from "@codemirror/view";
 import type { DecorationSet, PluginValue } from "@codemirror/view";
+import { processThinkingTags } from "./utils/thinking-tags";
 
 class LoaderWidget extends WidgetType {
 	static readonly element: HTMLSpanElement = document.createElement("span");
@@ -15,7 +16,7 @@ class LoaderWidget extends WidgetType {
 		this.element.addClasses(["ai-actions-loading", "ai-actions-dots"]);
 	}
 
-	toDOM(view: EditorView): HTMLElement {
+	toDOM(_view: EditorView): HTMLElement {
 		return LoaderWidget.element.cloneNode(true) as HTMLElement;
 	}
 }
@@ -37,7 +38,7 @@ class ThinkingWidget extends WidgetType {
 		return container;
 	}
 
-	toDOM(view: EditorView): HTMLElement {
+	toDOM(_view: EditorView): HTMLElement {
 		return ThinkingWidget.createDOMStructure();
 	}
 }
@@ -69,7 +70,7 @@ class ContentWidget extends WidgetType {
 		}
 	}
 
-	toDOM(view: EditorView): HTMLElement {
+	toDOM(_view: EditorView): HTMLElement {
 		if (!this.dom) {
 			this.dom = document.createElement("div");
 			this.dom.addClass("ai-actions-content");
@@ -77,17 +78,6 @@ class ContentWidget extends WidgetType {
 		}
 		return this.dom;
 	}
-}
-
-/**
- * Processed result of handling text with thinking tags
- */
-interface ProcessedThinkingResult {
-	// Whether we're in thinking mode
-	isThinking: boolean;
-
-	// The text to display (without thinking content)
-	displayText: string;
 }
 
 export class SpinnerPlugin implements PluginValue {
@@ -115,7 +105,7 @@ export class SpinnerPlugin implements PluginValue {
 		processFunc?: (text: string) => string,
 		position?: number
 	) {
-		const result = this.processThinkingTags(text);
+		const result = processThinkingTags(text);
 
 		// Update thinking state
 		this.showThinking(result.isThinking, position);
@@ -127,49 +117,6 @@ export class SpinnerPlugin implements PluginValue {
 				: result.displayText;
 			this.updateContent(displayText, position);
 		}
-	}
-
-	/**
-	 * Process text with potential <think> tags
-	 *
-	 * @param text Raw text that may contain <think> tags
-	 * @returns Object with parsed thinking state and display text
-	 */
-	private processThinkingTags(text: string): ProcessedThinkingResult {
-		// Simple case - no thinking tags at all
-		if (!text.startsWith("<think>")) {
-			return {
-				isThinking: false,
-				displayText: text,
-			};
-		}
-
-		// Check if we have a complete thinking tag
-		const thinkingMatch = text.match(
-			/^<think>([\s\S]*?)(<\/think>\s*([\s\S]*))?$/
-		);
-
-		if (!thinkingMatch) {
-			return {
-				isThinking: true,
-				displayText: "", // No display text while in thinking mode
-			};
-		}
-
-		// If we have a closing tag, extract content after it
-		if (thinkingMatch[2]) {
-			const afterThinkTag = thinkingMatch[3] || "";
-			return {
-				isThinking: false,
-				displayText: afterThinkTag,
-			};
-		}
-
-		// Open thinking tag without a closing tag
-		return {
-			isThinking: true,
-			displayText: "", // No display text while in thinking mode
-		};
 	}
 
 	show(position: number): () => void {

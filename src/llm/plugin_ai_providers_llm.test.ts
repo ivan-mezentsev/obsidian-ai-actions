@@ -1,0 +1,479 @@
+import { PluginAIProvidersLLM } from "./plugin_ai_providers_llm";
+
+// Mock the waitForAI function
+jest.mock("@obsidian-ai-providers/sdk");
+
+import { waitForAI } from "@obsidian-ai-providers/sdk";
+const mockWaitForAI = waitForAI as jest.MockedFunction<typeof waitForAI>;
+
+type MockAIProvidersService = {
+	providers: Array<{
+		id: string;
+		name: string;
+		type: string;
+		model?: string;
+	}>;
+	execute: jest.Mock;
+};
+
+type MockChunkHandler = {
+	onData: jest.Mock;
+	onEnd: jest.Mock;
+	onError: jest.Mock;
+};
+
+describe("PluginAIProvidersLLM", () => {
+	let pluginAIProvidersLLM: PluginAIProvidersLLM;
+	let mockAIProviders: MockAIProvidersService;
+	let mockChunkHandler: MockChunkHandler;
+
+	const testProviderId = "test-provider-id";
+
+	beforeEach(() => {
+		// Reset all mocks
+		jest.clearAllMocks();
+
+		// Create mock AI providers service
+		mockAIProviders = {
+			providers: [
+				{
+					id: testProviderId,
+					name: "Test Provider",
+					type: "openai",
+					model: "gpt-4",
+				},
+			],
+			execute: jest.fn(),
+		};
+
+		// Create mock chunk handler
+		mockChunkHandler = {
+			onData: jest.fn(),
+			onEnd: jest.fn(),
+			onError: jest.fn(),
+		};
+
+		// Setup waitForAI mock
+		mockWaitForAI.mockResolvedValue({
+			promise: Promise.resolve(mockAIProviders),
+		});
+
+		// Create PluginAIProvidersLLM instance
+		pluginAIProvidersLLM = new PluginAIProvidersLLM(testProviderId);
+	});
+
+	afterEach(() => {
+		jest.restoreAllMocks();
+	});
+
+	describe("Constructor", () => {
+		it("should initialize with correct provider ID", () => {
+			expect(pluginAIProvidersLLM).toBeDefined();
+			expect(pluginAIProvidersLLM["pluginAIProviderId"]).toBe(
+				testProviderId
+			);
+		});
+
+		it("should initialize with different provider ID", () => {
+			const differentProviderId = "different-provider";
+			const differentLLM = new PluginAIProvidersLLM(differentProviderId);
+			expect(differentLLM["pluginAIProviderId"]).toBe(
+				differentProviderId
+			);
+		});
+	});
+
+	describe("autocomplete", () => {
+		it("should successfully generate completion without userPrompt", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			// Setup chunk handler to call callbacks
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Generated completion text");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000
+			);
+
+			expect(result).toBe("Generated completion text");
+			expect(mockWaitForAI).toHaveBeenCalled();
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: mockAIProviders.providers[0],
+				messages: [
+					{ role: "user", content: "You are a helpful assistant" },
+					{ role: "user", content: "Write a hello world function" },
+				],
+			});
+		});
+
+		it("should successfully generate completion with userPrompt", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Response with user prompt");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt"
+			);
+
+			expect(result).toBe("Response with user prompt");
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: mockAIProviders.providers[0],
+				messages: [
+					{ role: "user", content: "System instruction" },
+					{ role: "user", content: "User custom prompt" },
+					{ role: "user", content: "Content text" },
+				],
+			});
+		});
+
+		it("should handle streaming mode with callback", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			const callback = jest.fn();
+
+			mockChunkHandler.onData.mockImplementation(callbackFn => {
+				callbackFn("Hello");
+				callbackFn(" world");
+				callbackFn("!");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callbackFn => {
+				callbackFn();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content",
+				callback,
+				0.7,
+				1000,
+				undefined,
+				true
+			);
+
+			expect(result).toBeUndefined();
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "Hello");
+			expect(callback).toHaveBeenNthCalledWith(2, " world");
+			expect(callback).toHaveBeenNthCalledWith(3, "!");
+		});
+
+		it("should handle non-streaming mode with callback", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			const callback = jest.fn();
+
+			mockChunkHandler.onData.mockImplementation(callbackFn => {
+				callbackFn("Complete response");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callbackFn => {
+				callbackFn();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content",
+				callback,
+				0.7,
+				1000,
+				undefined,
+				false
+			);
+
+			expect(result).toBe("Complete response");
+			expect(callback).not.toHaveBeenCalled();
+		});
+
+		it("should throw error when provider not found", async () => {
+			// Create empty providers array
+			mockAIProviders.providers = [];
+
+			await expect(
+				pluginAIProvidersLLM.autocomplete("Test prompt", "Test content")
+			).rejects.toThrow(`Provider with id ${testProviderId} not found`);
+		});
+
+		it("should throw error when waitForAI fails", async () => {
+			mockWaitForAI.mockRejectedValue(
+				new Error("AI providers not available")
+			);
+
+			await expect(
+				pluginAIProvidersLLM.autocomplete("Test prompt", "Test content")
+			).rejects.toThrow("AI providers not available");
+		});
+
+		it("should handle execute errors", async () => {
+			mockAIProviders.execute.mockRejectedValue(
+				new Error("Execute failed")
+			);
+
+			await expect(
+				pluginAIProvidersLLM.autocomplete("Test prompt", "Test content")
+			).rejects.toThrow("Plugin AI providers API error: Execute failed");
+		});
+
+		it("should handle chunk handler errors", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onError.mockImplementation(callbackFn => {
+				callbackFn(new Error("Chunk processing failed"));
+			});
+
+			const executePromise = pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content"
+			);
+
+			await expect(executePromise).rejects.toThrow(
+				"Plugin AI providers API error: Chunk processing failed"
+			);
+		});
+
+		it("should handle unknown errors", async () => {
+			mockAIProviders.execute.mockRejectedValue("Unknown error");
+
+			await expect(
+				pluginAIProvidersLLM.autocomplete("Test prompt", "Test content")
+			).rejects.toThrow("Plugin AI providers API error: Unknown error");
+		});
+
+		it("should work with different provider types", async () => {
+			const ollamaProvider = {
+				id: "ollama-provider",
+				name: "Ollama Provider",
+				type: "ollama",
+				model: "llama2",
+			};
+
+			mockAIProviders.providers = [ollamaProvider];
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Ollama response");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const ollamaLLM = new PluginAIProvidersLLM("ollama-provider");
+			const result = await ollamaLLM.autocomplete(
+				"Test prompt",
+				"Test content"
+			);
+
+			expect(result).toBe("Ollama response");
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: ollamaProvider,
+				messages: [
+					{ role: "user", content: "Test prompt" },
+					{ role: "user", content: "Test content" },
+				],
+			});
+		});
+
+		it("should handle empty response gracefully", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			// Don't call onData, just call onEnd
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content"
+			);
+
+			expect(result).toBe("");
+		});
+
+		it("should accumulate chunks correctly in non-streaming mode", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callbackFn => {
+				["Hello", " ", "world", "!"].forEach(chunk => {
+					callbackFn(chunk);
+				});
+			});
+			mockChunkHandler.onEnd.mockImplementation(callbackFn => {
+				callbackFn();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false
+			);
+
+			expect(result).toBe("Hello world!");
+		});
+
+		it("should handle multiple providers and find correct one", async () => {
+			const multipleProviders = [
+				{
+					id: "provider-1",
+					name: "Provider 1",
+					type: "openai",
+					model: "gpt-3.5",
+				},
+				{
+					id: testProviderId,
+					name: "Target Provider",
+					type: "ollama",
+					model: "llama2",
+				},
+				{
+					id: "provider-3",
+					name: "Provider 3",
+					type: "gemini",
+					model: "gemini-pro",
+				},
+			];
+
+			mockAIProviders.providers = multipleProviders;
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Target provider response");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content"
+			);
+
+			expect(result).toBe("Target provider response");
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: multipleProviders[1], // The target provider
+				messages: [
+					{ role: "user", content: "Test prompt" },
+					{ role: "user", content: "Test content" },
+				],
+			});
+		});
+	});
+
+	describe("edge cases and error scenarios", () => {
+		it("should handle waitForAI promise rejection", async () => {
+			mockWaitForAI.mockResolvedValue({
+				promise: Promise.reject(
+					new Error("Provider initialization failed")
+				),
+			});
+
+			await expect(
+				pluginAIProvidersLLM.autocomplete("Test prompt", "Test content")
+			).rejects.toThrow("Provider initialization failed");
+		});
+
+		it("should handle malformed waitForAI response", async () => {
+			mockWaitForAI.mockResolvedValue({
+				promise: Promise.resolve(null),
+			});
+
+			await expect(
+				pluginAIProvidersLLM.autocomplete("Test prompt", "Test content")
+			).rejects.toThrow();
+		});
+
+		it("should handle provider without required fields", async () => {
+			mockAIProviders.providers = [
+				{
+					id: testProviderId,
+					name: "Incomplete Provider",
+					type: "openai",
+					// missing model field
+				},
+			];
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Response from incomplete provider");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content"
+			);
+
+			expect(result).toBe("Response from incomplete provider");
+		});
+
+		it("should handle very long responses", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			let longResponse = "";
+			for (let i = 0; i < 1000; i++) {
+				longResponse += `This is chunk ${i}. `;
+			}
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback(longResponse);
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content"
+			);
+
+			expect(result).toBe(longResponse);
+			expect(result.length).toBeGreaterThan(10000);
+		});
+
+		it("should handle concurrent requests", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Concurrent response");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const promises = [
+				pluginAIProvidersLLM.autocomplete("Prompt 1", "Content 1"),
+				pluginAIProvidersLLM.autocomplete("Prompt 2", "Content 2"),
+				pluginAIProvidersLLM.autocomplete("Prompt 3", "Content 3"),
+			];
+
+			const results = await Promise.all(promises);
+
+			expect(results).toHaveLength(3);
+			results.forEach(result => {
+				expect(result).toBe("Concurrent response");
+			});
+			expect(mockAIProviders.execute).toHaveBeenCalledTimes(3);
+		});
+	});
+});
