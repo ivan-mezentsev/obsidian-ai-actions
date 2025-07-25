@@ -37,13 +37,13 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		// AI Providers Section
-		containerEl.createEl("h1", { text: "AI Providers" });
+		// Providers Section
+		containerEl.createEl("h1", { text: "Providers" });
 
 		this.createButton(
 			containerEl,
-			"Add new AI provider",
-			"Add Provider",
+			"Add new provider",
+			"Add",
 			() => {
 				this.displayProviderEditModalForNew();
 			},
@@ -59,12 +59,12 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		// AI Models Section
-		containerEl.createEl("h1", { text: "AI Models" });
+		containerEl.createEl("h1", { text: "Models" });
 
 		this.createButton(
 			containerEl,
-			"Add new AI model",
-			"Add Model",
+			"Add new model",
+			"Add",
 			() => {
 				this.displayModelEditModalForNew();
 			},
@@ -80,7 +80,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
-			.setName('Enable Plugin "AI Providers" integration')
+			.setName('Enable plugin "AI Providers" integration')
 			.setDesc("Show models from the AI Providers plugin")
 			.addToggle(toggle =>
 				toggle
@@ -122,7 +122,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		// Quick Prompt Section
 		this.createButton(
 			containerEl,
-			"Quick Prompt",
+			'"Quick Prompt"',
 			"Edit",
 			() => {
 				this.displayQuickPromptEditModal();
@@ -232,7 +232,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			availableModels.length > 0 ? availableModels[0].id : "";
 
 		const DUMMY_ACTION: UserAction = {
-			name: "Action Name",
+			name: "Action name",
 			prompt: "Enter your prompt",
 			sel: Selection.ALL,
 			loc: Location.INSERT_HEAD,
@@ -325,7 +325,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	private displayProviderEditModalForNew() {
 		const newProvider: AIProvider = {
 			id: Date.now().toString(),
-			name: "New Provider",
+			name: "New provider",
 			type: "openai",
 			url: "",
 			apiKey: "",
@@ -395,7 +395,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 		const newModel: AIModel = {
 			id: Date.now().toString(),
-			name: "New Model",
+			name: "New model",
 			providerId: this.plugin.settings.aiProviders.providers[0].id,
 			modelName: "",
 		};

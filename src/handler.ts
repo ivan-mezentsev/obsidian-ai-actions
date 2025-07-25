@@ -88,7 +88,7 @@ export class StreamingProcessor {
 			isCancelled: false,
 		};
 
-		let providerName = "Unknown Provider";
+		let providerName = "Unknown provider";
 		let spinner: {
 			hideSpinner: () => void;
 			onUpdate: (text: string) => void;
@@ -101,7 +101,7 @@ export class StreamingProcessor {
 					config.action.model
 				);
 			} catch {
-				providerName = "AI Provider";
+				providerName = "Provider";
 			}
 
 			new Notice(`Querying ${providerName} API...`);
