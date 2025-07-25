@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { X, Send } from "lucide-svelte";
 	import { createEventDispatcher } from "svelte";
-	import { App, MarkdownView } from "obsidian";
+import { App, MarkdownView, Platform } from "obsidian";
 	import type { AIModel, AIProvider } from "../types";
 	import { FilterableDropdown } from "./FilterableDropdown";
 	import type { FilterableDropdownOption } from "./FilterableDropdown";
@@ -23,9 +23,8 @@
 	export let loadModelsAsync: () => Promise<AIModel[]>; // Function to load models asynchronously
 
 	// Detect OS for keyboard shortcuts
-	const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-	const shortcutKey = isMac ? 'Cmd' : 'Ctrl';
-	const dynamicPlaceholder = `Prompt... ${shortcutKey}+Enter to submit, Esc to close`;
+	const shortcutKey = Platform.isMacOS ? 'Cmd' : 'Ctrl';
+	const dynamicPlaceholder = Platform.isMobile ? 'Prompt...' : `Prompt... ${shortcutKey}+Enter to submit, Esc to close`;
 
 	const dispatch = createEventDispatcher();
 	const iconSize = 18;
@@ -83,14 +82,14 @@
 		loadModelsAsync().then(models => {
 			if (models && models.length > 0) {
 				availableModels = models;
-				
+
 				// Check if currently selected model is still available
 				const isCurrentModelAvailable = models.some(m => m.id === selectedModelId);
 				if (!isCurrentModelAvailable) {
 					// If current model is not available, use default model
 					selectedModelId = defaultModelId;
 				}
-				
+
 				// Initialize dropdown after models are loaded
 				setTimeout(() => {
 					if (modelDropdownEl) {
@@ -102,7 +101,7 @@
 			console.error('Failed to load models:', error);
 		});
 	}
-	
+
 	// Initialize filterable dropdown when models change
 	$: if (availableModels.length > 0 && modelDropdownEl && !modelDropdown) {
 		initializeModelDropdown();
@@ -155,17 +154,17 @@
 	const autoResize = (element: HTMLTextAreaElement) => {
 		// Remove any existing height classes
 		element.classList.remove('ai-actions-textarea-auto', 'ai-actions-textarea-resized');
-		
+
 		const lineHeight = 20; // Approximate line height
 		const padding = 16; // Top and bottom padding
 		const maxLines = 4;
 		const minHeight = 40;
 		const maxHeight = (lineHeight * maxLines) + padding;
-		
+
 		// Temporarily add auto class to measure scrollHeight
 		element.classList.add('ai-actions-textarea-auto');
 		const newHeight = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight);
-		
+
 		// Use CSS custom property for dynamic height
 		element.style.setProperty('--dynamic-height', newHeight + 'px');
 		element.classList.remove('ai-actions-textarea-auto');
@@ -191,7 +190,7 @@
 	export function hide() {
 		visible = false;
 		// Don't clear prompt here to preserve user input
-		
+
 		// Return focus to editor when hiding prompt box
 		setTimeout(() => {
 			const activeView = app?.workspace?.getActiveViewOfType?.(MarkdownView);
@@ -243,14 +242,14 @@
 				if (app && (app as any).commands) {
 					// Check if the command exists before executing
 					const commands = (app as any).commands.listCommands ? (app as any).commands.listCommands() : [];
-					const keyboardCommand = commands.find((cmd: any) => 
+					const keyboardCommand = commands.find((cmd: any) =>
 						cmd.id && (
-							cmd.id.includes('keyboard') || 
+							cmd.id.includes('keyboard') ||
 							cmd.id.includes('toggle-keyboard') ||
 							cmd.id === 'app:toggle-keyboard'
 						)
 					);
-					
+
 					if (keyboardCommand) {
 						try {
 							(app as any).commands.executeCommandById(keyboardCommand.id);
@@ -314,12 +313,12 @@
 			>
 				<span class="mode-symbol">{outputModes[outputMode].symbol}</span>
 			</div>
-			
+
 			<!-- Model Selector Dropdown -->
 			<div class="model-selector" bind:this={modelDropdownEl}>
 				<!-- FilterableDropdown will be rendered here -->
 			</div>
-			
+
 			<div
 				class="prompt-btn prompt-btn--submit"
 				on:click={submitPrompt}
