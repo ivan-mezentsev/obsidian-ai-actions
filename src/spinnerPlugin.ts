@@ -136,40 +136,22 @@ export class SpinnerPlugin implements PluginValue {
 	 * @returns Object with parsed thinking state and display text
 	 */
 	private processThinkingTags(text: string): ProcessedThinkingResult {
-		// Simple case - no thinking tags at all
-		if (!text.startsWith("<think>")) {
-			return {
-				isThinking: false,
-				displayText: text,
-			};
+		let displayText = text;
+		let isThinking = false;
+		let start = displayText.indexOf("<think>");
+		while (start !== -1) {
+			const end = displayText.indexOf("</think>", start + 7);
+			if (end === -1) {
+				displayText = displayText.slice(0, start).trim();
+				isThinking = true;
+				break;
+			} else {
+				displayText =
+					displayText.slice(0, start) + displayText.slice(end + 8);
+			}
+			start = displayText.indexOf("<think>", start);
 		}
-
-		// Check if we have a complete thinking tag
-		const thinkingMatch = text.match(
-			/^<think>([\s\S]*?)(<\/think>\s*([\s\S]*))?$/
-		);
-
-		if (!thinkingMatch) {
-			return {
-				isThinking: true,
-				displayText: "", // No display text while in thinking mode
-			};
-		}
-
-		// If we have a closing tag, extract content after it
-		if (thinkingMatch[2]) {
-			const afterThinkTag = thinkingMatch[3] || "";
-			return {
-				isThinking: false,
-				displayText: afterThinkTag,
-			};
-		}
-
-		// Open thinking tag without a closing tag
-		return {
-			isThinking: true,
-			displayText: "", // No display text while in thinking mode
-		};
+		return { isThinking, displayText };
 	}
 
 	show(position: number): () => void {

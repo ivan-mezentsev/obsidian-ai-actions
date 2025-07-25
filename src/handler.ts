@@ -872,14 +872,31 @@ export class PromptProcessor {
 	/**
 	 * Apply format template to result with error handling
 	 */
+	private stripThinkingTags(text: string): string {
+		let displayText = text;
+		let start = displayText.indexOf("<think>");
+		while (start !== -1) {
+			const end = displayText.indexOf("</think>", start + 7);
+			if (end === -1) {
+				displayText = displayText.slice(0, start).trim();
+				break;
+			} else {
+				displayText =
+					displayText.slice(0, start) + displayText.slice(end + 8);
+			}
+			start = displayText.indexOf("<think>", start);
+		}
+		return displayText;
+	}
+
 	private formatResult(result: string, format?: string): string {
 		try {
 			if (!format || !format.trim()) {
-				return result;
+				return this.stripThinkingTags(result);
 			}
 
-			// Clean up the streaming result (remove extra newlines added for display)
-			const cleanResult = result.trim();
+			// Clean up the streaming result by stripping thinking tags
+			const cleanResult = this.stripThinkingTags(result).trim();
 
 			// Apply the format template
 			return format.replace(/\{\{result\}\}/g, cleanResult);
