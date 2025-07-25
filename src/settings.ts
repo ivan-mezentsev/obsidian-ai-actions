@@ -38,17 +38,15 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		// Providers Section
-		containerEl.createEl("h1", { text: "Providers" });
-
-		this.createButton(
-			containerEl,
-			"Add new provider",
-			"Add",
-			() => {
-				this.displayProviderEditModalForNew();
-			},
-			true
-		);
+		new Setting(containerEl)
+			.setName("Providers")
+			.setHeading()
+			.addButton(button => {
+				button.setButtonText("Add").onClick(() => {
+					this.displayProviderEditModalForNew();
+				});
+				button.setCta();
+			});
 
 		for (
 			let i = 0;
@@ -59,17 +57,15 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		// AI Models Section
-		containerEl.createEl("h1", { text: "Models" });
-
-		this.createButton(
-			containerEl,
-			"Add new model",
-			"Add",
-			() => {
-				this.displayModelEditModalForNew();
-			},
-			true
-		);
+		new Setting(containerEl)
+			.setName("Models")
+			.setHeading()
+			.addButton(button => {
+				button.setButtonText("Add").onClick(() => {
+					this.displayModelEditModalForNew();
+				});
+				button.setCta();
+			});
 
 		for (
 			let i = 0;
@@ -100,24 +96,22 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			await this.displayPluginAIProviders(containerEl);
 		}
 
-		containerEl.createEl("h1", { text: "Custom actions" });
-
-		this.createButton(
-			containerEl,
-			"Create custom action",
-			"New",
-			() => {
-				this.displayActionEditModalForNewAction();
-			},
-			true
-		);
+		new Setting(containerEl)
+			.setName("Custom actions")
+			.setHeading()
+			.addButton(button => {
+				button.setButtonText("New").onClick(() => {
+					this.displayActionEditModalForNewAction();
+				});
+				button.setCta();
+			});
 
 		for (let i = 0; i < this.plugin.settings.customActions.length; i++) {
 			this.displayActionByIndex(containerEl, i);
 		}
 
 		// General Section - moved to the bottom
-		containerEl.createEl("h1", { text: "General" });
+		new Setting(containerEl).setName("General").setHeading();
 
 		// Quick Prompt Section
 		this.createButton(
