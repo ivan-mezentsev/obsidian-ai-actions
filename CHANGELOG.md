@@ -1,5 +1,7 @@
 ## Changelog
 
+### 0.5.8 - 2025-07-26
+
 ### 0.5.7 - 2025-07-25
 - refactor: update QuickPromptBox to use Platform for OS detection and improve dynamic placeholder logic
 - refactor: update button labels and section names for clarity in settings
