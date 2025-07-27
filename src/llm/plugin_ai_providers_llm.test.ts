@@ -4,16 +4,17 @@ import { PluginAIProvidersLLM } from "./plugin_ai_providers_llm";
 jest.mock("@obsidian-ai-providers/sdk");
 
 import { waitForAI } from "@obsidian-ai-providers/sdk";
+import type { IAIProvider, AIProviderType } from "@obsidian-ai-providers/sdk";
 const mockWaitForAI = waitForAI as jest.MockedFunction<typeof waitForAI>;
 
 type MockAIProvidersService = {
-	providers: Array<{
-		id: string;
-		name: string;
-		type: string;
-		model?: string;
-	}>;
+	version: number;
+	providers: IAIProvider[];
 	execute: jest.Mock;
+	fetchModels: jest.Mock;
+	embed: jest.Mock;
+	checkCompatibility: jest.Mock;
+	migrateProvider: jest.Mock;
 };
 
 type MockChunkHandler = {
@@ -35,15 +36,20 @@ describe("PluginAIProvidersLLM", () => {
 
 		// Create mock AI providers service
 		mockAIProviders = {
+			version: 1,
 			providers: [
 				{
 					id: testProviderId,
 					name: "Test Provider",
-					type: "openai",
+					type: "openai" as AIProviderType,
 					model: "gpt-4",
 				},
 			],
 			execute: jest.fn(),
+			fetchModels: jest.fn(),
+			embed: jest.fn(),
+			checkCompatibility: jest.fn(),
+			migrateProvider: jest.fn(),
 		};
 
 		// Create mock chunk handler
@@ -56,6 +62,7 @@ describe("PluginAIProvidersLLM", () => {
 		// Setup waitForAI mock
 		mockWaitForAI.mockResolvedValue({
 			promise: Promise.resolve(mockAIProviders),
+			cancel: jest.fn(),
 		});
 
 		// Create PluginAIProvidersLLM instance
@@ -256,10 +263,10 @@ describe("PluginAIProvidersLLM", () => {
 		});
 
 		it("should work with different provider types", async () => {
-			const ollamaProvider = {
+			const ollamaProvider: IAIProvider = {
 				id: "ollama-provider",
 				name: "Ollama Provider",
-				type: "ollama",
+				type: "ollama" as AIProviderType,
 				model: "llama2",
 			};
 
@@ -331,23 +338,23 @@ describe("PluginAIProvidersLLM", () => {
 		});
 
 		it("should handle multiple providers and find correct one", async () => {
-			const multipleProviders = [
+			const multipleProviders: IAIProvider[] = [
 				{
 					id: "provider-1",
 					name: "Provider 1",
-					type: "openai",
+					type: "openai" as AIProviderType,
 					model: "gpt-3.5",
 				},
 				{
 					id: testProviderId,
 					name: "Target Provider",
-					type: "ollama",
+					type: "ollama" as AIProviderType,
 					model: "llama2",
 				},
 				{
 					id: "provider-3",
 					name: "Provider 3",
-					type: "gemini",
+					type: "gemini" as AIProviderType,
 					model: "gemini-pro",
 				},
 			];
@@ -384,6 +391,7 @@ describe("PluginAIProvidersLLM", () => {
 				promise: Promise.reject(
 					new Error("Provider initialization failed")
 				),
+				cancel: jest.fn(),
 			});
 
 			await expect(
@@ -392,8 +400,18 @@ describe("PluginAIProvidersLLM", () => {
 		});
 
 		it("should handle malformed waitForAI response", async () => {
+			const mockEmptyService = {
+				version: 1,
+				providers: [],
+				execute: jest.fn(),
+				fetchModels: jest.fn(),
+				embed: jest.fn(),
+				checkCompatibility: jest.fn(),
+				migrateProvider: jest.fn(),
+			};
 			mockWaitForAI.mockResolvedValue({
-				promise: Promise.resolve(null),
+				promise: Promise.resolve(mockEmptyService),
+				cancel: jest.fn(),
 			});
 
 			await expect(
@@ -406,7 +424,7 @@ describe("PluginAIProvidersLLM", () => {
 				{
 					id: testProviderId,
 					name: "Incomplete Provider",
-					type: "openai",
+					type: "openai" as AIProviderType,
 					// missing model field
 				},
 			];
@@ -448,7 +466,9 @@ describe("PluginAIProvidersLLM", () => {
 			);
 
 			expect(result).toBe(longResponse);
-			expect(result.length).toBeGreaterThan(10000);
+			expect(typeof result === "string" && result.length).toBeGreaterThan(
+				10000
+			);
 		});
 
 		it("should handle concurrent requests", async () => {
