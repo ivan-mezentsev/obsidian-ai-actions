@@ -300,7 +300,7 @@ import { App, MarkdownView, Platform } from "obsidian";
 			bind:value={prompt}
 			placeholder={dynamicPlaceholder}
 			tabindex="0"
-		/>
+		></textarea>
 		<div class="prompt-actions">
 			<!-- Output Mode Toggle -->
 			<div
