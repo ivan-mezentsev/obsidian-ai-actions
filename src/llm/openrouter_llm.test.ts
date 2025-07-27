@@ -10,12 +10,11 @@ jest.mock("../utils/fetch", () => ({
 // Mock TextDecoder for Node.js test environment
 import { TextDecoder, TextEncoder } from "util";
 
-if (typeof globalThis.TextDecoder === "undefined") {
-	globalThis.TextDecoder = TextDecoder;
-}
-if (typeof globalThis.TextEncoder === "undefined") {
-	globalThis.TextEncoder = TextEncoder;
-}
+// Setup TextDecoder and TextEncoder for Node.js test environment
+Object.assign(globalThis, {
+	TextDecoder,
+	TextEncoder,
+});
 
 import { OpenRouterLLM } from "./openrouter_llm";
 import type { AIProvider } from "../types";
