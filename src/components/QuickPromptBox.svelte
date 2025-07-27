@@ -289,7 +289,6 @@ import { App, MarkdownView, Platform } from "obsidian";
 	<div class="prompt-container">
 		<textarea
 			wrap="soft"
-			autocorrect="off"
 			autocapitalize="off"
 			spellcheck="false"
 			on:input={onPromptChanged}

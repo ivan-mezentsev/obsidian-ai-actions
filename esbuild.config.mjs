@@ -16,11 +16,11 @@ const prod = process.argv[2] === "production";
 const context = await esbuild.context({
 	plugins: [
 		esbuildSvelte({
-			compilerOptions: { 
+			compilerOptions: {
 				css: "injected",
 				compatibility: {
-					componentApi: 4
-				}
+					componentApi: 4,
+				},
 			},
 			preprocess: sveltePreprocess(),
 		}),
