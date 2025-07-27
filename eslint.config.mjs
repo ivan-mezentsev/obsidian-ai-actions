@@ -104,6 +104,17 @@ export default [
 			"@typescript-eslint/no-require-imports": "off",
 		},
 	},
+	// Mock files configuration - relaxed rules for test mocks
+	{
+		files: ["__mocks__/**/*.ts", "__mocks__/**/*.js"],
+		rules: {
+			"@typescript-eslint/no-explicit-any": "off",
+			"@typescript-eslint/no-unused-vars": "off",
+			"@typescript-eslint/ban-ts-comment": "off",
+			"@typescript-eslint/no-empty-function": "off",
+			"no-unused-vars": "off",
+		},
+	},
 	{
 		ignores: [
 			"node_modules/",

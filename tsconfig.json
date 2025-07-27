@@ -17,5 +17,5 @@
 		"lib": ["DOM", "ES5", "ES6", "ES7"]
 	},
 	"include": ["**/*.ts", "**/*.svelte", "src/types/**/*.d.ts"],
-	"exclude": ["references/", "**/*.test.ts", "__mocks__"]
+	"exclude": ["references/", "**/*.test.ts"]
 }
