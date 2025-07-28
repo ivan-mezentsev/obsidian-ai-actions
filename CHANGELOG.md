@@ -1,5 +1,14 @@
 ## Changelog
 
+### 0.5.9 - 2025-07-27
+- refactor: improve touch event handling for mobile in FilterableDropdown
+- refactor: clean up esbuild configuration and remove unnecessary autocorrect attribute from QuickPromptBox
+- refactor: update esbuild configuration and dependencies; enhance QuickPromptBox component
+- refactor(tests): implement MockResponse and MockReadableStreamReader for improved testing utilities
+- refactor(tests): update ESLint rules for mock files and adjust tsconfig exclusions
+- refactor(test): enhance mock AI providers service and type definitions
+- refactor(test): streamline TextDecoder and TextEncoder setup for Node.js environment
+
 ### 0.5.8 - 2025-07-26
 - style(eslint): format eslint config for better readability
 - refactor(thinking-tags): extract thinking tags logic to utils module
