@@ -89,11 +89,18 @@ export class FilterableDropdown {
 		});
 
 		// Touch events for mobile
-		this.inputEl.addEventListener("touchstart", e => {
-			e.preventDefault();
-			this.makeInputEditable();
-			this.openDropdown();
-		});
+		this.inputEl.addEventListener(
+			"touchstart",
+			e => {
+				// Only prevent default if necessary to avoid passive listener warnings
+				if (!this.isOpen) {
+					e.preventDefault();
+				}
+				this.makeInputEditable();
+				this.openDropdown();
+			},
+			{ passive: false }
+		);
 
 		// Focus on input - make it editable
 		this.inputEl.addEventListener("focus", () => {

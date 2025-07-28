@@ -2,6 +2,12 @@ import { OllamaLLM } from "./ollama_llm";
 import type { AIProvider } from "../types";
 import { nativeFetch, standardFetch } from "../utils/fetch";
 import { TextDecoder, TextEncoder } from "util";
+import {
+	MockResponse,
+	createMockResponse,
+	createMockStreamReader,
+} from "../../__mocks__/response";
+import type { MockReadableStreamReader } from "../../__mocks__/response";
 
 // Mock the fetch utils
 jest.mock("../utils/fetch", () => ({
@@ -14,21 +20,6 @@ Object.assign(globalThis, {
 	TextDecoder,
 	TextEncoder,
 });
-
-type MockResponse = {
-	ok: boolean;
-	status: number;
-	statusText: string;
-	json: jest.Mock;
-	body?: {
-		getReader: jest.Mock;
-	};
-};
-
-type MockReader = {
-	read: jest.Mock;
-	releaseLock: jest.Mock;
-};
 
 const mockNativeFetch = nativeFetch as jest.MockedFunction<typeof nativeFetch>;
 const mockStandardFetch = standardFetch as jest.MockedFunction<
@@ -54,12 +45,11 @@ describe("OllamaLLM", () => {
 		jest.clearAllMocks();
 
 		// Create mock response
-		mockResponse = {
+		mockResponse = createMockResponse({
 			ok: true,
 			status: 200,
 			statusText: "OK",
-			json: jest.fn(),
-		};
+		});
 
 		// Create OllamaLLM instance
 		ollamaLLM = new OllamaLLM(mockProvider, "llama2", false);
@@ -132,7 +122,7 @@ describe("OllamaLLM", () => {
 				response: "Generated completion text",
 				done: true,
 			};
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			const result = await ollamaLLM.autocomplete(
 				"You are a helpful assistant",
@@ -168,7 +158,7 @@ describe("OllamaLLM", () => {
 				response: "Response with user prompt",
 				done: true,
 			};
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			await ollamaLLM.autocomplete(
 				"System instruction",
@@ -204,7 +194,7 @@ describe("OllamaLLM", () => {
 				response: "Default response",
 				done: true,
 			};
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			await ollamaLLM.autocomplete("System prompt", "User input");
 
@@ -233,7 +223,7 @@ describe("OllamaLLM", () => {
 				response: "Response with default tokens",
 				done: true,
 			};
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			await ollamaLLM.autocomplete(
 				"System prompt",
@@ -265,7 +255,7 @@ describe("OllamaLLM", () => {
 
 		it("should handle empty response gracefully", async () => {
 			const mockResponseData = { response: "", done: true };
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			const result = await ollamaLLM.autocomplete("prompt", "content");
 			expect(result).toBe("");
@@ -273,7 +263,7 @@ describe("OllamaLLM", () => {
 
 		it("should handle missing response field gracefully", async () => {
 			const mockResponseData = { done: true };
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			const result = await ollamaLLM.autocomplete("prompt", "content");
 			expect(result).toBe("");
@@ -284,7 +274,7 @@ describe("OllamaLLM", () => {
 				response: "Full response text",
 				done: true,
 			};
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			const callback = jest.fn();
 			const result = await ollamaLLM.autocomplete(
@@ -304,7 +294,7 @@ describe("OllamaLLM", () => {
 
 		it("should not call callback in non-streaming mode when result is empty", async () => {
 			const mockResponseData = { response: "", done: true };
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			const callback = jest.fn();
 			const result = await ollamaLLM.autocomplete(
@@ -328,7 +318,7 @@ describe("OllamaLLM", () => {
 				true
 			);
 			const mockResponseData = { response: "Native fetch response" };
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			await ollamaWithNativeFetch.autocomplete("prompt", "content");
 
@@ -357,18 +347,11 @@ describe("OllamaLLM", () => {
 	});
 
 	describe("streaming mode", () => {
-		let mockReader: MockReader;
+		let mockReader: MockReadableStreamReader;
 
 		beforeEach(() => {
-			mockReader = {
-				read: jest.fn(),
-				releaseLock: jest.fn(),
-			};
-
-			mockResponse.body = {
-				getReader: jest.fn().mockReturnValue(mockReader),
-			};
-
+			mockReader = createMockStreamReader();
+			mockResponse.setStreamReader(mockReader);
 			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 		});
 
@@ -533,7 +516,7 @@ describe("OllamaLLM", () => {
 		});
 
 		it("should throw error when no reader is available", async () => {
-			mockResponse.body = undefined;
+			mockResponse.body = null;
 
 			const callback = jest.fn();
 			await expect(
@@ -641,7 +624,7 @@ describe("OllamaLLM", () => {
 
 		it("should handle undefined temperature correctly", async () => {
 			const mockResponseData = { response: "Test response" };
-			mockResponse.json.mockResolvedValue(mockResponseData);
+			mockResponse.setJsonResponse(mockResponseData);
 
 			await ollamaLLM.autocomplete(
 				"prompt",

@@ -16,6 +16,11 @@
 		"allowSyntheticDefaultImports": true,
 		"lib": ["DOM", "ES5", "ES6", "ES7"]
 	},
-	"include": ["**/*.ts", "**/*.svelte", "src/types/**/*.d.ts"],
-	"exclude": ["references/", "**/*.test.ts", "__mocks__"]
+	"include": [
+		"**/*.ts",
+		"**/*.svelte",
+		"src/types/**/*.d.ts",
+		"node_modules/svelte/types/index.d.ts"
+	],
+	"exclude": ["references/", "**/*.test.ts"]
 }

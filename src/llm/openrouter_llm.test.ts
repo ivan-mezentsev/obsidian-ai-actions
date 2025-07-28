@@ -10,23 +10,18 @@ jest.mock("../utils/fetch", () => ({
 // Mock TextDecoder for Node.js test environment
 import { TextDecoder, TextEncoder } from "util";
 
-if (typeof globalThis.TextDecoder === "undefined") {
-	globalThis.TextDecoder = TextDecoder;
-}
-if (typeof globalThis.TextEncoder === "undefined") {
-	globalThis.TextEncoder = TextEncoder;
-}
+// Setup TextDecoder and TextEncoder for Node.js test environment
+Object.assign(globalThis, {
+	TextDecoder,
+	TextEncoder,
+});
 
 import { OpenRouterLLM } from "./openrouter_llm";
 import type { AIProvider } from "../types";
-
-type MockResponse = {
-	ok: boolean;
-	status?: number;
-	statusText?: string;
-	json?: jest.Mock;
-	body?: { getReader?: () => unknown } | null;
-};
+import {
+	createMockResponse,
+	createMockStreamReader,
+} from "../../__mocks__/response";
 
 describe("OpenRouterLLM", () => {
 	let openRouterLLM: OpenRouterLLM;
@@ -96,19 +91,19 @@ describe("OpenRouterLLM", () => {
 
 	describe("autocomplete", () => {
 		it("should successfully generate completion", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({
-					choices: [
-						{
-							message: {
-								content: "Generated completion text",
-							},
+			});
+			mockResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: "Generated completion text",
 						},
-					],
-				}),
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+					},
+				],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const result = await openRouterLLM.autocomplete(
 				"You are a helpful assistant",
@@ -150,19 +145,19 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should use default temperature and max_tokens when not provided", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({
-					choices: [
-						{
-							message: {
-								content: "Default response",
-							},
+			});
+			mockResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: "Default response",
 						},
-					],
-				}),
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+					},
+				],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			await openRouterLLM.autocomplete("System prompt", "User input");
 
@@ -190,11 +185,11 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should handle empty response gracefully", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({ choices: [] }),
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockResponse.setJsonResponse({ choices: [] });
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const result = await openRouterLLM.autocomplete(
 				"prompt",
@@ -204,13 +199,13 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should handle malformed response gracefully", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({
-					choices: [{ message: null }],
-				}),
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockResponse.setJsonResponse({
+				choices: [{ message: null }],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const result = await openRouterLLM.autocomplete(
 				"prompt",
@@ -220,12 +215,12 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should propagate API errors with custom message", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: false,
 				status: 429,
 				statusText: "Too Many Requests",
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			await expect(
 				openRouterLLM.autocomplete("prompt", "content")
@@ -242,19 +237,19 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should handle userPrompt parameter correctly", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({
-					choices: [
-						{
-							message: {
-								content: "Response with user prompt",
-							},
+			});
+			mockResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: "Response with user prompt",
 						},
-					],
-				}),
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+					},
+				],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			await openRouterLLM.autocomplete(
 				"System instruction",
@@ -293,19 +288,19 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should call callback with the full result in non-streaming mode", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({
-					choices: [
-						{
-							message: {
-								content: "Test response",
-							},
+			});
+			mockResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: "Test response",
 						},
-					],
-				}),
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+					},
+				],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 			const result = await openRouterLLM.autocomplete(
@@ -320,11 +315,11 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should not call callback in non-streaming mode when result is empty", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({ choices: [] }),
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockResponse.setJsonResponse({ choices: [] });
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 			const result = await openRouterLLM.autocomplete(
@@ -340,10 +335,7 @@ describe("OpenRouterLLM", () => {
 
 	describe("streaming mode", () => {
 		const createMockStreamResponse = (chunks: string[]) => {
-			const mockReader = {
-				read: jest.fn(),
-				releaseLock: jest.fn(),
-			};
+			const mockReader = createMockStreamReader();
 
 			// Setup read mock to return chunks
 			let readIndex = 0;
@@ -360,12 +352,11 @@ describe("OpenRouterLLM", () => {
 				}
 			});
 
-			return {
+			const response = createMockResponse({
 				ok: true,
-				body: {
-					getReader: () => mockReader,
-				},
-			};
+			});
+			response.setStreamReader(mockReader);
+			return response;
 		};
 
 		it("should successfully stream completion", async () => {
@@ -377,7 +368,7 @@ describe("OpenRouterLLM", () => {
 			];
 
 			const mockResponse = createMockStreamResponse(streamChunks);
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 			await openRouterLLM.autocomplete(
@@ -419,12 +410,12 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should handle streaming errors", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: false,
 				status: 500,
 				statusText: "Internal Server Error",
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 
@@ -444,11 +435,11 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should handle missing response body reader", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: true,
 				body: null,
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 
@@ -474,7 +465,7 @@ describe("OpenRouterLLM", () => {
 			];
 
 			const mockResponse = createMockStreamResponse(streamChunks);
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 			await openRouterLLM.autocomplete(
@@ -503,7 +494,7 @@ describe("OpenRouterLLM", () => {
 			];
 
 			const mockResponse = createMockStreamResponse(streamChunks);
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 			await openRouterLLM.autocomplete(
@@ -525,18 +516,18 @@ describe("OpenRouterLLM", () => {
 			const expectedText = "Hello world response";
 
 			// Setup non-streaming mock
-			const mockNonStreamingResponse = {
+			const mockNonStreamingResponse = createMockResponse({
 				ok: true,
-				json: jest.fn().mockResolvedValue({
-					choices: [
-						{
-							message: {
-								content: expectedText,
-							},
+			});
+			mockNonStreamingResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: expectedText,
 						},
-					],
-				}),
-			};
+					},
+				],
+			});
 
 			// Setup streaming mock
 			const streamChunks = [
@@ -550,7 +541,7 @@ describe("OpenRouterLLM", () => {
 
 			// Test non-streaming mode
 			mockStandardFetch.mockResolvedValue(
-				mockNonStreamingResponse as MockResponse
+				mockNonStreamingResponse as Response
 			);
 			const nonStreamingCallback = jest.fn();
 			const nonStreamingResult = await openRouterLLM.autocomplete(
@@ -565,7 +556,7 @@ describe("OpenRouterLLM", () => {
 
 			// Test streaming mode
 			mockStandardFetch.mockResolvedValue(
-				mockStreamingResponse as MockResponse
+				mockStreamingResponse as Response
 			);
 			const streamingCallback = jest.fn();
 			let streamingResult = "";
@@ -601,12 +592,12 @@ describe("OpenRouterLLM", () => {
 
 	describe("edge cases and error scenarios", () => {
 		it("should handle authentication errors", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: false,
 				status: 401,
 				statusText: "Unauthorized",
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			await expect(
 				openRouterLLM.autocomplete("prompt", "content")
@@ -614,12 +605,12 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should handle rate limit errors", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: false,
 				status: 429,
 				statusText: "Too Many Requests",
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			const callback = jest.fn();
 			await expect(
@@ -636,12 +627,12 @@ describe("OpenRouterLLM", () => {
 		});
 
 		it("should handle server errors", async () => {
-			const mockResponse = {
+			const mockResponse = createMockResponse({
 				ok: false,
 				status: 500,
 				statusText: "Internal Server Error",
-			};
-			mockStandardFetch.mockResolvedValue(mockResponse as MockResponse);
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
 
 			await expect(
 				openRouterLLM.autocomplete("prompt", "content")
