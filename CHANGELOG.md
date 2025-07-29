@@ -1,5 +1,14 @@
 ## Changelog
 
+### 0.6.0 - 2025-07-29
+- Introduced systemPromptSupport parameter in OllamaLLM, OpenAILLM, and OpenRouterLLM to control the usage of system prompts.
+- Updated autocomplete methods to conditionally include system prompts based on the new parameter.
+- Enhanced unit tests for OpenAILLM and OpenRouterLLM to verify behavior with systemPromptSupport.
+- Adjusted PluginAIProvidersLLM to accommodate the new parameter and ensure consistent message formatting.
+- Migrated existing settings to include systemPromptSupport with a default value of true.
+- Updated UI components to allow users to toggle system prompt support in model settings.
+- Removed deprecated settings related to testing mode and default model for cleaner configuration.
+
 ### 0.5.9 - 2025-07-27
 - refactor: improve touch event handling for mobile in FilterableDropdown
 - refactor: clean up esbuild configuration and remove unnecessary autocorrect attribute from QuickPromptBox
