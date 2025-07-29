@@ -66,9 +66,6 @@ describe("StreamingProcessor", () => {
 
 		// Mock settings
 		mockSettings = {
-			openAiApiKey: "test-key",
-			testingMode: false,
-			defaultModel: "test-model",
 			customActions: [],
 			quickPrompt: {
 				name: "Quick Prompt",
@@ -81,7 +78,6 @@ describe("StreamingProcessor", () => {
 			aiProviders: {
 				providers: [],
 				models: [],
-				defaultModelId: "test-model",
 			},
 			useNativeFetch: false,
 			developmentMode: false,
@@ -112,6 +108,7 @@ describe("StreamingProcessor", () => {
 		mockLLMFactory.getProviderNameSync = jest
 			.fn()
 			.mockReturnValue("Test Provider");
+		mockLLMFactory.getSystemPromptSupport = jest.fn().mockReturnValue(true);
 
 		// Replace the constructor to return our mock
 		(LLMFactory as jest.MockedClass<typeof LLMFactory>).mockImplementation(
@@ -183,6 +180,7 @@ describe("StreamingProcessor", () => {
 				0.7,
 				1000,
 				undefined,
+				true,
 				true
 			);
 			expect(mockConfig.onToken).toHaveBeenCalledTimes(3);
@@ -300,6 +298,7 @@ describe("StreamingProcessor", () => {
 				0.7,
 				1000,
 				"Custom user prompt",
+				true,
 				true
 			);
 		});
@@ -726,9 +725,6 @@ describe("PromptProcessor", () => {
 
 		// Mock settings
 		mockSettings = {
-			openAiApiKey: "test-key",
-			testingMode: false,
-			defaultModel: "test-model",
 			customActions: [],
 			quickPrompt: {
 				name: "Quick Prompt",
@@ -741,7 +737,6 @@ describe("PromptProcessor", () => {
 			aiProviders: {
 				providers: [],
 				models: [],
-				defaultModelId: "test-model",
 			},
 			useNativeFetch: false,
 			developmentMode: false,
@@ -1235,9 +1230,6 @@ describe("ActionHandler Integration Tests", () => {
 
 		// Mock settings
 		mockSettings = {
-			openAiApiKey: "test-key",
-			testingMode: false,
-			defaultModel: "test-model",
 			customActions: [],
 			quickPrompt: {
 				name: "Quick Prompt",
@@ -1250,7 +1242,6 @@ describe("ActionHandler Integration Tests", () => {
 			aiProviders: {
 				providers: [],
 				models: [],
-				defaultModelId: "test-model",
 			},
 			useNativeFetch: false,
 			developmentMode: false,
@@ -1578,7 +1569,10 @@ describe("ActionHandler Integration Tests", () => {
 				"test input",
 				undefined,
 				0.5,
-				500
+				500,
+				undefined,
+				false,
+				true
 			);
 			expect(result).toBe("test result");
 		});

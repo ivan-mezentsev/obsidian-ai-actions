@@ -656,6 +656,358 @@ describe("OpenAILLM", () => {
 		});
 	});
 
+	describe("systemPromptSupport parameter", () => {
+		it("should use system role when systemPromptSupport is true", async () => {
+			const mockResponse: ChatCompletion = {
+				id: "test-id",
+				object: "chat.completion",
+				created: Date.now(),
+				model: OpenAIModel.GPT_4O_MINI,
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "System prompt response",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 10,
+					completion_tokens: 20,
+					total_tokens: 30,
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockResponse);
+
+			await openaiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write code",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				messages: [
+					{ role: "system", content: "You are a helpful assistant" },
+					{ role: "user", content: "Write code" },
+				],
+				max_tokens: 1000,
+				temperature: 0.7,
+			});
+		});
+
+		it("should use user role when systemPromptSupport is false", async () => {
+			const mockResponse: ChatCompletion = {
+				id: "test-id",
+				object: "chat.completion",
+				created: Date.now(),
+				model: OpenAIModel.GPT_4O_MINI,
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "User prompt response",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 10,
+					completion_tokens: 20,
+					total_tokens: 30,
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockResponse);
+
+			await openaiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write code",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false
+			);
+
+			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				messages: [
+					{ role: "user", content: "You are a helpful assistant" },
+					{ role: "user", content: "Write code" },
+				],
+				max_tokens: 1000,
+				temperature: 0.7,
+			});
+		});
+
+		it("should use system role by default when systemPromptSupport is not provided", async () => {
+			const mockResponse: ChatCompletion = {
+				id: "test-id",
+				object: "chat.completion",
+				created: Date.now(),
+				model: OpenAIModel.GPT_4O_MINI,
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content: "Default system prompt response",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 10,
+					completion_tokens: 20,
+					total_tokens: 30,
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockResponse);
+
+			await openaiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write code"
+			);
+
+			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				messages: [
+					{ role: "system", content: "You are a helpful assistant" },
+					{ role: "user", content: "Write code" },
+				],
+				max_tokens: 4000,
+				temperature: 0.7,
+			});
+		});
+
+		it("should handle userPrompt with systemPromptSupport true", async () => {
+			const mockResponse: ChatCompletion = {
+				id: "test-id",
+				object: "chat.completion",
+				created: Date.now(),
+				model: OpenAIModel.GPT_4O_MINI,
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content:
+								"Response with user prompt and system support",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 15,
+					completion_tokens: 25,
+					total_tokens: 40,
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockResponse);
+
+			await openaiLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				true
+			);
+
+			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				messages: [
+					{ role: "system", content: "System instruction" },
+					{ role: "user", content: "User custom prompt" },
+					{ role: "user", content: "Content text" },
+				],
+				max_tokens: 1000,
+				temperature: 0.7,
+			});
+		});
+
+		it("should handle userPrompt with systemPromptSupport false", async () => {
+			const mockResponse: ChatCompletion = {
+				id: "test-id",
+				object: "chat.completion",
+				created: Date.now(),
+				model: OpenAIModel.GPT_4O_MINI,
+				choices: [
+					{
+						index: 0,
+						message: {
+							role: "assistant",
+							content:
+								"Response with user prompt and no system support",
+						},
+						finish_reason: "stop",
+					},
+				],
+				usage: {
+					prompt_tokens: 15,
+					completion_tokens: 25,
+					total_tokens: 40,
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockResponse);
+
+			await openaiLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				false
+			);
+
+			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				messages: [
+					{ role: "user", content: "System instruction" },
+					{ role: "user", content: "User custom prompt" },
+					{ role: "user", content: "Content text" },
+				],
+				max_tokens: 1000,
+				temperature: 0.7,
+			});
+		});
+
+		it("should work with streaming mode and systemPromptSupport true", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: { content: "System" },
+								finish_reason: null,
+							},
+						],
+					};
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: { content: " streaming" },
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockStream);
+
+			const callback = jest.fn();
+			await openaiLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				undefined,
+				true,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(2);
+			expect(callback).toHaveBeenNthCalledWith(1, "System");
+			expect(callback).toHaveBeenNthCalledWith(2, " streaming");
+
+			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				messages: [
+					{ role: "system", content: "You are helpful" },
+					{ role: "user", content: "Say hello" },
+				],
+				max_tokens: 500,
+				temperature: 0.8,
+				stream: true,
+			});
+		});
+
+		it("should work with streaming mode and systemPromptSupport false", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: { content: "User" },
+								finish_reason: null,
+							},
+						],
+					};
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: { content: " streaming" },
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockStream);
+
+			const callback = jest.fn();
+			await openaiLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				undefined,
+				true,
+				false
+			);
+
+			expect(callback).toHaveBeenCalledTimes(2);
+			expect(callback).toHaveBeenNthCalledWith(1, "User");
+			expect(callback).toHaveBeenNthCalledWith(2, " streaming");
+
+			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				messages: [
+					{ role: "user", content: "You are helpful" },
+					{ role: "user", content: "Say hello" },
+				],
+				max_tokens: 500,
+				temperature: 0.8,
+				stream: true,
+			});
+		});
+	});
+
 	describe("edge cases and error scenarios", () => {
 		it("should handle network errors gracefully", async () => {
 			const networkError = new Error("Network connection failed");

@@ -11,10 +11,6 @@ import { spinnerPlugin } from "./spinnerPlugin";
 import { initAI } from "@obsidian-ai-providers/sdk";
 
 const DEFAULT_SETTINGS: AIEditorSettings = {
-	// Legacy settings for backward compatibility
-	openAiApiKey: "",
-	testingMode: false,
-	defaultModel: "", // Legacy field, now empty
 	customActions: DEFAULT_ACTIONS,
 	quickPrompt: {
 		name: "Quick Prompt",
@@ -139,6 +135,22 @@ export default class AIEditor extends Plugin {
 		}
 		if (this.settings.aiProviders.usePluginAIProviders === undefined) {
 			this.settings.aiProviders.usePluginAIProviders = false;
+		}
+
+		// Migrate existing models to add systemPromptSupport
+		if (this.settings.aiProviders.models) {
+			let migrationNeeded = false;
+			this.settings.aiProviders.models.forEach(model => {
+				if (model.systemPromptSupport === undefined) {
+					model.systemPromptSupport = true;
+					migrationNeeded = true;
+				}
+			});
+
+			// Save settings if migration was needed
+			if (migrationNeeded) {
+				await this.saveSettings();
+			}
 		}
 	}
 

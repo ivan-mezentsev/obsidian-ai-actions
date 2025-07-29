@@ -94,16 +94,13 @@ describe("GeminiLLM", () => {
 				contents: [
 					{
 						role: "user",
-						parts: [{ text: "You are a helpful assistant" }],
-					},
-					{
-						role: "user",
 						parts: [{ text: "Write a hello world function" }],
 					},
 				],
 				config: {
 					temperature: 0.7,
 					maxOutputTokens: 1000,
+					systemInstruction: "You are a helpful assistant",
 				},
 			});
 		});
@@ -128,13 +125,11 @@ describe("GeminiLLM", () => {
 
 			expect(mockClient.models.generateContent).toHaveBeenCalledWith({
 				model: "gemini-1.5-pro",
-				contents: [
-					{ role: "user", parts: [{ text: "System prompt" }] },
-					{ role: "user", parts: [{ text: "User input" }] },
-				],
+				contents: [{ role: "user", parts: [{ text: "User input" }] }],
 				config: {
 					temperature: 0.7,
 					maxOutputTokens: 1000,
+					systemInstruction: "System prompt",
 				},
 			});
 		});
@@ -350,13 +345,11 @@ describe("GeminiLLM", () => {
 				mockClient.models.generateContentStream
 			).toHaveBeenCalledWith({
 				model: "gemini-1.5-pro",
-				contents: [
-					{ role: "user", parts: [{ text: "You are helpful" }] },
-					{ role: "user", parts: [{ text: "Say hello" }] },
-				],
+				contents: [{ role: "user", parts: [{ text: "Say hello" }] }],
 				config: {
 					temperature: 0.8,
 					maxOutputTokens: 500,
+					systemInstruction: "You are helpful",
 				},
 			});
 		});
@@ -465,34 +458,6 @@ describe("GeminiLLM", () => {
 		});
 	});
 
-	describe("model name handling", () => {
-		it("should detect Gemma models correctly", () => {
-			const gemmaModels = ["gemma-7b-it", "GEMMA-2B", "my-gemma-model"];
-
-			gemmaModels.forEach(modelName => {
-				const gemmaLLM = new GeminiLLM(mockProvider, modelName, false);
-				expect(gemmaLLM).toBeDefined();
-			});
-		});
-
-		it("should handle non-Gemma models correctly", () => {
-			const nonGemmaModels = [
-				"gemini-1.5-pro",
-				"gemini-pro-vision",
-				"text-bison",
-			];
-
-			nonGemmaModels.forEach(modelName => {
-				const regularLLM = new GeminiLLM(
-					mockProvider,
-					modelName,
-					false
-				);
-				expect(regularLLM).toBeDefined();
-			});
-		});
-	});
-
 	describe("edge cases and error scenarios", () => {
 		it("should handle network errors gracefully", async () => {
 			const networkError = new Error("Network connection failed");
@@ -530,6 +495,365 @@ describe("GeminiLLM", () => {
 					true
 				)
 			).rejects.toThrow("Gemini SDK error: Rate limit exceeded");
+		});
+	});
+
+	describe("systemPromptSupport parameter", () => {
+		it("should use systemInstruction when systemPromptSupport is true (default)", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "Response with system instruction",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(result).toBe("Response with system instruction");
+			expect(mockClient.models.generateContent).toHaveBeenCalledWith({
+				model: "gemini-1.5-pro",
+				contents: [
+					{
+						role: "user",
+						parts: [{ text: "Write a hello world function" }],
+					},
+				],
+				config: {
+					temperature: 0.7,
+					maxOutputTokens: 1000,
+					systemInstruction: "You are a helpful assistant",
+				},
+			});
+		});
+
+		it("should not use systemInstruction when systemPromptSupport is false", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "Response without system instruction",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false
+			);
+
+			expect(result).toBe("Response without system instruction");
+			expect(mockClient.models.generateContent).toHaveBeenCalledWith({
+				model: "gemini-1.5-pro",
+				contents: [
+					{
+						role: "user",
+						parts: [{ text: "You are a helpful assistant" }],
+					},
+					{
+						role: "user",
+						parts: [{ text: "Write a hello world function" }],
+					},
+				],
+				config: {
+					temperature: 0.7,
+					maxOutputTokens: 1000,
+				},
+			});
+		});
+
+		it("should use systemInstruction with userPrompt when systemPromptSupport is true", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "Response with user prompt and system instruction",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				"Custom user prompt",
+				false,
+				true
+			);
+
+			expect(result).toBe(
+				"Response with user prompt and system instruction"
+			);
+			expect(mockClient.models.generateContent).toHaveBeenCalledWith({
+				model: "gemini-1.5-pro",
+				contents: [
+					{
+						role: "user",
+						parts: [{ text: "Custom user prompt" }],
+					},
+					{
+						role: "user",
+						parts: [{ text: "Write a hello world function" }],
+					},
+				],
+				config: {
+					temperature: 0.7,
+					maxOutputTokens: 1000,
+					systemInstruction: "You are a helpful assistant",
+				},
+			});
+		});
+
+		it("should not use systemInstruction with userPrompt when systemPromptSupport is false", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "Response with user prompt but no system instruction",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				"Custom user prompt",
+				false,
+				false
+			);
+
+			expect(result).toBe(
+				"Response with user prompt but no system instruction"
+			);
+			expect(mockClient.models.generateContent).toHaveBeenCalledWith({
+				model: "gemini-1.5-pro",
+				contents: [
+					{
+						role: "user",
+						parts: [{ text: "You are a helpful assistant" }],
+					},
+					{
+						role: "user",
+						parts: [{ text: "Custom user prompt" }],
+					},
+					{
+						role: "user",
+						parts: [{ text: "Write a hello world function" }],
+					},
+				],
+				config: {
+					temperature: 0.7,
+					maxOutputTokens: 1000,
+				},
+			});
+		});
+
+		it("should handle systemPromptSupport in streaming mode", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: "Streaming with system instruction",
+										},
+									],
+								},
+							},
+						],
+					};
+				},
+			};
+			mockClient.models.generateContentStream.mockResolvedValue(
+				mockStream
+			);
+
+			const callback = jest.fn();
+			await geminiLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				undefined,
+				true,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledWith(
+				"Streaming with system instruction"
+			);
+			expect(
+				mockClient.models.generateContentStream
+			).toHaveBeenCalledWith({
+				model: "gemini-1.5-pro",
+				contents: [{ role: "user", parts: [{ text: "Say hello" }] }],
+				config: {
+					temperature: 0.8,
+					maxOutputTokens: 500,
+					systemInstruction: "You are helpful",
+				},
+			});
+		});
+
+		it("should default to systemPromptSupport=true when parameter is undefined", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "Default system instruction behavior",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function"
+			);
+
+			expect(result).toBe("Default system instruction behavior");
+			expect(mockClient.models.generateContent).toHaveBeenCalledWith({
+				model: "gemini-1.5-pro",
+				contents: [
+					{
+						role: "user",
+						parts: [{ text: "Write a hello world function" }],
+					},
+				],
+				config: {
+					temperature: 0.7,
+					maxOutputTokens: 1000,
+					systemInstruction: "You are a helpful assistant",
+				},
+			});
+		});
+	});
+
+	describe("Gemma model handling with systemPromptSupport", () => {
+		let gemmaLLM: GeminiLLM;
+		let gemmaMockClient: MockGeminiClient;
+
+		beforeEach(() => {
+			gemmaLLM = new GeminiLLM(mockProvider, "gemma-7b-it", false);
+			gemmaMockClient = gemmaLLM["client"] as unknown as MockGeminiClient;
+
+			// Setup mock to throw error for Gemma models with systemInstruction
+			gemmaMockClient.models.generateContent.mockImplementation(
+				(request: {
+					model?: string;
+					config?: { systemInstruction?: string };
+				}) => {
+					if (
+						request.model &&
+						request.model.toLowerCase().includes("gemma") &&
+						request.config?.systemInstruction
+					) {
+						throw new Error(
+							"Gemma models do not support system instructions"
+						);
+					}
+					return Promise.resolve({
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: "Mock response",
+										},
+									],
+								},
+							},
+						],
+					});
+				}
+			);
+		});
+
+		it("should throw error for Gemma models when systemPromptSupport is true", async () => {
+			await expect(
+				gemmaLLM.autocomplete(
+					"You are a helpful assistant",
+					"Write a hello world function",
+					undefined,
+					0.7,
+					1000,
+					undefined,
+					false,
+					true
+				)
+			).rejects.toThrow(
+				"Gemini SDK error: Gemma models do not support system instructions"
+			);
+		});
+
+		it("should throw error for Gemma models with userPrompt when systemPromptSupport is true", async () => {
+			await expect(
+				gemmaLLM.autocomplete(
+					"You are a helpful assistant",
+					"Write a hello world function",
+					undefined,
+					0.7,
+					1000,
+					"Custom user prompt",
+					false,
+					true
+				)
+			).rejects.toThrow(
+				"Gemini SDK error: Gemma models do not support system instructions"
+			);
 		});
 	});
 });

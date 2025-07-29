@@ -10,7 +10,8 @@ export abstract class LLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming?: boolean
+		streaming?: boolean,
+		systemPromptSupport?: boolean
 	): Promise<string | void>;
 
 	async autocompleteStreaming(
@@ -42,7 +43,8 @@ export abstract class LLM {
 			temperature,
 			maxOutputTokens,
 			userPrompt,
-			true
+			true,
+			undefined
 		);
 		return new Promise<void>((resolve, reject) => {
 			const intervalId = globalThis.setInterval(() => {

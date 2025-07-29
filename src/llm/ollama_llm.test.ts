@@ -142,12 +142,13 @@ describe("OllamaLLM", () => {
 					},
 					body: JSON.stringify({
 						model: "llama2",
-						prompt: "You are a helpful assistant\nWrite a hello world function",
+						prompt: "Write a hello world function",
 						stream: false,
 						options: {
 							temperature: 0.7,
 							num_predict: 1000,
 						},
+						system: "You are a helpful assistant",
 					}),
 				}
 			);
@@ -178,12 +179,13 @@ describe("OllamaLLM", () => {
 					},
 					body: JSON.stringify({
 						model: "llama2",
-						prompt: "System instruction\nUser custom prompt\nContent text",
+						prompt: "User custom prompt\nContent text",
 						stream: false,
 						options: {
 							temperature: 0.7,
 							num_predict: 1000,
 						},
+						system: "System instruction",
 					}),
 				}
 			);
@@ -207,12 +209,13 @@ describe("OllamaLLM", () => {
 					},
 					body: JSON.stringify({
 						model: "llama2",
-						prompt: "System prompt\nUser input",
+						prompt: "User input",
 						stream: false,
 						options: {
 							temperature: 0.7,
 							num_predict: 1000,
 						},
+						system: "System prompt",
 					}),
 				}
 			);
@@ -242,12 +245,13 @@ describe("OllamaLLM", () => {
 					},
 					body: JSON.stringify({
 						model: "llama2",
-						prompt: "System prompt\nUser input",
+						prompt: "User input",
 						stream: false,
 						options: {
 							temperature: 0.5,
 							num_predict: 1000,
 						},
+						system: "System prompt",
 					}),
 				}
 			);
@@ -401,12 +405,13 @@ describe("OllamaLLM", () => {
 					},
 					body: JSON.stringify({
 						model: "llama2",
-						prompt: "System prompt\nUser input",
+						prompt: "User input",
 						stream: true,
 						options: {
 							temperature: 0.7,
 							num_predict: 1000,
 						},
+						system: "System prompt",
 					}),
 				}
 			);
@@ -604,6 +609,321 @@ describe("OllamaLLM", () => {
 					true
 				)
 			).rejects.toThrow("Ollama API error: 500 Internal Server Error");
+		});
+	});
+
+	describe("systemPromptSupport parameter", () => {
+		beforeEach(() => {
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
+		});
+
+		it("should use system parameter in API when systemPromptSupport is true", async () => {
+			const mockResponseData = {
+				response: "System prompt response",
+				done: true,
+			};
+			mockResponse.setJsonResponse(mockResponseData);
+
+			await ollamaLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"http://localhost:11434/api/generate",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama2",
+						prompt: "Write a hello world function",
+						stream: false,
+						options: {
+							temperature: 0.7,
+							num_predict: 1000,
+						},
+						system: "You are a helpful assistant",
+					}),
+				}
+			);
+		});
+
+		it("should add prompt as part of user prompt when systemPromptSupport is false", async () => {
+			const mockResponseData = {
+				response: "User prompt response",
+				done: true,
+			};
+			mockResponse.setJsonResponse(mockResponseData);
+
+			await ollamaLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"http://localhost:11434/api/generate",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama2",
+						prompt: "You are a helpful assistant\nWrite a hello world function",
+						stream: false,
+						options: {
+							temperature: 0.7,
+							num_predict: 1000,
+						},
+					}),
+				}
+			);
+		});
+
+		it("should handle userPrompt with systemPromptSupport true", async () => {
+			const mockResponseData = {
+				response: "Combined prompt response",
+				done: true,
+			};
+			mockResponse.setJsonResponse(mockResponseData);
+
+			await ollamaLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				true
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"http://localhost:11434/api/generate",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama2",
+						prompt: "User custom prompt\nContent text",
+						stream: false,
+						options: {
+							temperature: 0.7,
+							num_predict: 1000,
+						},
+						system: "System instruction",
+					}),
+				}
+			);
+		});
+
+		it("should handle userPrompt with systemPromptSupport false", async () => {
+			const mockResponseData = {
+				response: "User prompt response",
+				done: true,
+			};
+			mockResponse.setJsonResponse(mockResponseData);
+
+			await ollamaLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				false
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"http://localhost:11434/api/generate",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama2",
+						prompt: "System instruction\nUser custom prompt\nContent text",
+						stream: false,
+						options: {
+							temperature: 0.7,
+							num_predict: 1000,
+						},
+					}),
+				}
+			);
+		});
+
+		it("should default to systemPromptSupport true when parameter is not provided", async () => {
+			const mockResponseData = {
+				response: "Default system prompt response",
+				done: true,
+			};
+			mockResponse.setJsonResponse(mockResponseData);
+
+			await ollamaLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"http://localhost:11434/api/generate",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama2",
+						prompt: "Write a hello world function",
+						stream: false,
+						options: {
+							temperature: 0.7,
+							num_predict: 1000,
+						},
+						system: "You are a helpful assistant",
+					}),
+				}
+			);
+		});
+
+		it("should work with streaming mode and systemPromptSupport true", async () => {
+			const mockReader = createMockStreamReader();
+			mockResponse.setStreamReader(mockReader);
+
+			const chunks = [
+				'{"response": "System", "done": false}\n',
+				'{"response": " prompt", "done": false}\n',
+				'{"response": " streaming", "done": true}\n',
+			];
+
+			let chunkIndex = 0;
+			mockReader.read.mockImplementation(() => {
+				if (chunkIndex < chunks.length) {
+					const chunk = chunks[chunkIndex++];
+					return Promise.resolve({
+						done: false,
+						value: new TextEncoder().encode(chunk),
+					});
+				}
+				return Promise.resolve({ done: true });
+			});
+
+			const callback = jest.fn();
+			await ollamaLLM.autocomplete(
+				"System prompt",
+				"User input",
+				callback,
+				0.7,
+				1000,
+				undefined,
+				true,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "System");
+			expect(callback).toHaveBeenNthCalledWith(2, " prompt");
+			expect(callback).toHaveBeenNthCalledWith(3, " streaming");
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"http://localhost:11434/api/generate",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama2",
+						prompt: "User input",
+						stream: true,
+						options: {
+							temperature: 0.7,
+							num_predict: 1000,
+						},
+						system: "System prompt",
+					}),
+				}
+			);
+		});
+
+		it("should work with streaming mode and systemPromptSupport false", async () => {
+			const mockReader = createMockStreamReader();
+			mockResponse.setStreamReader(mockReader);
+
+			const chunks = [
+				'{"response": "User", "done": false}\n',
+				'{"response": " prompt", "done": false}\n',
+				'{"response": " streaming", "done": true}\n',
+			];
+
+			let chunkIndex = 0;
+			mockReader.read.mockImplementation(() => {
+				if (chunkIndex < chunks.length) {
+					const chunk = chunks[chunkIndex++];
+					return Promise.resolve({
+						done: false,
+						value: new TextEncoder().encode(chunk),
+					});
+				}
+				return Promise.resolve({ done: true });
+			});
+
+			const callback = jest.fn();
+			await ollamaLLM.autocomplete(
+				"System prompt",
+				"User input",
+				callback,
+				0.7,
+				1000,
+				undefined,
+				true,
+				false
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "User");
+			expect(callback).toHaveBeenNthCalledWith(2, " prompt");
+			expect(callback).toHaveBeenNthCalledWith(3, " streaming");
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"http://localhost:11434/api/generate",
+				{
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						model: "llama2",
+						prompt: "System prompt\nUser input",
+						stream: true,
+						options: {
+							temperature: 0.7,
+							num_predict: 1000,
+						},
+					}),
+				}
+			);
 		});
 	});
 

@@ -128,7 +128,7 @@ describe("OpenRouterLLM", () => {
 						model: "mistralai/mistral-7b-instruct",
 						messages: [
 							{
-								role: "user",
+								role: "system",
 								content: "You are a helpful assistant",
 							},
 							{
@@ -168,7 +168,7 @@ describe("OpenRouterLLM", () => {
 						model: "mistralai/mistral-7b-instruct",
 						messages: [
 							{
-								role: "user",
+								role: "system",
 								content: "System prompt",
 							},
 							{
@@ -267,7 +267,7 @@ describe("OpenRouterLLM", () => {
 						model: "mistralai/mistral-7b-instruct",
 						messages: [
 							{
-								role: "user",
+								role: "system",
 								content: "System instruction",
 							},
 							{
@@ -393,7 +393,7 @@ describe("OpenRouterLLM", () => {
 						model: "mistralai/mistral-7b-instruct",
 						messages: [
 							{
-								role: "user",
+								role: "system",
 								content: "You are helpful",
 							},
 							{
@@ -638,6 +638,157 @@ describe("OpenRouterLLM", () => {
 				openRouterLLM.autocomplete("prompt", "content")
 			).rejects.toThrow(
 				"OpenRouter API error: 500 Internal Server Error"
+			);
+		});
+
+		it("should use system role when systemPromptSupport is true", async () => {
+			const mockResponse = createMockResponse({
+				ok: true,
+			});
+			mockResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: "System prompt response",
+						},
+					},
+				],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
+
+			await openRouterLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				false,
+				true
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://openrouter.ai/api/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "mistralai/mistral-7b-instruct",
+						messages: [
+							{
+								role: "system",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should use user role when systemPromptSupport is false", async () => {
+			const mockResponse = createMockResponse({
+				ok: true,
+			});
+			mockResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: "User prompt response",
+						},
+					},
+				],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
+
+			await openRouterLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				false,
+				false
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://openrouter.ai/api/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "mistralai/mistral-7b-instruct",
+						messages: [
+							{
+								role: "user",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should handle userPrompt with systemPromptSupport true", async () => {
+			const mockResponse = createMockResponse({
+				ok: true,
+			});
+			mockResponse.setJsonResponse({
+				choices: [
+					{
+						message: {
+							content: "Response with user prompt",
+						},
+					},
+				],
+			});
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
+
+			await openRouterLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				undefined,
+				undefined,
+				"Additional user context",
+				false,
+				true
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://openrouter.ai/api/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "mistralai/mistral-7b-instruct",
+						messages: [
+							{
+								role: "system",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Additional user context",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
 			);
 		});
 	});

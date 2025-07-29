@@ -28,14 +28,36 @@ export class OllamaLLM extends BaseProviderLLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false
+		streaming: boolean = false,
+		systemPromptSupport: boolean = true
 	): Promise<string | void> {
-		const combinedPrompt = userPrompt
-			? prompt + "\n" + userPrompt + "\n" + content
-			: prompt + "\n" + content;
-		const body = {
+		let requestPrompt: string;
+		let systemPrompt: string | undefined;
+
+		if (systemPromptSupport) {
+			// Use system parameter in API
+			systemPrompt = prompt;
+			requestPrompt = userPrompt ? userPrompt + "\n" + content : content;
+		} else {
+			// Add prompt as part of user prompt
+			systemPrompt = undefined;
+			requestPrompt = userPrompt
+				? prompt + "\n" + userPrompt + "\n" + content
+				: prompt + "\n" + content;
+		}
+
+		const body: {
+			model: string;
+			prompt: string;
+			stream: boolean;
+			options: {
+				temperature: number;
+				num_predict: number;
+			};
+			system?: string;
+		} = {
 			model: this.modelName,
-			prompt: combinedPrompt,
+			prompt: requestPrompt,
 			stream: streaming,
 			options: {
 				temperature: temperature !== undefined ? temperature : 0.7,
@@ -44,6 +66,10 @@ export class OllamaLLM extends BaseProviderLLM {
 					: { num_predict: 1000 }),
 			},
 		};
+
+		if (systemPrompt) {
+			body.system = systemPrompt;
+		}
 
 		const response = await this.makeRequest("/api/generate", body);
 

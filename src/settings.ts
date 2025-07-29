@@ -14,9 +14,6 @@ import type {
 } from "@obsidian-ai-providers/sdk";
 
 export interface AIEditorSettings {
-	openAiApiKey: string; // Deprecated, will be removed
-	testingMode: boolean;
-	defaultModel: string; // Deprecated, will be removed
 	customActions: Array<UserAction>;
 	quickPrompt: UserAction;
 	aiProviders: AIProvidersSettings;
@@ -150,20 +147,6 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		if (!this.plugin.settings.developmentMode) {
 			devOptionsContainer.addClass("ai-actions-dev-options-hidden");
 		}
-
-		new Setting(devOptionsContainer)
-			.setName("Testing mode")
-			.setDesc(
-				"Use testing mode to test custom action without calling AI APIs"
-			)
-			.addToggle(toggle =>
-				toggle
-					.setValue(this.plugin.settings.testingMode)
-					.onChange(async value => {
-						this.plugin.settings.testingMode = value;
-						await this.plugin.saveSettings();
-					})
-			);
 
 		new Setting(devOptionsContainer)
 			.setName("Use native fetch")

@@ -6,9 +6,10 @@
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit && node esbuild.config.mjs production",
-		"test": "jest",
-		"test:watch": "jest --watch",
+		"test": "node jest-wrapper.js",
+		"test:watch": "node jest-wrapper.js --watch",
 		"lint": "eslint . && tsc --noEmit",
+		"check": "eslint . && tsc --noEmit",
 		"lint:fix": "eslint . --fix",
 		"cs": "prettier --check .",
 		"cs:fix": "prettier --write .",

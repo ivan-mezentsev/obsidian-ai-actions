@@ -30,16 +30,14 @@ export class GeminiLLM extends BaseProviderLLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false
+		streaming: boolean = false,
+		systemPromptSupport?: boolean
 	): Promise<string | void> {
 		try {
-			// Check if model supports system instructions (avoid for Gemma models)
-			const supportsSystemInstruction = !this.modelName
-				.toLowerCase()
-				.includes("gemma");
+			const useSystemPrompt = systemPromptSupport !== false;
 
 			const contents = userPrompt
-				? supportsSystemInstruction
+				? useSystemPrompt
 					? [
 							{ role: "user", parts: [{ text: userPrompt }] },
 							{ role: "user", parts: [{ text: content }] },
@@ -49,10 +47,12 @@ export class GeminiLLM extends BaseProviderLLM {
 							{ role: "user", parts: [{ text: userPrompt }] },
 							{ role: "user", parts: [{ text: content }] },
 						]
-				: [
-						{ role: "user", parts: [{ text: prompt }] },
-						{ role: "user", parts: [{ text: content }] },
-					];
+				: useSystemPrompt
+					? [{ role: "user", parts: [{ text: content }] }]
+					: [
+							{ role: "user", parts: [{ text: prompt }] },
+							{ role: "user", parts: [{ text: content }] },
+						];
 
 			const config: {
 				temperature: number;
@@ -66,9 +66,9 @@ export class GeminiLLM extends BaseProviderLLM {
 						: 1000,
 			};
 
-			// Add system instruction for supported models when userPrompt is provided
-			if (userPrompt && supportsSystemInstruction) {
-				config.systemInstruction = prompt;
+			// Add system instruction when system prompt support is enabled
+			if (useSystemPrompt) {
+				config.systemInstruction = userPrompt ? prompt : prompt;
 			}
 
 			if (streaming && callback) {

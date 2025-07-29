@@ -496,4 +496,145 @@ describe("PluginAIProvidersLLM", () => {
 			expect(mockAIProviders.execute).toHaveBeenCalledTimes(3);
 		});
 	});
+
+	describe("systemPromptSupport parameter", () => {
+		it("should ignore systemPromptSupport parameter when true", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Response ignoring systemPromptSupport");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true // systemPromptSupport = true
+			);
+
+			expect(result).toBe("Response ignoring systemPromptSupport");
+			// Verify that messages are still formatted the same way (no system role)
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: mockAIProviders.providers[0],
+				messages: [
+					{ role: "user", content: "System instruction" },
+					{ role: "user", content: "Content text" },
+				],
+			});
+		});
+
+		it("should ignore systemPromptSupport parameter when false", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Response ignoring systemPromptSupport false");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false // systemPromptSupport = false
+			);
+
+			expect(result).toBe("Response ignoring systemPromptSupport false");
+			// Verify that messages are still formatted the same way (no system role)
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: mockAIProviders.providers[0],
+				messages: [
+					{ role: "user", content: "System instruction" },
+					{ role: "user", content: "Content text" },
+				],
+			});
+		});
+
+		it("should ignore systemPromptSupport with userPrompt", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			mockChunkHandler.onData.mockImplementation(callback => {
+				callback("Response with userPrompt and systemPromptSupport");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callback => {
+				callback();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				true // systemPromptSupport = true
+			);
+
+			expect(result).toBe(
+				"Response with userPrompt and systemPromptSupport"
+			);
+			// Verify that messages are still formatted the same way with userPrompt
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: mockAIProviders.providers[0],
+				messages: [
+					{ role: "user", content: "System instruction" },
+					{ role: "user", content: "User custom prompt" },
+					{ role: "user", content: "Content text" },
+				],
+			});
+		});
+
+		it("should work in streaming mode with systemPromptSupport", async () => {
+			mockAIProviders.execute.mockResolvedValue(mockChunkHandler);
+
+			const callback = jest.fn();
+
+			mockChunkHandler.onData.mockImplementation(callbackFn => {
+				callbackFn("Streaming");
+				callbackFn(" with");
+				callbackFn(" systemPromptSupport");
+			});
+			mockChunkHandler.onEnd.mockImplementation(callbackFn => {
+				callbackFn();
+			});
+
+			const result = await pluginAIProvidersLLM.autocomplete(
+				"Test prompt",
+				"Test content",
+				callback,
+				0.7,
+				1000,
+				undefined,
+				true, // streaming = true
+				true // systemPromptSupport = true
+			);
+
+			expect(result).toBeUndefined();
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "Streaming");
+			expect(callback).toHaveBeenNthCalledWith(2, " with");
+			expect(callback).toHaveBeenNthCalledWith(3, " systemPromptSupport");
+			// Verify messages are still formatted the same way
+			expect(mockAIProviders.execute).toHaveBeenCalledWith({
+				provider: mockAIProviders.providers[0],
+				messages: [
+					{ role: "user", content: "Test prompt" },
+					{ role: "user", content: "Test content" },
+				],
+			});
+		});
+	});
 });

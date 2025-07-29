@@ -43,42 +43,81 @@ export class AnthropicLLM extends BaseProviderLLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false
+		streaming: boolean = false,
+		systemPromptSupport: boolean = true
 	): Promise<string | void> {
-		const systemPrompt = prompt;
-
 		try {
-			const messages = userPrompt
-				? [
-						{
-							role: "user" as const,
-							content: userPrompt,
-						},
-						{
-							role: "user" as const,
-							content: content,
-						},
-					]
-				: [
-						{
-							role: "user" as const,
-							content: content,
-						},
-					];
+			let messages: Array<{ role: "user"; content: string }>;
+			let systemPrompt: string | undefined;
+
+			if (systemPromptSupport) {
+				// Use system parameter in API
+				systemPrompt = prompt;
+				messages = userPrompt
+					? [
+							{
+								role: "user" as const,
+								content: userPrompt,
+							},
+							{
+								role: "user" as const,
+								content: content,
+							},
+						]
+					: [
+							{
+								role: "user" as const,
+								content: content,
+							},
+						];
+			} else {
+				// Add prompt as first user message
+				systemPrompt = undefined;
+				messages = userPrompt
+					? [
+							{
+								role: "user" as const,
+								content: prompt,
+							},
+							{
+								role: "user" as const,
+								content: userPrompt,
+							},
+							{
+								role: "user" as const,
+								content: content,
+							},
+						]
+					: [
+							{
+								role: "user" as const,
+								content: prompt,
+							},
+							{
+								role: "user" as const,
+								content: content,
+							},
+						];
+			}
 
 			if (streaming && callback) {
 				// Streaming mode
-				const stream = await this.client.messages.create({
+				const requestParams: Anthropic.MessageCreateParams = {
 					model: this.modelName,
 					max_tokens:
 						maxOutputTokens && maxOutputTokens > 0
 							? maxOutputTokens
 							: 1000,
 					temperature: temperature !== undefined ? temperature : 0.7,
-					system: systemPrompt,
 					messages: messages,
 					stream: true,
-				});
+				};
+
+				if (systemPrompt) {
+					requestParams.system = systemPrompt;
+				}
+
+				const stream = await this.client.messages.create(requestParams);
 
 				for await (const chunk of stream) {
 					if (
@@ -91,16 +130,22 @@ export class AnthropicLLM extends BaseProviderLLM {
 				return;
 			} else {
 				// Non-streaming mode
-				const message = await this.client.messages.create({
+				const requestParams: Anthropic.MessageCreateParams = {
 					model: this.modelName,
 					max_tokens:
 						maxOutputTokens && maxOutputTokens > 0
 							? maxOutputTokens
 							: 1000,
 					temperature: temperature !== undefined ? temperature : 0.7,
-					system: systemPrompt,
 					messages: messages,
-				});
+				};
+
+				if (systemPrompt) {
+					requestParams.system = systemPrompt;
+				}
+
+				const message =
+					await this.client.messages.create(requestParams);
 
 				let result = "";
 				if (message.content && message.content.length > 0) {

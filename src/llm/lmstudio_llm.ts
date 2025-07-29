@@ -35,12 +35,16 @@ export class LMStudioLLM extends BaseProviderLLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false
+		streaming: boolean = false,
+		systemPromptSupport?: boolean
 	): Promise<string | void> {
+		// Determine the role for the prompt based on systemPromptSupport
+		const promptRole = systemPromptSupport !== false ? "system" : "user";
+
 		const messages = userPrompt
 			? [
 					{
-						role: "system",
+						role: promptRole,
 						content: prompt,
 					},
 					{
@@ -54,7 +58,7 @@ export class LMStudioLLM extends BaseProviderLLM {
 				]
 			: [
 					{
-						role: "system",
+						role: promptRole,
 						content: prompt,
 					},
 					{
