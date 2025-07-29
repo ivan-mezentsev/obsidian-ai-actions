@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-ai-actions",
-	"version": "0.5.9",
+	"version": "0.6.0",
 	"description": "Obsidian AI Actions - Based on AI-powered Text Editor by Zekun Shen",
 	"main": "main.js",
 	"scripts": {
