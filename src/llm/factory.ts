@@ -1,6 +1,5 @@
 import { LLM } from "./base";
 import { OpenAILLM } from "./openai_llm";
-import { DummyLLM } from "./dummy_llm";
 import { GeminiLLM } from "./gemini_llm";
 import { OllamaLLM } from "./ollama_llm";
 import { GroqLLM } from "./groq_llm";
@@ -10,6 +9,7 @@ import { AnthropicLLM } from "./anthropic_llm";
 import { PluginAIProvidersLLM } from "./plugin_ai_providers_llm";
 import { OpenAIModel } from "./openai_llm";
 import type { AIEditorSettings } from "../settings";
+import type { AIProvider } from "../types";
 
 export class LLMFactory {
 	private settings: AIEditorSettings;
@@ -47,11 +47,6 @@ export class LLMFactory {
 			return "Plugin AI Providers";
 		}
 
-		// Handle legacy OpenAI models
-		if (Object.values(OpenAIModel).includes(modelId as OpenAIModel)) {
-			return "OpenAI";
-		}
-
 		// Handle new provider-based models
 		const model = this.settings.aiProviders?.models.find(
 			m => m.id === modelId
@@ -72,11 +67,6 @@ export class LLMFactory {
 
 	// Synchronous version for backward compatibility
 	getProviderNameSync(modelId: string): string {
-		// Handle legacy OpenAI models
-		if (Object.values(OpenAIModel).includes(modelId as OpenAIModel)) {
-			return "OpenAI";
-		}
-
 		// Handle plugin AI providers (synchronous fallback)
 		if (modelId.startsWith("plugin_ai_providers_")) {
 			return "Plugin AI Providers";
@@ -100,7 +90,56 @@ export class LLMFactory {
 		return provider.name;
 	}
 
-	create(modelId: string): LLM {
+	getSystemPromptSupport(modelId: string): boolean {
+		// Handle new provider-based models
+		const model = this.settings.aiProviders?.models.find(
+			m => m.id === modelId
+		);
+		if (!model) {
+			return true; // Default to true when model not found
+		}
+
+		return model.systemPromptSupport ?? true;
+	}
+
+	private createLLMInstance(provider: AIProvider, modelName: string): LLM {
+		if (!provider.apiKey) {
+			throw new Error(
+				`API key not configured for provider: ${provider.name}`
+			);
+		}
+
+		const useNativeFetch = this.settings.useNativeFetch || false;
+
+		switch (provider.type) {
+			case "openai":
+				return new OpenAILLM(
+					modelName as OpenAIModel,
+					provider.apiKey,
+					provider.url
+				);
+			case "anthropic":
+				return new AnthropicLLM(provider, modelName, useNativeFetch);
+			case "gemini":
+				return new GeminiLLM(provider, modelName, useNativeFetch);
+			case "ollama":
+				return new OllamaLLM(provider, modelName, useNativeFetch);
+			case "groq":
+				return new GroqLLM(provider, modelName, useNativeFetch);
+			case "openrouter":
+				return new OpenRouterLLM(provider, modelName, useNativeFetch);
+			case "lmstudio":
+				return new LMStudioLLM(provider, modelName, useNativeFetch);
+			default:
+				throw new Error(`Unsupported provider type: ${provider.type}`);
+		}
+	}
+
+	create(
+		modelId: string,
+		overrideModelName?: string,
+		providerId?: string
+	): LLM {
 		// Handle plugin AI providers
 		if (modelId.startsWith("plugin_ai_providers_")) {
 			const pluginAIProviderId = modelId.replace(
@@ -110,89 +149,50 @@ export class LLMFactory {
 			return new PluginAIProvidersLLM(pluginAIProviderId);
 		}
 
-		// Handle legacy OpenAI models
-		if (Object.values(OpenAIModel).includes(modelId as OpenAIModel)) {
-			if (this.settings.openAiApiKey) {
-				return new OpenAILLM(
-					modelId as OpenAIModel,
-					this.settings.openAiApiKey
-				);
-			} else if (this.settings.testingMode) {
-				return new DummyLLM();
-			} else {
-				throw new Error("OpenAI API key is required");
-			}
-		}
-
-		// Handle new provider-based models
-		const model = this.settings.aiProviders?.models.find(
-			m => m.id === modelId
-		);
-		if (!model) {
-			if (this.settings.testingMode) {
-				return new DummyLLM();
-			}
-			throw new Error(`Model not found: ${modelId}`);
-		}
-
-		const provider = this.settings.aiProviders?.providers.find(
-			p => p.id === model.providerId
-		);
-		if (!provider) {
-			if (this.settings.testingMode) {
-				return new DummyLLM();
-			}
-			throw new Error(`Provider not found for model: ${modelId}`);
-		}
-
-		if (!provider.apiKey) {
-			if (this.settings.testingMode) {
-				return new DummyLLM();
-			}
-			throw new Error(
-				`API key not configured for provider: ${provider.name}`
+		// Find or determine provider
+		let provider;
+		if (providerId) {
+			// Use provided provider ID
+			provider = this.settings.aiProviders?.providers.find(
+				p => p.id === providerId
 			);
+			if (!provider) {
+				throw new Error(`Provider not found: ${providerId}`);
+			}
+		} else {
+			// Find model first, then get its provider
+			const model = this.settings.aiProviders?.models.find(
+				m => m.id === modelId
+			);
+			if (!model) {
+				throw new Error(`Model not found: ${modelId}`);
+			}
+
+			provider = this.settings.aiProviders?.providers.find(
+				p => p.id === model.providerId
+			);
+			if (!provider) {
+				throw new Error(`Provider not found for model: ${modelId}`);
+			}
 		}
 
-		// Create LLM instance based on provider type
-		const useNativeFetch = this.settings.useNativeFetch || false;
-
-		switch (provider.type) {
-			case "openai":
-				return new OpenAILLM(
-					model.modelName as OpenAIModel,
-					provider.apiKey,
-					provider.url
-				);
-			case "anthropic":
-				return new AnthropicLLM(
-					provider,
-					model.modelName,
-					useNativeFetch
-				);
-			case "gemini":
-				return new GeminiLLM(provider, model.modelName, useNativeFetch);
-			case "ollama":
-				return new OllamaLLM(provider, model.modelName, useNativeFetch);
-			case "groq":
-				return new GroqLLM(provider, model.modelName, useNativeFetch);
-			case "openrouter":
-				return new OpenRouterLLM(
-					provider,
-					model.modelName,
-					useNativeFetch
-				);
-			case "lmstudio":
-				return new LMStudioLLM(
-					provider,
-					model.modelName,
-					useNativeFetch
-				);
-			default:
-				if (this.settings.testingMode) {
-					return new DummyLLM();
+		// Determine model name
+		const modelName =
+			overrideModelName ||
+			(() => {
+				if (!overrideModelName) {
+					const model = this.settings.aiProviders?.models.find(
+						m => m.id === modelId
+					);
+					return model?.modelName;
 				}
-				throw new Error(`Unsupported provider type: ${provider.type}`);
+				return overrideModelName;
+			})();
+
+		if (!modelName) {
+			throw new Error(`Model name not found for model: ${modelId}`);
 		}
+
+		return this.createLLMInstance(provider, modelName);
 	}
 }

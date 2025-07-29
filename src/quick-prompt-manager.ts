@@ -47,10 +47,7 @@ export class QuickPromptManager {
 		const availableModels = this.plugin.settings.aiProviders?.models || [];
 		const availableProviders =
 			this.plugin.settings.aiProviders?.providers || [];
-		const defaultModelId =
-			this.plugin.settings.quickPrompt?.model ||
-			this.plugin.settings.aiProviders?.defaultModelId ||
-			"";
+		const defaultModelId = this.plugin.settings.quickPrompt?.model || "";
 
 		const promptBox = new QuickPromptBox({
 			target: targetEl,

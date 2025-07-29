@@ -12,8 +12,8 @@ A powerful Obsidian plugin that integrates AI-powered text processing directly i
 ## 📋 Changelog
 For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 
-> ⚠️ **ATTENTION!** 
-> Since version __0.3.0__, to view streaming results, you need to __disable__ the "Development mode -> __Use native fetch__" setting.
+> ⚠️ **ATTENTION!**
+> Since version __0.6.0__, system prompt support is __enabled by default__ for all models. If you experience issues, __disable__ the "Supports system prompt" setting for models like "gemma" and others.
 
 ## Demo
 ![Demo0](docs/QuickPrompt0.gif)

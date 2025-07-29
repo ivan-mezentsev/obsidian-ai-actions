@@ -23,11 +23,11 @@ export interface AIModel {
 	modelName: string;
 	type?: AIProviderType;
 	pluginAIProviderId?: string; // For plugin AI providers, store original provider ID
+	systemPromptSupport?: boolean;
 }
 
 export interface AIProvidersSettings {
 	providers: AIProvider[];
 	models: AIModel[];
-	defaultModelId?: string;
 	usePluginAIProviders?: boolean;
 }

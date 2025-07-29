@@ -38,9 +38,6 @@ describe("QuickPromptManager Integration Tests", () => {
 
 		// Mock settings
 		mockSettings = {
-			openAiApiKey: "test-key",
-			testingMode: false,
-			defaultModel: "test-model",
 			customActions: [],
 			quickPrompt: {
 				name: "Quick Prompt",
@@ -64,7 +61,6 @@ describe("QuickPromptManager Integration Tests", () => {
 						modelName: "test-model",
 					},
 				],
-				defaultModelId: "test-model",
 			},
 			useNativeFetch: false,
 			developmentMode: false,

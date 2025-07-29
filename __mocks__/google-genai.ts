@@ -9,7 +9,39 @@ export class GoogleGenAI {
 	}
 
 	models = {
-		generateContent: jest.fn(),
+		generateContent: jest
+			.fn()
+			.mockImplementation(
+				(request: {
+					model?: string;
+					config?: { systemInstruction?: string };
+				}) => {
+					// Check if this is a Gemma model trying to use systemInstruction
+					if (
+						request.model &&
+						request.model.toLowerCase().includes("gemma") &&
+						request.config?.systemInstruction
+					) {
+						throw new Error(
+							"Gemma models do not support system instructions"
+						);
+					}
+					// Default behavior for other cases
+					return Promise.resolve({
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: "Mock response",
+										},
+									],
+								},
+							},
+						],
+					});
+				}
+			),
 		generateContentStream: jest.fn(),
 	};
 }

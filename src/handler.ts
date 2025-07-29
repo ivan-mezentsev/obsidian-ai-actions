@@ -119,6 +119,9 @@ export class StreamingProcessor {
 
 			// Create LLM instance and start streaming
 			const llm = this.llmFactory.create(config.action.model);
+			const systemPromptSupport = this.llmFactory.getSystemPromptSupport(
+				config.action.model
+			);
 
 			await llm.autocomplete(
 				config.action.prompt,
@@ -146,7 +149,8 @@ export class StreamingProcessor {
 				config.action.temperature,
 				config.action.maxOutputTokens,
 				config.userPrompt,
-				true // streaming enabled
+				true, // streaming enabled
+				systemPromptSupport
 			);
 
 			// Check if cancelled during streaming
@@ -926,13 +930,19 @@ export class ActionHandler {
 
 	async handleAction(userAction: UserAction, input: string): Promise<string> {
 		const llm = this.llmFactory.create(userAction.model);
+		const systemPromptSupport = this.llmFactory.getSystemPromptSupport(
+			userAction.model
+		);
 		const prompt = userAction.prompt.replace("{{input}}", input);
 		const result = await llm.autocomplete(
 			prompt,
 			input,
 			undefined,
 			userAction.temperature,
-			userAction.maxOutputTokens
+			userAction.maxOutputTokens,
+			undefined,
+			false,
+			systemPromptSupport
 		);
 		return result as string;
 	}
@@ -944,6 +954,9 @@ export class ActionHandler {
 		userPrompt?: string
 	): Promise<void> {
 		const llm = this.llmFactory.create(userAction.model);
+		const systemPromptSupport = this.llmFactory.getSystemPromptSupport(
+			userAction.model
+		);
 		await llm.autocomplete(
 			userAction.prompt,
 			input,
@@ -951,17 +964,9 @@ export class ActionHandler {
 			userAction.temperature,
 			userAction.maxOutputTokens,
 			userPrompt,
-			true
+			true,
+			systemPromptSupport
 		);
-	}
-
-	getAPIKey(settings: AIEditorSettings) {
-		const apiKey = settings.openAiApiKey;
-		if (!apiKey) {
-			new Notice("API key is not set in plugin settings");
-			throw "API key not set";
-		}
-		return apiKey;
 	}
 
 	async getTextInput(sel: Selection, editor: Editor): Promise<string> {

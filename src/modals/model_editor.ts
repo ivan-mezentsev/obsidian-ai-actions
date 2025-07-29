@@ -5,6 +5,7 @@ import {
 	Notice,
 	TextComponent,
 	DropdownComponent,
+	ToggleComponent,
 } from "obsidian";
 import type { AIModel, AIProvider } from "../types";
 import AIEditor from "../main";
@@ -99,6 +100,25 @@ export class ModelEditModal extends Modal {
 				});
 			});
 
+		new Setting(contentEl)
+			.setName("Enable system prompt")
+			.setDesc(
+				"Enable system prompt support (defines the AI's overall behavior and role)"
+			)
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.model.systemPromptSupport ?? true)
+					.onChange(value => {
+						this.model.systemPromptSupport = value;
+					});
+				this.systemPromptToggle = toggle;
+			})
+			.addButton(button => {
+				button.setButtonText("Test").onClick(async () => {
+					await this.testSystemPromptSupport();
+				});
+			});
+
 		// Buttons
 		new Setting(contentEl)
 			.addButton(button => {
@@ -137,6 +157,7 @@ export class ModelEditModal extends Modal {
 	private refreshButton: Setting;
 	private displayNameText: TextComponent | null = null;
 	private filterableDropdown: FilterableDropdown | null = null;
+	private systemPromptToggle: ToggleComponent | null = null;
 
 	private updateAvailableModels() {
 		const selectedProvider = this.availableProviders.find(
@@ -304,6 +325,46 @@ export class ModelEditModal extends Modal {
 		}
 
 		return true;
+	}
+
+	private async testSystemPromptSupport() {
+		if (!this.model.providerId || !this.model.modelName) {
+			new Notice("Please select a provider and model first");
+			return;
+		}
+
+		try {
+			const { LLMFactory } = await import("../llm/factory");
+			const factory = new LLMFactory(this.plugin.settings);
+			const llm = factory.create(
+				"fake_test_model",
+				this.model.modelName,
+				this.model.providerId
+			);
+
+			await llm.autocomplete(
+				"You are a helpful assistant.Answer EXACTLY in one word.",
+				"Say Hi! - just one word",
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				false,
+				true
+			);
+
+			this.model.systemPromptSupport = true;
+			if (this.systemPromptToggle) {
+				this.systemPromptToggle.setValue(true);
+			}
+			new Notice("System prompt is supported ✓");
+		} catch {
+			this.model.systemPromptSupport = false;
+			if (this.systemPromptToggle) {
+				this.systemPromptToggle.setValue(false);
+			}
+			new Notice("System prompt is not supported ✗");
+		}
 	}
 
 	onClose() {

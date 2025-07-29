@@ -64,8 +64,10 @@ describe("GroqLLM", () => {
 			json: jest.fn(),
 		};
 
-		mockStandardFetch.mockResolvedValue(mockResponse);
-		mockNativeFetch.mockResolvedValue(mockResponse);
+		mockStandardFetch.mockResolvedValue(
+			mockResponse as unknown as Response
+		);
+		mockNativeFetch.mockResolvedValue(mockResponse as unknown as Response);
 	});
 
 	afterEach(() => {
@@ -151,6 +153,100 @@ describe("GroqLLM", () => {
 			);
 		});
 
+		it("should use system role when systemPromptSupport is true", async () => {
+			const mockResponseData = {
+				choices: [
+					{
+						message: {
+							content: "System prompt response",
+						},
+					},
+				],
+			};
+			mockResponse.json.mockResolvedValue(mockResponseData);
+
+			const result = await groqLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(result).toBe("System prompt response");
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{
+								role: "system",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should use user role when systemPromptSupport is false", async () => {
+			const mockResponseData = {
+				choices: [
+					{
+						message: {
+							content: "User prompt response",
+						},
+					},
+				],
+			};
+			mockResponse.json.mockResolvedValue(mockResponseData);
+
+			const result = await groqLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false
+			);
+
+			expect(result).toBe("User prompt response");
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{
+								role: "user",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
 		it("should use default temperature and max_tokens when not provided", async () => {
 			const mockResponseData = {
 				choices: [
@@ -210,6 +306,89 @@ describe("GroqLLM", () => {
 						model: "llama2-70b-4096",
 						messages: [
 							{ role: "system", content: "System instruction" },
+							{ role: "user", content: "User custom prompt" },
+							{ role: "user", content: "Content text" },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should handle userPrompt with systemPromptSupport=true", async () => {
+			const mockResponseData = {
+				choices: [
+					{
+						message: {
+							content:
+								"Response with system prompt and user prompt",
+						},
+					},
+				],
+			};
+			mockResponse.json.mockResolvedValue(mockResponseData);
+
+			await groqLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				true
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{ role: "system", content: "System instruction" },
+							{ role: "user", content: "User custom prompt" },
+							{ role: "user", content: "Content text" },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should handle userPrompt with systemPromptSupport=false", async () => {
+			const mockResponseData = {
+				choices: [
+					{
+						message: {
+							content: "Response with user prompt only",
+						},
+					},
+				],
+			};
+			mockResponse.json.mockResolvedValue(mockResponseData);
+
+			await groqLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				false
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{ role: "user", content: "System instruction" },
 							{ role: "user", content: "User custom prompt" },
 							{ role: "user", content: "Content text" },
 						],
@@ -402,6 +581,110 @@ describe("GroqLLM", () => {
 			);
 		});
 
+		it("should handle streaming with systemPromptSupport=true", async () => {
+			const streamData = [
+				'data: {"choices":[{"delta":{"content":"System"}}]}\n\n',
+				'data: {"choices":[{"delta":{"content":" response"}}]}\n\n',
+				"data: [DONE]\n\n",
+			];
+
+			let dataIndex = 0;
+			mockReader.read.mockImplementation(() => {
+				if (dataIndex < streamData.length) {
+					const value = new TextEncoder().encode(
+						streamData[dataIndex]
+					);
+					dataIndex++;
+					return Promise.resolve({ done: false, value });
+				}
+				return Promise.resolve({ done: true, value: undefined });
+			});
+
+			const callback = jest.fn();
+			await groqLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				undefined,
+				true,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(2);
+			expect(callback).toHaveBeenNthCalledWith(1, "System");
+			expect(callback).toHaveBeenNthCalledWith(2, " response");
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{ role: "system", content: "You are helpful" },
+							{ role: "user", content: "Say hello" },
+						],
+						temperature: 0.8,
+						max_tokens: 500,
+						stream: true,
+					}),
+				})
+			);
+		});
+
+		it("should handle streaming with systemPromptSupport=false", async () => {
+			const streamData = [
+				'data: {"choices":[{"delta":{"content":"User"}}]}\n\n',
+				'data: {"choices":[{"delta":{"content":" response"}}]}\n\n',
+				"data: [DONE]\n\n",
+			];
+
+			let dataIndex = 0;
+			mockReader.read.mockImplementation(() => {
+				if (dataIndex < streamData.length) {
+					const value = new TextEncoder().encode(
+						streamData[dataIndex]
+					);
+					dataIndex++;
+					return Promise.resolve({ done: false, value });
+				}
+				return Promise.resolve({ done: true, value: undefined });
+			});
+
+			const callback = jest.fn();
+			await groqLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				undefined,
+				true,
+				false
+			);
+
+			expect(callback).toHaveBeenCalledTimes(2);
+			expect(callback).toHaveBeenNthCalledWith(1, "User");
+			expect(callback).toHaveBeenNthCalledWith(2, " response");
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{ role: "user", content: "You are helpful" },
+							{ role: "user", content: "Say hello" },
+						],
+						temperature: 0.8,
+						max_tokens: 500,
+						stream: true,
+					}),
+				})
+			);
+		});
+
 		it("should handle invalid JSON in stream gracefully", async () => {
 			const streamData = [
 				'data: {"choices":[{"delta":{"content":"Hello"}}]}\n\n',
@@ -546,6 +829,61 @@ describe("GroqLLM", () => {
 			expect(mockReader.releaseLock).toHaveBeenCalled();
 		});
 
+		it("should work correctly with streaming and systemPromptSupport=false", async () => {
+			const streamData = [
+				'data: {"choices":[{"delta":{"content":"User"}}]}\n\n',
+				'data: {"choices":[{"delta":{"content":" mode"}}]}\n\n',
+				'data: {"choices":[{"delta":{"content":" streaming"}}]}\n\n',
+				"data: [DONE]\n\n",
+			];
+
+			let dataIndex = 0;
+			mockReader.read.mockImplementation(() => {
+				if (dataIndex < streamData.length) {
+					const value = new TextEncoder().encode(
+						streamData[dataIndex]
+					);
+					dataIndex++;
+					return Promise.resolve({ done: false, value });
+				}
+				return Promise.resolve({ done: true, value: undefined });
+			});
+
+			const callback = jest.fn();
+			await groqLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				"Custom user prompt",
+				true,
+				false
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "User");
+			expect(callback).toHaveBeenNthCalledWith(2, " mode");
+			expect(callback).toHaveBeenNthCalledWith(3, " streaming");
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{ role: "user", content: "You are helpful" },
+							{ role: "user", content: "Custom user prompt" },
+							{ role: "user", content: "Say hello" },
+						],
+						temperature: 0.8,
+						max_tokens: 500,
+						stream: true,
+					}),
+				})
+			);
+		});
+
 		it("should have identical final result for streaming and non-streaming modes", async () => {
 			const expectedText = "Hello world response";
 
@@ -589,8 +927,12 @@ describe("GroqLLM", () => {
 
 			// Reset and setup streaming mode
 			jest.clearAllMocks();
-			mockStandardFetch.mockResolvedValue(mockResponse);
-			mockNativeFetch.mockResolvedValue(mockResponse);
+			mockStandardFetch.mockResolvedValue(
+				mockResponse as unknown as Response
+			);
+			mockNativeFetch.mockResolvedValue(
+				mockResponse as unknown as Response
+			);
 
 			let dataIndex = 0;
 			mockReader.read.mockImplementation(() => {
@@ -695,6 +1037,140 @@ describe("GroqLLM", () => {
 					true
 				)
 			).rejects.toThrow("Groq API error: 503 Service Unavailable");
+		});
+	});
+
+	describe("systemPromptSupport parameter", () => {
+		it("should default to true when systemPromptSupport is not provided", async () => {
+			const mockResponseData = {
+				choices: [
+					{
+						message: {
+							content: "Default system prompt response",
+						},
+					},
+				],
+			};
+			mockResponse.json.mockResolvedValue(mockResponseData);
+
+			await groqLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function"
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{
+								role: "system",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should handle systemPromptSupport=true explicitly", async () => {
+			const mockResponseData = {
+				choices: [
+					{
+						message: {
+							content: "Explicit system prompt response",
+						},
+					},
+				],
+			};
+			mockResponse.json.mockResolvedValue(mockResponseData);
+
+			await groqLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{
+								role: "system",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should handle systemPromptSupport=false explicitly", async () => {
+			const mockResponseData = {
+				choices: [
+					{
+						message: {
+							content: "User prompt response",
+						},
+					},
+				],
+			};
+			mockResponse.json.mockResolvedValue(mockResponseData);
+
+			await groqLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false
+			);
+
+			expect(mockStandardFetch).toHaveBeenCalledWith(
+				"https://api.groq.com/openai/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "llama2-70b-4096",
+						messages: [
+							{
+								role: "user",
+								content: "You are a helpful assistant",
+							},
+							{
+								role: "user",
+								content: "Write a hello world function",
+							},
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
 		});
 	});
 

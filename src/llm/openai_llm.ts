@@ -33,19 +33,31 @@ export class OpenAILLM extends LLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false
+		streaming: boolean = false,
+		systemPromptSupport: boolean = true
 	): Promise<string | void> {
 		try {
-			const messages = userPrompt
-				? [
-						{ role: "system" as const, content: prompt },
-						{ role: "user" as const, content: userPrompt },
-						{ role: "user" as const, content: content },
-					]
-				: [
-						{ role: "system" as const, content: prompt },
-						{ role: "user" as const, content: content },
-					];
+			const messages = systemPromptSupport
+				? userPrompt
+					? [
+							{ role: "system" as const, content: prompt },
+							{ role: "user" as const, content: userPrompt },
+							{ role: "user" as const, content: content },
+						]
+					: [
+							{ role: "system" as const, content: prompt },
+							{ role: "user" as const, content: content },
+						]
+				: userPrompt
+					? [
+							{ role: "user" as const, content: prompt },
+							{ role: "user" as const, content: userPrompt },
+							{ role: "user" as const, content: content },
+						]
+					: [
+							{ role: "user" as const, content: prompt },
+							{ role: "user" as const, content: content },
+						];
 
 			const baseRequestData = {
 				model: this.model,

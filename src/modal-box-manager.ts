@@ -11,7 +11,6 @@ class ModelSelectionModal extends Modal {
 	private selectedModelId: string;
 	private availableModels: AIModel[] = [];
 	private availableProviders: AIProvider[] = [];
-	private defaultModelId: string;
 	private onSubmit: (modelId: string) => void;
 	private onCancel: () => void;
 	private filterableDropdown: FilterableDropdown | null = null;
@@ -27,7 +26,6 @@ class ModelSelectionModal extends Modal {
 		super(app);
 		this.plugin = plugin;
 		this.selectedModelId = currentModelId;
-		this.defaultModelId = plugin.settings.aiProviders?.defaultModelId || "";
 		this.onSubmit = onSubmit;
 		this.onCancel = onCancel;
 
@@ -58,8 +56,7 @@ class ModelSelectionModal extends Modal {
 			m => m.id === this.selectedModelId
 		);
 		if (!isCurrentModelAvailable) {
-			this.selectedModelId =
-				this.defaultModelId || this.availableModels[0]?.id || "";
+			this.selectedModelId = this.availableModels[0]?.id || "";
 		}
 
 		// Create message

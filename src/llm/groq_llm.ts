@@ -21,12 +21,15 @@ export class GroqLLM extends BaseProviderLLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false
+		streaming: boolean = false,
+		systemPromptSupport: boolean = true
 	): Promise<string | void> {
+		const promptRole = systemPromptSupport ? "system" : "user";
+
 		const messages = userPrompt
 			? [
 					{
-						role: "system",
+						role: promptRole,
 						content: prompt,
 					},
 					{
@@ -40,7 +43,7 @@ export class GroqLLM extends BaseProviderLLM {
 				]
 			: [
 					{
-						role: "system",
+						role: promptRole,
 						content: prompt,
 					},
 					{

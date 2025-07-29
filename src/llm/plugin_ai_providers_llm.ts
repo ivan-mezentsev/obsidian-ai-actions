@@ -16,7 +16,8 @@ export class PluginAIProvidersLLM extends LLM {
 		temperature?: number,
 		maxOutputTokens?: number,
 		userPrompt?: string,
-		streaming: boolean = false
+		streaming: boolean = false,
+		_systemPromptSupport?: boolean
 	): Promise<string | void> {
 		const { promise } = await waitForAI();
 		const aiProviders = await promise;

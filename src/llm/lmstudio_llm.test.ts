@@ -725,4 +725,245 @@ describe("LMStudioLLM", () => {
 			expect(mockFetch).not.toHaveBeenCalled();
 		});
 	});
+
+	describe("systemPromptSupport functionality", () => {
+		it("should use system role when systemPromptSupport is true", async () => {
+			const mockResponse = {
+				ok: true,
+				json: jest.fn().mockResolvedValue({
+					choices: [
+						{
+							message: {
+								content: "Response with system role",
+							},
+						},
+					],
+				}),
+			};
+			mockFetch.mockResolvedValue(mockResponse);
+
+			await lmstudioLLM.autocomplete(
+				"System instruction",
+				"User content",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(mockFetch).toHaveBeenCalledWith(
+				"http://localhost:1234/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "test-model",
+						messages: [
+							{ role: "system", content: "System instruction" },
+							{ role: "user", content: "User content" },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should use user role when systemPromptSupport is false", async () => {
+			const mockResponse = {
+				ok: true,
+				json: jest.fn().mockResolvedValue({
+					choices: [
+						{
+							message: {
+								content: "Response with user role",
+							},
+						},
+					],
+				}),
+			};
+			mockFetch.mockResolvedValue(mockResponse);
+
+			await lmstudioLLM.autocomplete(
+				"System instruction",
+				"User content",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false
+			);
+
+			expect(mockFetch).toHaveBeenCalledWith(
+				"http://localhost:1234/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "test-model",
+						messages: [
+							{ role: "user", content: "System instruction" },
+							{ role: "user", content: "User content" },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should default to system role when systemPromptSupport is undefined", async () => {
+			const mockResponse = {
+				ok: true,
+				json: jest.fn().mockResolvedValue({
+					choices: [
+						{
+							message: {
+								content: "Response with default system role",
+							},
+						},
+					],
+				}),
+			};
+			mockFetch.mockResolvedValue(mockResponse);
+
+			await lmstudioLLM.autocomplete(
+				"System instruction",
+				"User content",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				undefined
+			);
+
+			expect(mockFetch).toHaveBeenCalledWith(
+				"http://localhost:1234/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "test-model",
+						messages: [
+							{ role: "system", content: "System instruction" },
+							{ role: "user", content: "User content" },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should handle systemPromptSupport with userPrompt correctly", async () => {
+			const mockResponse = {
+				ok: true,
+				json: jest.fn().mockResolvedValue({
+					choices: [
+						{
+							message: {
+								content:
+									"Response with user prompt and system support false",
+							},
+						},
+					],
+				}),
+			};
+			mockFetch.mockResolvedValue(mockResponse);
+
+			await lmstudioLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				false
+			);
+
+			expect(mockFetch).toHaveBeenCalledWith(
+				"http://localhost:1234/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "test-model",
+						messages: [
+							{ role: "user", content: "System instruction" },
+							{ role: "user", content: "User custom prompt" },
+							{ role: "user", content: "Content text" },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: false,
+					}),
+				})
+			);
+		});
+
+		it("should work with streaming mode and systemPromptSupport", async () => {
+			const mockReader = {
+				read: jest
+					.fn()
+					.mockResolvedValueOnce({
+						done: false,
+						value: new TextEncoder().encode(
+							'data: {"choices":[{"delta":{"content":"Streaming"}}]}\n'
+						),
+					})
+					.mockResolvedValueOnce({
+						done: false,
+						value: new TextEncoder().encode(
+							'data: {"choices":[{"delta":{"content":" response"}}]}\n'
+						),
+					})
+					.mockResolvedValueOnce({
+						done: false,
+						value: new TextEncoder().encode("data: [DONE]\n"),
+					})
+					.mockResolvedValueOnce({ done: true, value: undefined }),
+				releaseLock: jest.fn(),
+			};
+
+			const mockResponse = {
+				ok: true,
+				body: {
+					getReader: jest.fn().mockReturnValue(mockReader),
+				},
+			};
+			mockFetch.mockResolvedValue(mockResponse);
+
+			const callback = jest.fn();
+			await lmstudioLLM.autocomplete(
+				"System instruction",
+				"User content",
+				callback,
+				undefined,
+				undefined,
+				undefined,
+				true,
+				false
+			);
+
+			expect(mockFetch).toHaveBeenCalledWith(
+				"http://localhost:1234/v1/chat/completions",
+				expect.objectContaining({
+					body: JSON.stringify({
+						model: "test-model",
+						messages: [
+							{ role: "user", content: "System instruction" },
+							{ role: "user", content: "User content" },
+						],
+						temperature: 0.7,
+						max_tokens: 1000,
+						stream: true,
+					}),
+				})
+			);
+
+			expect(callback).toHaveBeenCalledTimes(2);
+			expect(callback).toHaveBeenNthCalledWith(1, "Streaming");
+			expect(callback).toHaveBeenNthCalledWith(2, " response");
+		});
+	});
 });

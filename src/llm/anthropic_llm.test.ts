@@ -496,4 +496,245 @@ describe("AnthropicLLM", () => {
 			});
 		});
 	});
+
+	describe("systemPromptSupport parameter", () => {
+		it("should use system parameter when systemPromptSupport is true", async () => {
+			const mockResponse = {
+				content: [
+					{
+						type: "text",
+						text: "Response with system prompt",
+					},
+				],
+			};
+			mockClient.messages.create.mockResolvedValue(mockResponse);
+
+			const result = await anthropicLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(result).toBe("Response with system prompt");
+			expect(mockClient.messages.create).toHaveBeenCalledWith({
+				model: "claude-3-sonnet-20240229",
+				max_tokens: 1000,
+				temperature: 0.7,
+				system: "You are a helpful assistant",
+				messages: [
+					{
+						role: "user",
+						content: "Write a hello world function",
+					},
+				],
+			});
+		});
+
+		it("should add prompt as first user message when systemPromptSupport is false", async () => {
+			const mockResponse = {
+				content: [
+					{
+						type: "text",
+						text: "Response without system prompt",
+					},
+				],
+			};
+			mockClient.messages.create.mockResolvedValue(mockResponse);
+
+			const result = await anthropicLLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				false
+			);
+
+			expect(result).toBe("Response without system prompt");
+			expect(mockClient.messages.create).toHaveBeenCalledWith({
+				model: "claude-3-sonnet-20240229",
+				max_tokens: 1000,
+				temperature: 0.7,
+				messages: [
+					{
+						role: "user",
+						content: "You are a helpful assistant",
+					},
+					{
+						role: "user",
+						content: "Write a hello world function",
+					},
+				],
+			});
+		});
+
+		it("should handle userPrompt correctly when systemPromptSupport is false", async () => {
+			const mockResponse = {
+				content: [
+					{
+						type: "text",
+						text: "Response with user prompt and no system",
+					},
+				],
+			};
+			mockClient.messages.create.mockResolvedValue(mockResponse);
+
+			const result = await anthropicLLM.autocomplete(
+				"System instruction",
+				"Content text",
+				undefined,
+				0.7,
+				1000,
+				"User custom prompt",
+				false,
+				false
+			);
+
+			expect(result).toBe("Response with user prompt and no system");
+			expect(mockClient.messages.create).toHaveBeenCalledWith({
+				model: "claude-3-sonnet-20240229",
+				max_tokens: 1000,
+				temperature: 0.7,
+				messages: [
+					{
+						role: "user",
+						content: "System instruction",
+					},
+					{
+						role: "user",
+						content: "User custom prompt",
+					},
+					{
+						role: "user",
+						content: "Content text",
+					},
+				],
+			});
+		});
+
+		it("should use system parameter in streaming mode when systemPromptSupport is true", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					yield {
+						type: "content_block_delta",
+						delta: {
+							type: "text_delta",
+							text: "Streaming with system",
+						},
+					};
+				},
+			};
+			mockClient.messages.create.mockResolvedValue(mockStream);
+
+			const callback = jest.fn();
+			await anthropicLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				undefined,
+				true,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledWith("Streaming with system");
+			expect(mockClient.messages.create).toHaveBeenCalledWith({
+				model: "claude-3-sonnet-20240229",
+				max_tokens: 500,
+				temperature: 0.8,
+				system: "You are helpful",
+				messages: [
+					{
+						role: "user",
+						content: "Say hello",
+					},
+				],
+				stream: true,
+			});
+		});
+
+		it("should add prompt as first user message in streaming mode when systemPromptSupport is false", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					yield {
+						type: "content_block_delta",
+						delta: {
+							type: "text_delta",
+							text: "Streaming without system",
+						},
+					};
+				},
+			};
+			mockClient.messages.create.mockResolvedValue(mockStream);
+
+			const callback = jest.fn();
+			await anthropicLLM.autocomplete(
+				"You are helpful",
+				"Say hello",
+				callback,
+				0.8,
+				500,
+				undefined,
+				true,
+				false
+			);
+
+			expect(callback).toHaveBeenCalledWith("Streaming without system");
+			expect(mockClient.messages.create).toHaveBeenCalledWith({
+				model: "claude-3-sonnet-20240229",
+				max_tokens: 500,
+				temperature: 0.8,
+				messages: [
+					{
+						role: "user",
+						content: "You are helpful",
+					},
+					{
+						role: "user",
+						content: "Say hello",
+					},
+				],
+				stream: true,
+			});
+		});
+
+		it("should default to systemPromptSupport=true when parameter is not provided", async () => {
+			const mockResponse = {
+				content: [
+					{
+						type: "text",
+						text: "Default behavior response",
+					},
+				],
+			};
+			mockClient.messages.create.mockResolvedValue(mockResponse);
+
+			const result = await anthropicLLM.autocomplete(
+				"Default system prompt",
+				"Default content"
+			);
+
+			expect(result).toBe("Default behavior response");
+			expect(mockClient.messages.create).toHaveBeenCalledWith({
+				model: "claude-3-sonnet-20240229",
+				max_tokens: 1000,
+				temperature: 0.7,
+				system: "Default system prompt",
+				messages: [
+					{
+						role: "user",
+						content: "Default content",
+					},
+				],
+			});
+		});
+	});
 });
