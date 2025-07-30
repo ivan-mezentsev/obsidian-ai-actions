@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.6.1 - 2025-07-
+-
+
 ### 0.6.0 - 2025-07-29
 - Introduced systemPromptSupport parameter in OllamaLLM, OpenAILLM, and OpenRouterLLM to control the usage of system prompts.
 - Updated autocomplete methods to conditionally include system prompts based on the new parameter.
