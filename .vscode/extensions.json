@@ -1,6 +1,6 @@
 {
 	"recommendations": [
-		"ms-vscode.vscode-eslint",
+		"dbaeumer.vscode-eslint",
 		"esbenp.prettier-vscode"
 	]
 }
