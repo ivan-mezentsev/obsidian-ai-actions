@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { X, Send } from "lucide-svelte";
+	import { RefreshCcw as ReplaceIcon, MoveDown as AppendIcon, X as CloseIcon, Send as SubmitIcon, ClipboardPaste as ClipboardIcon, TextCursorInput as SelectionIcon, FileText as SelectionAllIcon } from "lucide-svelte";
+	import { nextInputSource, getInputSourceMeta, type InputSource } from "../utils/inputSource";
+	import { getOutputModeMeta, type OutputMode, toggleOutputMode as toggleOutputModeUtil } from "../utils/outputMode";
 	import { createEventDispatcher } from "svelte";
 import { App, MarkdownView, Platform } from "obsidian";
 	import type { AIModel, AIProvider } from "../types";
@@ -19,7 +21,9 @@ import { App, MarkdownView, Platform } from "obsidian";
 	export let availableProviders: AIProvider[] = [];
 	export let selectedModelId: string = "";
 	export let defaultModelId: string = "";
-	export let outputMode: string = "replace"; // "replace" or "append"
+	export let outputMode: OutputMode = "replace"; // "replace" or "append"
+	// Input source toggle local state
+	export let inputSource: InputSource = "CURSOR";
 	export let loadModelsAsync: () => Promise<AIModel[]>; // Function to load models asynchronously
 
 	// Detect OS for keyboard shortcuts
@@ -33,11 +37,12 @@ import { App, MarkdownView, Platform } from "obsidian";
 	let modelDropdown: FilterableDropdown | null = null;
 	let selectedModelName: string = "Select Model";
 
-	// Output mode options with symbols
-	const outputModes: Record<string, { symbol: string; label: string }> = {
-		replace: { symbol: "↻", label: "Replace" },
-		append: { symbol: "↓", label: "Append" }
-	};
+	// Output mode meta
+	$: outputModeMeta = getOutputModeMeta(outputMode);
+
+	// Input source options metadata
+	// derive meta for aria/tooltip
+	$: inputSourceMeta = getInputSourceMeta(inputSource);
 
 	// Initialize selected model with default
 	$: if (selectedModelId === "" && defaultModelId !== "") {
@@ -231,7 +236,7 @@ import { App, MarkdownView, Platform } from "obsidian";
 
 	const submitPrompt = () => {
 		if (prompt.trim() && selectedModelId) {
-			dispatch('submit', { prompt: prompt.trim(), modelId: selectedModelId, outputMode });
+			dispatch('submit', { prompt: prompt.trim(), modelId: selectedModelId, outputMode, inputSource });
 
 			setTimeout(() => {
 				hide();
@@ -264,7 +269,11 @@ import { App, MarkdownView, Platform } from "obsidian";
 
 
 	const toggleOutputMode = () => {
-		outputMode = outputMode === "replace" ? "append" : "replace";
+		outputMode = toggleOutputModeUtil(outputMode);
+	};
+
+	const toggleInputSource = () => {
+		inputSource = nextInputSource(inputSource);
 	};
 
 	const closePrompt = () => {
@@ -301,6 +310,22 @@ import { App, MarkdownView, Platform } from "obsidian";
 			tabindex="0"
 		></textarea>
 		<div class="prompt-actions">
+			<!-- Input Source Toggle -->
+			<div
+				class="mode-toggle"
+				on:click={toggleInputSource}
+				role="button"
+				tabindex="0"
+				on:keydown={defaultEnterEvent}
+				aria-label={inputSourceMeta.aria}
+				data-testid="input-source-toggle"
+			>
+				<span class="mode-symbol" data-icon={inputSourceMeta.iconKey}>
+					<span class="icon icon--cursor"><SelectionIcon size={iconSize} /></span>
+					<span class="icon icon--clipboard"><ClipboardIcon size={iconSize} /></span>
+					<span class="icon icon--all"><SelectionAllIcon size={iconSize} /></span>
+				</span>
+			</div>
 			<!-- Output Mode Toggle -->
 			<div
 				class="mode-toggle"
@@ -308,9 +333,13 @@ import { App, MarkdownView, Platform } from "obsidian";
 				role="button"
 				tabindex="0"
 				on:keydown={defaultEnterEvent}
-				aria-label="{outputModes[outputMode].label} (click to toggle)"
+				aria-label={outputModeMeta.aria}
+				data-testid="output-mode-toggle"
 			>
-				<span class="mode-symbol">{outputModes[outputMode].symbol}</span>
+				<span class="mode-symbol" data-icon={outputModeMeta.iconKey}>
+					<span class="icon icon--replace"><ReplaceIcon size={iconSize} /></span>
+					<span class="icon icon--append"><AppendIcon size={iconSize} /></span>
+				</span>
 			</div>
 
 			<!-- Model Selector Dropdown -->
@@ -326,7 +355,7 @@ import { App, MarkdownView, Platform } from "obsidian";
 				on:keydown={defaultEnterEvent}
 				aria-label="Submit prompt (Ctrl+Enter)"
 			>
-				<Send size={iconSize} />
+				<SubmitIcon size={iconSize} />
 			</div>
 			<div
 				class="prompt-btn prompt-btn--close"
@@ -336,7 +365,7 @@ import { App, MarkdownView, Platform } from "obsidian";
 				on:keydown={defaultEnterEvent}
 				aria-label="Close (Esc)"
 			>
-				<X size={iconSize} />
+				<CloseIcon size={iconSize} />
 			</div>
 		</div>
 	</div>
@@ -492,6 +521,15 @@ import { App, MarkdownView, Platform } from "obsidian";
 		line-height: 1;
 		user-select: none;
 	}
+
+	/* Icon visibility controlled via data attribute */
+	.mode-symbol .icon { display: none; }
+	.mode-symbol[data-icon="cursor"] .icon--cursor { display: inline-flex; }
+	.mode-symbol[data-icon="clipboard"] .icon--clipboard { display: inline-flex; }
+	.mode-symbol[data-icon="all"] .icon--all { display: inline-flex; }
+	/* Output mode icons */
+	.mode-symbol[data-icon="replace"] .icon--replace { display: inline-flex; }
+	.mode-symbol[data-icon="append"] .icon--append { display: inline-flex; }
 
 	/* Model Selector Styles */
 	.model-selector {

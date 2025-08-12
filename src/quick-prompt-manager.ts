@@ -2,7 +2,12 @@ import { Editor, MarkdownView } from "obsidian";
 import QuickPromptBox from "./components/QuickPromptBox.svelte";
 import AIEditor from "./main";
 import { ActionHandler, PromptProcessor } from "./handler";
-import { Location, getAvailableModelsWithPluginAIProviders } from "./action";
+import {
+	Location,
+	getAvailableModelsWithPluginAIProviders,
+	Selection,
+} from "./action";
+import type { InputSource } from "./utils/inputSource";
 
 export class QuickPromptManager {
 	plugin: AIEditor;
@@ -177,10 +182,17 @@ export class QuickPromptManager {
 					prompt: string;
 					modelId: string;
 					outputMode: string;
+					inputSource: InputSource;
 				}>
 			) => {
-				const { prompt, modelId, outputMode } = event.detail;
-				await this.processPrompt(prompt, modelId, outputMode);
+				const { prompt, modelId, outputMode, inputSource } =
+					event.detail;
+				await this.processPrompt(
+					prompt,
+					modelId,
+					outputMode,
+					inputSource
+				);
 			}
 		);
 
@@ -208,7 +220,8 @@ export class QuickPromptManager {
 	private async processPrompt(
 		userPrompt: string,
 		modelId?: string,
-		outputMode: string = "replace"
+		outputMode: string = "replace",
+		inputSource: InputSource = "CURSOR"
 	) {
 		const view =
 			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
@@ -227,6 +240,14 @@ export class QuickPromptManager {
 					: Location.REPLACE_CURRENT,
 			showModalWindow: false, // Quick prompts never show modal
 		};
+
+		// Map UI inputSource to Selection enum and override sel
+		const selMap: Record<InputSource, Selection> = {
+			CURSOR: Selection.CURSOR,
+			CLIPBOARD: Selection.CLIPBOARD,
+			ALL: Selection.ALL,
+		};
+		quickPromptAction.sel = selMap[inputSource] ?? Selection.CURSOR;
 
 		// Get text input based on selection mode
 		const text = await handler.getTextInput(quickPromptAction.sel, editor);

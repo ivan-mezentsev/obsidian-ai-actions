@@ -1490,6 +1490,30 @@ describe("ActionHandler Integration Tests", () => {
 			expect(mockEditor.getValue).toHaveBeenCalled();
 		});
 
+		it("should read clipboard via getTextInput for CLIPBOARD selection", async () => {
+			const mockClipboardContent = "clipboard content via getTextInput";
+			Object.assign(navigator, {
+				clipboard: {
+					read: jest.fn().mockResolvedValue([
+						{
+							types: ["text/plain"],
+							getType: jest.fn().mockResolvedValue({
+								text: jest
+									.fn()
+									.mockResolvedValue(mockClipboardContent),
+							}),
+						},
+					]),
+				},
+			});
+
+			const result = await actionHandler.getTextInput(
+				Selection.CLIPBOARD,
+				mockEditor
+			);
+			expect(result).toBe(mockClipboardContent);
+		});
+
 		it("should preserve addToNote method functionality", async () => {
 			const mockVault = mockView.file.vault;
 
