@@ -341,7 +341,6 @@
 	on:keydown={onContainerKeydown}
 	role="dialog"
 	aria-modal="true"
-	aria-label="Quick Prompt"
 	tabindex="-1"
 >
 	<div class="prompt-container">
@@ -535,7 +534,7 @@
 	}
 
 	.prompt-btn--close {
-		color: var(--text-muted);
+		color: var(--interactive-accent);
 	}
 
 	/* Mode Toggle Styles */
@@ -548,7 +547,7 @@
 		border: 1px solid transparent;
 		border-radius: 4px;
 		background: var(--background-primary);
-		color: var(--text-muted);
+		color: var(--interactive-accent);
 		cursor: pointer;
 		transition: all 0.2s ease;
 		margin-right: 8px;
