@@ -3,7 +3,7 @@
 	import { nextInputSource, getInputSourceMeta, type InputSource } from "../utils/inputSource";
 	import { getOutputModeMeta, type OutputMode, toggleOutputMode as toggleOutputModeUtil } from "../utils/outputMode";
 	import { createEventDispatcher } from "svelte";
-import { App, MarkdownView, Platform } from "obsidian";
+	import { App, MarkdownView, Platform } from "obsidian";
 	import type { AIModel, AIProvider } from "../types";
 	import { FilterableDropdown } from "./FilterableDropdown";
 	import type { FilterableDropdownOption } from "./FilterableDropdown";
@@ -34,6 +34,7 @@ import { App, MarkdownView, Platform } from "obsidian";
 
 	const dispatch = createEventDispatcher();
 	const iconSize = 18;
+	let containerEl: HTMLDivElement;
 	let promptEl: HTMLTextAreaElement;
 	let modelDropdownEl: HTMLElement;
 	let modelDropdown: FilterableDropdown | null = null;
@@ -291,11 +292,57 @@ import { App, MarkdownView, Platform } from "obsidian";
 			el.click();
 		}
 	};
+
+	// Focus management: keep Tab focus cycling within the prompt box
+	function getFocusableElements(root: HTMLElement): HTMLElement[] {
+		const selector = [
+			'button',
+			'[href]',
+			'input',
+			'select',
+			'textarea',
+			'[tabindex]:not([tabindex="-1"])'
+		].join(',');
+		const nodeList = root.querySelectorAll(selector);
+		const elements: HTMLElement[] = [];
+		nodeList.forEach((el) => {
+			const element = el as HTMLElement;
+			const disabled = (element as HTMLButtonElement).disabled === true;
+			const isHidden = element.offsetParent === null || getComputedStyle(element).visibility === 'hidden';
+			if (!disabled && !isHidden) {
+				elements.push(element);
+			}
+		});
+		return elements;
+	}
+
+	const onContainerKeydown = (e: KeyboardEvent) => {
+		if (e.key !== 'Tab' || !containerEl || !visible) return;
+		const focusables = getFocusableElements(containerEl);
+		if (focusables.length === 0) return;
+		const active = (document.activeElement as HTMLElement) || null;
+		const currentIndex = active ? focusables.indexOf(active) : -1;
+		const direction = e.shiftKey ? -1 : 1;
+		let nextIndex: number;
+		if (currentIndex === -1) {
+			nextIndex = direction === 1 ? 0 : focusables.length - 1;
+		} else {
+			nextIndex = (currentIndex + direction + focusables.length) % focusables.length;
+		}
+		e.preventDefault();
+		focusables[nextIndex]?.focus();
+	};
 </script>
 
 <div
 	data-cid={cid}
 	class={`quick-prompt-box ${visible ? "quick-prompt-box--active" : "quick-prompt-box--hidden"}`}
+	bind:this={containerEl}
+	on:keydown={onContainerKeydown}
+	role="dialog"
+	aria-modal="true"
+	aria-label="Quick Prompt"
+	tabindex="-1"
 >
 	<div class="prompt-container">
 		<textarea
