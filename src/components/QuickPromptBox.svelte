@@ -29,6 +29,8 @@ import { App, MarkdownView, Platform } from "obsidian";
 	// Detect OS for keyboard shortcuts
 	const shortcutKey = Platform.isMacOS ? 'Cmd' : 'Ctrl';
 	const dynamicPlaceholder = Platform.isMobile ? 'Prompt...' : `Prompt... ${shortcutKey}+Enter to submit, Esc to close`;
+	// Accessible tooltip/label for Submit button with correct Ctrl/Cmd hint
+	$: submitAriaLabel = Platform.isMobile ? 'Submit prompt' : `Submit prompt (${shortcutKey}+Enter)`;
 
 	const dispatch = createEventDispatcher();
 	const iconSize = 18;
@@ -353,7 +355,7 @@ import { App, MarkdownView, Platform } from "obsidian";
 				role="button"
 				tabindex="0"
 				on:keydown={defaultEnterEvent}
-				aria-label="Submit prompt (Ctrl+Enter)"
+				aria-label={submitAriaLabel}
 			>
 				<SubmitIcon size={iconSize} />
 			</div>
