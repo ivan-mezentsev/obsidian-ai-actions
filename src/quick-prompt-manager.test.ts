@@ -5,6 +5,7 @@ import { Selection } from "./action";
 import type { App, Editor, MarkdownView } from "obsidian";
 import { ActionHandler, PromptProcessor } from "./handler";
 import type AIEditor from "./main";
+import type { InputSource } from "./utils/inputSource";
 
 // Mock dependencies
 jest.mock("./handler");
@@ -291,6 +292,42 @@ describe("QuickPromptManager Integration Tests", () => {
 				outputMode: "replace",
 				plugin: mockPlugin,
 			});
+		});
+	});
+
+	describe("inputSource mapping integration", () => {
+		it("should map inputSource=CLIPBOARD to Selection.CLIPBOARD and call getTextInput with it", async () => {
+			await quickPromptManager["processPrompt"](
+				"Test prompt",
+				"test-model",
+				"replace",
+				"CLIPBOARD" as InputSource
+			);
+
+			expect(mockActionHandler.getTextInput).toHaveBeenCalledWith(
+				Selection.CLIPBOARD,
+				mockEditor
+			);
+
+			const callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			expect(callArgs.action.sel).toBe(Selection.CLIPBOARD);
+		});
+
+		it("should map inputSource=ALL to Selection.ALL and call getTextInput with it", async () => {
+			await quickPromptManager["processPrompt"](
+				"Test prompt",
+				"test-model",
+				"append",
+				"ALL" as InputSource
+			);
+
+			expect(mockActionHandler.getTextInput).toHaveBeenCalledWith(
+				Selection.ALL,
+				mockEditor
+			);
+
+			const callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			expect(callArgs.action.sel).toBe(Selection.ALL);
 		});
 	});
 

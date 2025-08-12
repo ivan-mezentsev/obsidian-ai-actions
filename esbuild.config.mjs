@@ -55,8 +55,8 @@ const context = await esbuild.context({
 	outfile: "main.js",
 	minify: prod,
 	loader: {
-			".ts": "ts",
-			".css": "css"
+		".ts": "ts",
+		".css": "css",
 	},
 });
 
