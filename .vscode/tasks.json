@@ -1,0 +1,28 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Run unit tests",
+			"type": "shell",
+			"command": "npm test",
+			"args": [],
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "test"
+		},
+		{
+			"label": "Run unit tests",
+			"type": "shell",
+			"command": "npm test",
+			"group": "test"
+		},
+		{
+			"label": "Run unit tests",
+			"type": "shell",
+			"command": "npm test",
+			"isBackground": false,
+			"group": "test"
+		}
+	]
+}
