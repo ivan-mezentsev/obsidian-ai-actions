@@ -91,11 +91,10 @@
 			if (models && models.length > 0) {
 				availableModels = models;
 
-				// Check if currently selected model is still available
+				// Ensure selectedModelId is valid: use defaultModelId, else the first available model
 				const isCurrentModelAvailable = models.some(m => m.id === selectedModelId);
-				if (!isCurrentModelAvailable) {
-					// If current model is not available, use default model
-					selectedModelId = defaultModelId;
+				if (!selectedModelId || !isCurrentModelAvailable) {
+					selectedModelId = defaultModelId || models[0].id;
 				}
 
 				// Initialize dropdown after models are loaded

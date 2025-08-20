@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1 - 2025-08-20
+
+- fix(QuickPromptBox): ensure selected model is synced after loading (#37)
+
 ## 0.7.0 - 2025-08-13
 
 - style(QuickPromptBox): update aria-label and button colors for accessibility

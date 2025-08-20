@@ -41,7 +41,7 @@ export class QuickPromptEditModal extends Modal {
 
 		new Setting(contentEl)
 			.setName("LLM")
-			.setDesc("The large language model to use for this action")
+			.setDesc("The large language model selected (when Obsidian starts)")
 			.addButton(button => {
 				// This is a placeholder button that we'll replace with our custom dropdown
 				button.setButtonText("Select model");
