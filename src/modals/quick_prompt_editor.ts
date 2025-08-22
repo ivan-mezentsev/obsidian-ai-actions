@@ -41,13 +41,9 @@ export class QuickPromptEditModal extends Modal {
 
 		new Setting(contentEl)
 			.setName("LLM")
-			.setDesc("The large language model selected (when Obsidian starts)")
+			.setDesc("Model auto-selected at Obsidian startup")
 			.addButton(button => {
-				// This is a placeholder button that we'll replace with our custom dropdown
 				button.setButtonText("Select model");
-				button.onClick(() => {
-					// This will be replaced by our custom dropdown functionality
-				});
 			});
 
 		// Replace the button with our custom filterable dropdown
