@@ -1,9 +1,9 @@
 {
 	"id": "ai-actions",
 	"name": "AI Actions",
-	"version": "0.7.1",
+	"version": "0.7.2",
 	"minAppVersion": "0.15.0",
-	"description": "Integrates AI actions into your note-taking workflow. Based on AI-powered Text Editor by Zekun Shen.",
+	"description": "Integrates AI actions into your note-taking workflow.",
 	"author": "Ivan Mezentsev",
 	"authorUrl": "https://github.com/ivan-mezentsev",
 	"isDesktopOnly": false

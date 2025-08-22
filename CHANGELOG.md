@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.2 - 2025-08-22
+
+- fix(QuickPromptEditModal): update description for LLM setting
+- Updated package descriptions
+
 ## 0.7.1 - 2025-08-20
 
 - fix(QuickPromptBox): ensure selected model is synced after loading (#37)

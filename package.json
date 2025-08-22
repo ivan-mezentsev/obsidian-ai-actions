@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-ai-actions",
-	"version": "0.7.1",
-	"description": "Obsidian AI Actions - Based on AI-powered Text Editor by Zekun Shen",
+	"version": "0.7.2",
+	"description": "Integrates AI actions into your note-taking workflow.",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
