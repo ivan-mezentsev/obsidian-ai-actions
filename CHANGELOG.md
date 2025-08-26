@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3 - 2025-08-27
+
+- fix(QuickPromptBox): synchronize control size with dropdown input height
+
 ## 0.7.2 - 2025-08-22
 
 - fix(QuickPromptEditModal): update description for LLM setting

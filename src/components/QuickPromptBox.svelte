@@ -3,6 +3,7 @@
 	import { nextInputSource, getInputSourceMeta, type InputSource } from "../utils/inputSource";
 	import { getOutputModeMeta, type OutputMode, toggleOutputMode as toggleOutputModeUtil } from "../utils/outputMode";
 	import { createEventDispatcher } from "svelte";
+	import { onMount } from "svelte";
 	import { App, MarkdownView, Platform } from "obsidian";
 	import type { AIModel, AIProvider } from "../types";
 	import { FilterableDropdown } from "./FilterableDropdown";
@@ -33,7 +34,6 @@
 	$: submitAriaLabel = Platform.isMobile ? 'Submit prompt' : `Submit prompt (${shortcutKey}+Enter)`;
 
 	const dispatch = createEventDispatcher();
-	const iconSize = 18;
 	let containerEl: HTMLDivElement;
 	let promptEl: HTMLTextAreaElement;
 	let modelDropdownEl: HTMLElement;
@@ -147,6 +147,9 @@
 				selectedModelId = value;
 			}
 		);
+
+		// After init — sync control size with the actual dropdown input height
+		setTimeout(updateControlSizeFromDropdown, 0);
 	}
 
 	// Cleanup on component destroy
@@ -155,6 +158,38 @@
 			modelDropdown.destroy();
 			modelDropdown = null;
 		}
+	}
+
+	// Sync control sizes with the dropdown input height
+	function updateControlSizeFromDropdown() {
+		try {
+			if (!containerEl) return;
+			const input = modelDropdownEl?.querySelector('.ai-actions-filterable-dropdown-input') as HTMLElement | null;
+			if (!input) return;
+			const rect = input.getBoundingClientRect();
+			const h = Math.round(rect.height);
+			if (h > 0) {
+				containerEl.style.setProperty('--ai-actions-control-size', h + 'px');
+			}
+		} catch (e) {
+			// silently ignore
+		}
+	}
+
+	// Recalculate size on show and on window resize
+	onMount(() => {
+		const resizeHandler = () => updateControlSizeFromDropdown();
+		window.addEventListener('resize', resizeHandler);
+		// initial sync, if dropdown is already mounted
+		setTimeout(updateControlSizeFromDropdown, 0);
+		return () => {
+			window.removeEventListener('resize', resizeHandler);
+		};
+	});
+
+	$: if (visible) {
+		// small delay to wait for paint
+		setTimeout(updateControlSizeFromDropdown, 50);
 	}
 
 	// Auto-resize textarea function
@@ -368,9 +403,9 @@
 				data-testid="input-source-toggle"
 			>
 				<span class="mode-symbol" data-icon={inputSourceMeta.iconKey}>
-					<span class="icon icon--cursor"><SelectionIcon size={iconSize} /></span>
-					<span class="icon icon--clipboard"><ClipboardIcon size={iconSize} /></span>
-					<span class="icon icon--all"><SelectionAllIcon size={iconSize} /></span>
+					<span class="icon icon--cursor"><SelectionIcon /></span>
+					<span class="icon icon--clipboard"><ClipboardIcon /></span>
+					<span class="icon icon--all"><SelectionAllIcon /></span>
 				</span>
 			</div>
 			<!-- Output Mode Toggle -->
@@ -384,8 +419,8 @@
 				data-testid="output-mode-toggle"
 			>
 				<span class="mode-symbol" data-icon={outputModeMeta.iconKey}>
-					<span class="icon icon--replace"><ReplaceIcon size={iconSize} /></span>
-					<span class="icon icon--append"><AppendIcon size={iconSize} /></span>
+					<span class="icon icon--replace"><ReplaceIcon /></span>
+					<span class="icon icon--append"><AppendIcon /></span>
 				</span>
 			</div>
 
@@ -402,7 +437,7 @@
 				on:keydown={defaultEnterEvent}
 				aria-label={submitAriaLabel}
 			>
-				<SubmitIcon size={iconSize} />
+				<SubmitIcon />
 			</div>
 			<div
 				class="prompt-btn prompt-btn--close"
@@ -412,7 +447,7 @@
 				on:keydown={defaultEnterEvent}
 				aria-label="Close (Esc)"
 			>
-				<CloseIcon size={iconSize} />
+				<CloseIcon />
 			</div>
 		</div>
 	</div>
@@ -442,6 +477,11 @@
 		max-width: 600px;
 		padding: 4px;
 		transition: opacity 0.2s ease, transform 0.2s ease;
+
+		/* Sizing tokens for this panel */
+		--ai-actions-control-size: 32px; /* default; will be overridden by actual dropdown height */
+		--ai-actions-icon-scale: 0.5625; /* 18px out of 32px — previous visual proportion */
+		--ai-actions-icon-size: calc(var(--ai-actions-control-size) * var(--ai-actions-icon-scale));
 	}
 
 	.quick-prompt-box--active {
@@ -499,11 +539,12 @@
 		display: flex;
 		justify-content: flex-end;
 		gap: 8px;
+		align-items: center;
 	}
 
 	.prompt-btn {
-		width: 32px;
-		height: 32px;
+		width: var(--ai-actions-control-size);
+		height: var(--ai-actions-control-size);
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -538,8 +579,8 @@
 
 	/* Mode Toggle Styles */
 	.mode-toggle {
-		width: 32px;
-		height: 32px;
+		width: var(--ai-actions-control-size);
+		height: var(--ai-actions-control-size);
 		display: flex;
 		justify-content: center;
 		align-items: center;
@@ -564,9 +605,19 @@
 	}
 
 	.mode-symbol {
-		font-size: 14px;
-		line-height: 1;
+		line-height: 0; /* remove baseline influence */
 		user-select: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	/* Icon sizing and visibility */
+	.prompt-btn :global(svg),
+	.mode-toggle :global(svg) {
+		width: var(--ai-actions-icon-size);
+		height: var(--ai-actions-icon-size);
+		display: block; /* avoid baseline shift */
 	}
 
 	/* Icon visibility controlled via data attribute */
