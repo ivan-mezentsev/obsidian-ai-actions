@@ -53,9 +53,9 @@ export abstract class LLM {
 					has_timeout = true;
 					clearInterval(intervalId);
 					reject(
-						"Timeout: last streaming output is " +
-							(now - last_tick) +
-							"ms ago."
+						new Error(
+							`Timeout: last streaming output is ${now - last_tick}ms ago.`
+						)
 					);
 				}
 			}, 1000);

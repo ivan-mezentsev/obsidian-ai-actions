@@ -130,8 +130,11 @@ export class LLMFactory {
 				return new OpenRouterLLM(provider, modelName, useNativeFetch);
 			case "lmstudio":
 				return new LMStudioLLM(provider, modelName, useNativeFetch);
-			default:
-				throw new Error(`Unsupported provider type: ${provider.type}`);
+			default: {
+				const providerType = (provider as unknown as { type: string })
+					.type;
+				throw new Error(`Unsupported provider type: ${providerType}`);
+			}
 		}
 	}
 
