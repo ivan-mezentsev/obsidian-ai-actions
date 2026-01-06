@@ -84,7 +84,7 @@ export class PluginAIProvidersLLM extends LLM {
 				}
 			};
 
-			executeRequest();
+			void executeRequest();
 		});
 	}
 }
