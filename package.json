@@ -35,6 +35,7 @@
 		"esbuild-svelte": "^0.9.3",
 		"eslint": "^9.31.0",
 		"eslint-config-prettier": "^10.1.8",
+		"eslint-plugin-obsidianmd": "^0.1.9",
 		"eslint-plugin-prettier": "^5.5.3",
 		"jest": "^30.0.5",
 		"jest-environment-jsdom": "^30.0.5",
