@@ -71,7 +71,7 @@ export default class AIEditor extends Plugin {
 	}
 
 	async onload() {
-		initAI(
+		void initAI(
 			this.app,
 			this,
 			async () => {
@@ -88,7 +88,7 @@ export default class AIEditor extends Plugin {
 
 				this.addCommand({
 					id: "reload",
-					name: "Reload commands",
+					name: "Reload actions",
 					callback: () => {
 						this.registerActions();
 					},
@@ -116,8 +116,12 @@ export default class AIEditor extends Plugin {
 	}
 
 	async loadSettings() {
-		const loadedData = await this.loadData();
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedData);
+		const loadedData = (await this.loadData()) as unknown;
+		const loadedSettings: Partial<AIEditorSettings> =
+			loadedData && typeof loadedData === "object"
+				? (loadedData as Partial<AIEditorSettings>)
+				: {};
+		this.settings = Object.assign({}, DEFAULT_SETTINGS, loadedSettings);
 
 		// Ensure aiProviders is properly initialized
 		if (!this.settings.aiProviders) {
