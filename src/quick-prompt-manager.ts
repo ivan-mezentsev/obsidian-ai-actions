@@ -48,7 +48,7 @@ export class QuickPromptManager {
 		}
 
 		// Create new component
-		const cid = this.generateUniqueId();
+		const cid = `qp_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 		const availableModels = this.plugin.settings.aiProviders?.models || [];
 		const availableProviders =
 			this.plugin.settings.aiProviders?.providers || [];
@@ -74,13 +74,6 @@ export class QuickPromptManager {
 		this.registerPromptBoxEvents(targetEl, promptBox);
 		this.promptBoxCache.set(cid, promptBox);
 		return promptBox;
-	}
-
-	/**
-	 * Generate unique ID for components
-	 */
-	private generateUniqueId(): string {
-		return `qp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 	}
 
 	/**

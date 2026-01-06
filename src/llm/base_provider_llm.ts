@@ -2,6 +2,11 @@ import { LLM } from "./base";
 import type { AIProvider } from "../types";
 import { nativeFetch, standardFetch } from "../utils/fetch";
 
+type FetchFn = (
+	input: RequestInfo | URL,
+	init?: RequestInit
+) => Promise<Response>;
+
 export abstract class BaseProviderLLM extends LLM {
 	protected provider: AIProvider;
 	protected modelName: string;
@@ -22,7 +27,12 @@ export abstract class BaseProviderLLM extends LLM {
 		input: RequestInfo | URL,
 		init?: RequestInit
 	) => Promise<Response> {
-		return this.useNativeFetch ? nativeFetch : standardFetch;
+		const fetchImpl = (this.useNativeFetch
+			? nativeFetch
+			: standardFetch) as unknown as FetchFn;
+
+		return (input: RequestInfo | URL, init?: RequestInit) =>
+			fetchImpl(input, init);
 	}
 
 	protected getBaseUrl(): string {

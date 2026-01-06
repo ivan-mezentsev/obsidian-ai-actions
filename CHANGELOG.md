@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.4 - 2026-01-06
+
+- reduce dead code
+
 ## 0.7.3 - 2025-08-27
 
 - fix(QuickPromptBox): synchronize control size with dropdown input height
