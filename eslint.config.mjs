@@ -1,61 +1,95 @@
-import js from "@eslint/js";
-import tseslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
+import obsidianmd from "eslint-plugin-obsidianmd";
 import eslintConfigPrettier from "eslint-config-prettier";
 import eslintPluginPrettier from "eslint-plugin-prettier";
+import globals from "globals";
+
+function flattenObsidianRecommendedConfig(configs) {
+	const flattened = [];
+	for (const cfg of configs) {
+		if (cfg && typeof cfg === "object" && "extends" in cfg && cfg.extends) {
+			const { extends: ext, ...rest } = cfg;
+			const extArray = Array.isArray(ext) ? ext : [ext];
+			const fileGlobs = rest.files;
+			for (const item of extArray) {
+				const items = Array.isArray(item) ? item : [item];
+				for (const extCfg of items) {
+					if (fileGlobs) {
+						flattened.push({ ...extCfg, files: fileGlobs });
+					} else {
+						flattened.push(extCfg);
+					}
+				}
+			}
+			flattened.push(rest);
+		} else {
+			flattened.push(cfg);
+		}
+	}
+	return flattened;
+}
+
+const obsidianRecommended = flattenObsidianRecommendedConfig([
+	...obsidianmd.configs.recommended,
+]);
 
 export default [
-	js.configs.recommended,
+	// Obsidian's official lint ruleset (mirrors the community-plugin bot checks)
+	...obsidianRecommended,
+	// The obsidianmd recommended ruleset enables type-aware @typescript-eslint rules.
+	// Provide parserOptions so those rules can access TypeScript type information.
 	{
-		files: ["**/*.ts", "**/*.js"],
+		files: [
+			"**/*.ts",
+			"**/*.tsx",
+			"**/*.js",
+			"**/*.jsx",
+			"**/*.cjs",
+			"**/*.mjs",
+		],
 		languageOptions: {
-			parser: tsparser,
-			ecmaVersion: 2020,
-			sourceType: "module",
-			globals: {
-				node: true,
-				console: "readonly",
-				document: "readonly",
-				window: "readonly",
-				HTMLElement: "readonly",
-				HTMLInputElement: "readonly",
-				KeyboardEvent: "readonly",
-				Event: "readonly",
-				Element: "readonly",
-				Node: "readonly",
-				CustomEvent: "readonly",
-				setTimeout: "readonly",
-				clearInterval: "readonly",
-				RequestInfo: "readonly",
-				URL: "readonly",
-				RequestInit: "readonly",
-				Response: "readonly",
-				fetch: "readonly",
-				TextDecoder: "readonly",
-				setInterval: "readonly",
-				HTMLSpanElement: "readonly",
-				NodeJS: "readonly",
-				clearTimeout: "readonly",
-				ResponseInit: "readonly",
+			parserOptions: {
+				projectService: {
+					allowDefaultProject: [
+						"*.js",
+						"*.jsx",
+						"*.cjs",
+						"*.mjs",
+						"__mocks__/*.js",
+						"__mocks__/*.jsx",
+						"__mocks__/*.cjs",
+						"__mocks__/*.mjs",
+						"src/*.test.ts",
+						"src/*/*.test.ts",
+					],
+					defaultProject: "tsconfig.json",
+					maximumDefaultProjectFileMatchCount_THIS_WILL_SLOW_DOWN_LINTING: 50,
+				},
+				tsconfigRootDir: process.cwd(),
 			},
 		},
+	},
+	{
+		files: [
+			"**/*.ts",
+			"**/*.tsx",
+			"**/*.js",
+			"**/*.jsx",
+			"**/*.cjs",
+			"**/*.mjs",
+		],
+		languageOptions: {
+			globals: {
+				...globals.browser,
+				...globals.node,
+			},
+		},
+	},
+	// Keep Prettier enforcement (formatting as errors)
+	{
 		plugins: {
-			"@typescript-eslint": tseslint,
 			prettier: eslintPluginPrettier,
 		},
 		rules: {
-			...tseslint.configs.recommended.rules,
-			...tseslint.configs["eslint-recommended"].rules,
-			"no-unused-vars": "off",
-			"@typescript-eslint/no-unused-vars": [
-				"error",
-				{
-					argsIgnorePattern: "^_",
-				},
-			],
-			"@typescript-eslint/ban-ts-comment": "error",
-			"no-prototype-builtins": "error",
-			"@typescript-eslint/no-empty-function": "off",
 			"prettier/prettier": "error",
 		},
 	},
@@ -119,6 +153,7 @@ export default [
 		ignores: [
 			"node_modules/",
 			"main.js",
+			"dist/",
 			"references/",
 			"version-bump.mjs",
 			"**/jest.*",
