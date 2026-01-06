@@ -1,6 +1,12 @@
 import OpenAI from "openai";
 import { LLM } from "./base";
 
+type AsyncIterableLike<T> = {
+	[Symbol.asyncIterator](): {
+		next(): Promise<{ value: T; done: boolean }>;
+	};
+};
+
 export enum OpenAIModel {
 	GPT_4O_MINI = "gpt-4o-mini",
 }
@@ -79,7 +85,7 @@ export class OpenAILLM extends LLM {
 				);
 
 				if ("stream" in requestData && requestData.stream) {
-					for await (const chunk of stream as AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>) {
+					for await (const chunk of stream as unknown as AsyncIterableLike<OpenAI.Chat.Completions.ChatCompletionChunk>) {
 						const content = chunk.choices[0]?.delta?.content;
 						if (content) {
 							callback(content);
