@@ -3,6 +3,7 @@
 ## 0.7.5 - 2026-01-07
 
 - reduce dead code
+- improve error handling
 
 ## 0.7.4 - 2026-01-06
 
