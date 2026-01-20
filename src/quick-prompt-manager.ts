@@ -1,4 +1,6 @@
 import { Editor, MarkdownView } from "obsidian";
+import { mount, unmount } from "svelte";
+import type { Component } from "svelte";
 import QuickPromptBox from "./components/QuickPromptBox.svelte";
 import AIEditor from "./main";
 import { ActionHandler, PromptProcessor } from "./handler";
@@ -7,11 +9,40 @@ import {
 	getAvailableModelsWithPluginAIProviders,
 	Selection,
 } from "./action";
+import type { AIModel, AIProvider } from "./types";
 import type { InputSource } from "./utils/inputSource";
+
+type QuickPromptBoxProps = {
+	visible: boolean;
+	prompt: string;
+	cid: string;
+	availableModels: AIModel[];
+	availableProviders: AIProvider[];
+	selectedModelId: string;
+	defaultModelId: string;
+	loadModelsAsync: () => Promise<AIModel[]>;
+	onSubmit?: (payload: {
+		prompt: string;
+		modelId: string;
+		outputMode: string;
+		inputSource: InputSource;
+	}) => void;
+	onClose?: () => void;
+};
+
+type QuickPromptBoxExports = {
+	show: (initialPrompt?: string) => void;
+	hide: () => void;
+};
+
+type QuickPromptBoxEntry = {
+	promptBox: QuickPromptBoxExports;
+	mountEl: HTMLElement;
+};
 
 export class QuickPromptManager {
 	plugin: AIEditor;
-	promptBoxCache: Map<string, QuickPromptBox> = new Map();
+	promptBoxCache: Map<string, QuickPromptBoxEntry> = new Map();
 
 	constructor(plugin: AIEditor) {
 		this.plugin = plugin;
@@ -20,7 +51,7 @@ export class QuickPromptManager {
 	/**
 	 * Get or create QuickPromptBox component
 	 */
-	getPromptBox(): QuickPromptBox {
+	getPromptBox(): QuickPromptBoxExports {
 		const view =
 			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) {
@@ -34,9 +65,9 @@ export class QuickPromptManager {
 		if (promptBoxEl) {
 			const cid = promptBoxEl.getAttribute("data-cid");
 			if (cid) {
-				const cachedBox = this.promptBoxCache.get(cid);
-				if (cachedBox) {
-					return cachedBox;
+				const cachedEntry = this.promptBoxCache.get(cid);
+				if (cachedEntry) {
+					return cachedEntry.promptBox;
 				} else {
 					// Orphaned element, remove it
 					promptBoxEl.remove();
@@ -53,26 +84,39 @@ export class QuickPromptManager {
 		const availableProviders =
 			this.plugin.settings.aiProviders?.providers || [];
 		const defaultModelId = this.plugin.settings.quickPrompt?.model || "";
+		const mountEl = targetEl.createDiv();
 
-		const promptBox = new QuickPromptBox({
-			target: targetEl,
-			props: {
-				visible: false,
-				prompt: "",
-				cid: cid,
-				availableModels: availableModels,
-				availableProviders: availableProviders,
-				selectedModelId: defaultModelId,
-				defaultModelId: defaultModelId,
-				loadModelsAsync: () =>
-					getAvailableModelsWithPluginAIProviders(
-						this.plugin.settings
-					),
-			},
-		});
+		const promptBox = mount<QuickPromptBoxProps, QuickPromptBoxExports>(
+			QuickPromptBox as unknown as Component<
+				QuickPromptBoxProps,
+				QuickPromptBoxExports
+			>,
+			{
+				target: mountEl,
+				props: {
+					visible: false,
+					prompt: "",
+					cid: cid,
+					availableModels: availableModels,
+					availableProviders: availableProviders,
+					selectedModelId: defaultModelId,
+					defaultModelId: defaultModelId,
+					loadModelsAsync: () =>
+						getAvailableModelsWithPluginAIProviders(
+							this.plugin.settings
+						),
+					onSubmit: payload => {
+						this.handleSubmit(payload);
+					},
+					onClose: () => {
+						this.hideAllPromptBoxes();
+					},
+				},
+			}
+		);
 
 		this.registerPromptBoxEvents(targetEl, promptBox);
-		this.promptBoxCache.set(cid, promptBox);
+		this.promptBoxCache.set(cid, { promptBox, mountEl });
 		return promptBox;
 	}
 
@@ -98,10 +142,8 @@ export class QuickPromptManager {
 	 * Hide all active prompt boxes
 	 */
 	private hideAllPromptBoxes() {
-		this.promptBoxCache.forEach(promptBox => {
-			if (promptBox) {
-				promptBox.hide();
-			}
+		this.promptBoxCache.forEach(({ promptBox }) => {
+			promptBox.hide();
 		});
 	}
 
@@ -115,8 +157,16 @@ export class QuickPromptManager {
 			? editor.getCursor("to")
 			: editor.getCursor();
 
-		// @ts-expect-error, not typed
-		const editorView = editor.cm;
+		const editorView = (
+			editor as unknown as {
+				cm: {
+					coordsAtPos: (pos: number) => {
+						left: number;
+						bottom: number;
+					};
+				};
+			}
+		).cm;
 		const coords = editorView.coordsAtPos(editor.posToOffset(cursorPos));
 
 		if (coords) {
@@ -136,8 +186,10 @@ export class QuickPromptManager {
 				promptBoxEl.classList.add("ai-actions-quick-prompt-box");
 
 				// Position slightly below and to the right of cursor/selection
-				promptBoxEl.style.setProperty("left", `${relativeLeft + 10}px`);
-				promptBoxEl.style.setProperty("top", `${relativeTop + 10}px`);
+				promptBoxEl.setCssProps({
+					left: `${relativeLeft + 10}px`,
+					top: `${relativeTop + 10}px`,
+				});
 
 				// Ensure it doesn't go off screen
 				const rect = promptBoxEl.getBoundingClientRect();
@@ -149,12 +201,12 @@ export class QuickPromptManager {
 						10,
 						relativeLeft - rect.width - 10
 					);
-					promptBoxEl.style.setProperty("left", `${newLeft}px`);
+					promptBoxEl.setCssProps({ left: `${newLeft}px` });
 				}
 
 				if (rect.bottom > viewportHeight) {
 					const newTop = Math.max(10, relativeTop - rect.height - 20);
-					promptBoxEl.style.setProperty("top", `${newTop}px`);
+					promptBoxEl.setCssProps({ top: `${newTop}px` });
 				}
 			}
 		}
@@ -165,35 +217,8 @@ export class QuickPromptManager {
 	 */
 	private registerPromptBoxEvents(
 		mountEl: HTMLElement,
-		promptBox: QuickPromptBox
+		promptBox: QuickPromptBoxExports
 	) {
-		// Handle submit event
-		promptBox.$on(
-			"submit",
-			async (
-				event: CustomEvent<{
-					prompt: string;
-					modelId: string;
-					outputMode: string;
-					inputSource: InputSource;
-				}>
-			) => {
-				const { prompt, modelId, outputMode, inputSource } =
-					event.detail;
-				await this.processPrompt(
-					prompt,
-					modelId,
-					outputMode,
-					inputSource
-				);
-			}
-		);
-
-		// Handle close event
-		promptBox.$on("close", () => {
-			promptBox.hide();
-		});
-
 		// Handle escape key globally
 		this.plugin.registerDomEvent(mountEl, "keydown", e => {
 			if (e.key === "Escape") {
@@ -205,6 +230,20 @@ export class QuickPromptManager {
 				}
 			}
 		});
+	}
+
+	private handleSubmit(payload: {
+		prompt: string;
+		modelId: string;
+		outputMode: string;
+		inputSource: InputSource;
+	}) {
+		void this.processPrompt(
+			payload.prompt,
+			payload.modelId,
+			payload.outputMode,
+			payload.inputSource
+		);
 	}
 
 	/**
@@ -265,15 +304,10 @@ export class QuickPromptManager {
 	 * Destroy all prompt boxes
 	 */
 	destroy() {
-		this.promptBoxCache.forEach((promptBox, cid) => {
-			if (promptBox) {
-				// Find and remove the DOM element
-				const element = document.querySelector(`[data-cid="${cid}"]`);
-				if (element) {
-					element.remove();
-				}
-				// Destroy the Svelte component
-				promptBox.$destroy();
+		this.promptBoxCache.forEach(({ promptBox, mountEl }) => {
+			void unmount(promptBox);
+			if (mountEl.isConnected) {
+				mountEl.remove();
 			}
 		});
 		this.promptBoxCache.clear();

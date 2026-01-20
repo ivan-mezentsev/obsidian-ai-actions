@@ -1,6 +1,7 @@
 import { MarkdownView } from "obsidian";
+import { mount, unmount } from "svelte";
+import type { Component } from "svelte";
 import ActionResultPanel from "./components/ActionResultPanel.svelte";
-import type { SvelteComponent } from "svelte";
 import type AIEditor from "./main";
 import { Location } from "./action";
 
@@ -24,11 +25,8 @@ type ActionResultPanelExports = {
 	updateProps: (props: ActionResultPanelUpdateProps) => void;
 };
 
-type ActionResultPanelInstance = SvelteComponent<ActionResultPanelProps> &
-	ActionResultPanelExports;
-
 type ActionResultPanelEntry = {
-	panel: ActionResultPanelInstance;
+	panel: ActionResultPanelExports;
 	mountEl: HTMLElement;
 };
 
@@ -53,7 +51,7 @@ export class ActionResultManager {
 	/**
 	 * Get or create a result panel for the current view
 	 */
-	getResultPanel(): ActionResultPanelInstance {
+	getResultPanel(): ActionResultPanelExports {
 		const view =
 			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) {
@@ -83,21 +81,27 @@ export class ActionResultManager {
 		// Create new panel
 		const cid = Date.now().toString();
 		const mountEl = targetEl.createDiv();
-		const panel = new ActionResultPanel({
-			target: mountEl,
-			props: {
-				visible: false,
-				cid: cid,
-				hasFileOutput: false,
-				defaultLocation: Location.REPLACE_CURRENT,
-				onAction: (location: Location) => {
-					void this.handleLocationAction(location);
+		const panel = mount<ActionResultPanelProps, ActionResultPanelExports>(
+			ActionResultPanel as unknown as Component<
+				ActionResultPanelProps,
+				ActionResultPanelExports
+			>,
+			{
+				target: mountEl,
+				props: {
+					visible: false,
+					cid: cid,
+					hasFileOutput: false,
+					defaultLocation: Location.REPLACE_CURRENT,
+					onAction: (location: Location) => {
+						void this.handleLocationAction(location);
+					},
+					onCancel: () => {
+						this.handleCancel();
+					},
 				},
-				onCancel: () => {
-					this.handleCancel();
-				},
-			},
-		}) as ActionResultPanelInstance;
+			}
+		);
 
 		// Cache the panel
 		this.panelCache.set(cid, { panel, mountEl });
@@ -246,7 +250,8 @@ export class ActionResultManager {
 	 * Destroy all result panels
 	 */
 	destroy() {
-		this.panelCache.forEach(({ mountEl }) => {
+		this.panelCache.forEach(({ panel, mountEl }) => {
+			void unmount(panel);
 			if (mountEl.isConnected) {
 				mountEl.remove();
 			}

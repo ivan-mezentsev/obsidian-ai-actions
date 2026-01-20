@@ -2,7 +2,6 @@
 	import { RefreshCcw as ReplaceIcon, MoveDown as AppendIcon, X as CloseIcon, Send as SubmitIcon, ClipboardPaste as ClipboardIcon, TextCursorInput as SelectionIcon, FileText as SelectionAllIcon } from "lucide-svelte";
 	import { nextInputSource, getInputSourceMeta, type InputSource } from "../utils/inputSource";
 	import { getOutputModeMeta, type OutputMode, toggleOutputMode as toggleOutputModeUtil } from "../utils/outputMode";
-	import { createEventDispatcher } from "svelte";
 	import { onMount } from "svelte";
 	import { App, MarkdownView, Platform } from "obsidian";
 	import type { AIModel, AIProvider } from "../types";
@@ -26,6 +25,13 @@
 	// Input source toggle local state
 	export let inputSource: InputSource = "CURSOR";
 	export let loadModelsAsync: () => Promise<AIModel[]>; // Function to load models asynchronously
+	export let onSubmit: ((payload: {
+		prompt: string;
+		modelId: string;
+		outputMode: OutputMode;
+		inputSource: InputSource;
+	}) => void) | null = null;
+	export let onClose: (() => void) | null = null;
 
 	// Detect OS for keyboard shortcuts
 	const shortcutKey = Platform.isMacOS ? 'Cmd' : 'Ctrl';
@@ -33,7 +39,6 @@
 	// Accessible tooltip/label for Submit button with correct Ctrl/Cmd hint
 	$: submitAriaLabel = Platform.isMobile ? 'Submit prompt' : `Submit prompt (${shortcutKey}+Enter)`;
 
-	const dispatch = createEventDispatcher();
 	let containerEl: HTMLDivElement;
 	let promptEl: HTMLTextAreaElement;
 	let modelDropdownEl: HTMLElement;
@@ -169,7 +174,9 @@
 			const rect = input.getBoundingClientRect();
 			const h = Math.round(rect.height);
 			if (h > 0) {
-				containerEl.style.setProperty('--ai-actions-control-size', h + 'px');
+				containerEl.setCssProps({
+					"--ai-actions-control-size": h + "px",
+				});
 			}
 		} catch (e) {
 			// silently ignore
@@ -208,7 +215,7 @@
 		const newHeight = Math.min(Math.max(element.scrollHeight, minHeight), maxHeight);
 
 		// Use CSS custom property for dynamic height
-		element.style.setProperty('--dynamic-height', newHeight + 'px');
+		element.setCssProps({ "--dynamic-height": newHeight + "px" });
 		element.classList.remove('ai-actions-textarea-auto');
 		element.classList.add('ai-actions-textarea-resized');
 	};
@@ -264,7 +271,9 @@
 		if (e.key === "Escape") {
 			e.preventDefault();
 			hide();
-			dispatch('close');
+			if (onClose) {
+				onClose();
+			}
 		} else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
 			e.preventDefault();
 			submitPrompt();
@@ -273,7 +282,14 @@
 
 	const submitPrompt = () => {
 		if (prompt.trim() && selectedModelId) {
-			dispatch('submit', { prompt: prompt.trim(), modelId: selectedModelId, outputMode, inputSource });
+			if (onSubmit) {
+				onSubmit({
+					prompt: prompt.trim(),
+					modelId: selectedModelId,
+					outputMode,
+					inputSource,
+				});
+			}
 
 			setTimeout(() => {
 				hide();
@@ -315,7 +331,9 @@
 
 	const closePrompt = () => {
 		hide();
-		dispatch('close');
+		if (onClose) {
+			onClose();
+		}
 	};
 
 	const defaultEnterEvent = (e: KeyboardEvent) => {
