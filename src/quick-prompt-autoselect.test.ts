@@ -3,6 +3,7 @@ import type AIEditor from "./main";
 import type { App, Editor, MarkdownView } from "obsidian";
 import type { AIEditorSettings } from "./settings";
 import { ActionHandler, PromptProcessor } from "./handler";
+import type { PromptConfig } from "./handler";
 import { Location, Selection } from "./action";
 
 // Mocks
@@ -108,46 +109,36 @@ describe("QuickPrompt autoselection and submit", () => {
 		// Given: defaultModelId is empty and models would be loaded (autoselect to first happens in component).
 		const promptBox = quickPromptManager.getPromptBox();
 
-		// Prepare prompt and simulate that component chose first model "m1"
-		(
-			promptBox as unknown as { $set: (p: { prompt: string }) => void }
-		).$set({
-			prompt: "hello",
-		});
-
-		// Fire submit event from the mocked Svelte component
-		type SubmitHandler = (
-			e: CustomEvent<{
-				prompt: string;
-				modelId: string;
-				outputMode: string;
-				inputSource: string;
-			}>
-		) => void;
 		const submitHandler = (
 			promptBox as unknown as {
-				eventHandlers: Record<string, SubmitHandler>;
+				props: {
+					onSubmit?: (payload: {
+						prompt: string;
+						modelId: string;
+						outputMode: string;
+						inputSource: string;
+					}) => void;
+				};
 			}
-		).eventHandlers["submit"];
+		).props.onSubmit;
 		expect(typeof submitHandler).toBe("function");
-		submitHandler(
-			new CustomEvent("submit", {
-				detail: {
-					prompt: "hello",
-					modelId: "m1", // implies autoselected first model
-					outputMode: "replace",
-					inputSource: "CURSOR",
-				},
-			})
-		);
+		submitHandler?.({
+			prompt: "hello",
+			modelId: "m1", // implies autoselected first model
+			outputMode: "replace",
+			inputSource: "CURSOR",
+		});
 
 		// Wait for async logic inside manager
 		await new Promise(resolve => setTimeout(resolve, 0));
 
 		// Then: processor was called with this model id
-		const callArgs = (mockPromptProcessor.processPrompt as jest.Mock).mock
-			.calls[0][0];
-		expect(callArgs.action.model).toBe("m1");
-		expect(callArgs.userPrompt).toBe("hello");
+		const callArgs = (
+			mockPromptProcessor.processPrompt as jest.MockedFunction<
+				(config: PromptConfig) => Promise<void>
+			>
+		).mock.calls[0]?.[0];
+		expect(callArgs?.action.model).toBe("m1");
+		expect(callArgs?.userPrompt).toBe("hello");
 	});
 });
