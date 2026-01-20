@@ -1,14 +1,13 @@
 <script lang="ts">
 	import { X } from "lucide-svelte";
-	import { createEventDispatcher } from "svelte";
 	import { Location } from "../action";
 
 	export let visible: boolean = false;
 	export let cid: string = "";
 	export let hasFileOutput: boolean = false;
 	export let defaultLocation: Location = Location.REPLACE_CURRENT;
-
-	const dispatch = createEventDispatcher();
+	export let onAction: ((location: Location) => void) | null = null;
+	export let onCancel: (() => void) | null = null;
 	const iconSize = 18;
 
 	export function show() {
@@ -19,13 +18,29 @@
 		visible = false;
 	}
 
+	export function updateProps(props: {
+		hasFileOutput?: boolean;
+		defaultLocation?: Location;
+	}) {
+		if (typeof props.hasFileOutput !== "undefined") {
+			hasFileOutput = props.hasFileOutput;
+		}
+		if (typeof props.defaultLocation !== "undefined") {
+			defaultLocation = props.defaultLocation;
+		}
+	}
+
 	const handleAction = (location: Location) => {
-		dispatch('action', { location });
+		if (onAction) {
+			onAction(location);
+		}
 		hide();
 	};
 
 	const handleCancel = () => {
-		dispatch('cancel');
+		if (onCancel) {
+			onCancel();
+		}
 		hide();
 	};
 

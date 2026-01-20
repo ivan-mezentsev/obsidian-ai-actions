@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.6 - 2026-01-20
+
+- feat(tests): add Svelte mock and enhance Jest configuration
+- refactor(quick-prompt-manager): used componentApi: 5
+- refactor(action-result-panel): enhance panel structure and event handling
+
 ## 0.7.5 - 2026-01-07
 
 - reduce dead code

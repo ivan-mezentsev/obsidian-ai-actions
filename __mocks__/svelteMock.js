@@ -14,6 +14,10 @@ class MockSvelteComponent {
 		Object.assign(this.props, props);
 	}
 
+	updateProps(props) {
+		Object.assign(this.props, props);
+	}
+
 	$destroy() {
 		// Mock destroy
 	}

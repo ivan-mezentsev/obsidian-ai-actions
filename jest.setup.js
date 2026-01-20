@@ -25,3 +25,12 @@ global.globalThis.fetch = global.fetch;
 
 // Use real timers for setup
 jest.useRealTimers();
+
+// Provide Obsidian-style DOM helpers in JSDOM
+if (typeof HTMLElement !== "undefined" && !HTMLElement.prototype.createDiv) {
+	HTMLElement.prototype.createDiv = function () {
+		const div = document.createElement("div");
+		this.appendChild(div);
+		return div;
+	};
+}

@@ -19,7 +19,7 @@ const context = await esbuild.context({
 			compilerOptions: {
 				css: "injected",
 				compatibility: {
-					componentApi: 4,
+					componentApi: 5,
 				},
 			},
 			preprocess: sveltePreprocess(),

@@ -1,11 +1,38 @@
 import { MarkdownView } from "obsidian";
+import { mount, unmount } from "svelte";
+import type { Component } from "svelte";
 import ActionResultPanel from "./components/ActionResultPanel.svelte";
 import type AIEditor from "./main";
 import { Location } from "./action";
 
+type ActionResultPanelUpdateProps = {
+	hasFileOutput?: boolean;
+	defaultLocation?: Location;
+};
+
+type ActionResultPanelProps = {
+	visible: boolean;
+	cid: string;
+	hasFileOutput: boolean;
+	defaultLocation: Location;
+	onAction?: (location: Location) => void;
+	onCancel?: () => void;
+};
+
+type ActionResultPanelExports = {
+	show: () => void;
+	hide: () => void;
+	updateProps: (props: ActionResultPanelUpdateProps) => void;
+};
+
+type ActionResultPanelEntry = {
+	panel: ActionResultPanelExports;
+	mountEl: HTMLElement;
+};
+
 export class ActionResultManager {
 	plugin: AIEditor;
-	panelCache: Map<string, ActionResultPanel> = new Map();
+	panelCache: Map<string, ActionResultPanelEntry> = new Map();
 	private currentResult: string = "";
 	private currentFormat: ((text: string) => string) | null = null;
 	private onAcceptCallback?: (result: string) => Promise<void>;
@@ -24,7 +51,7 @@ export class ActionResultManager {
 	/**
 	 * Get or create a result panel for the current view
 	 */
-	getResultPanel(): ActionResultPanel {
+	getResultPanel(): ActionResultPanelExports {
 		const view =
 			this.plugin.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!view) {
@@ -38,9 +65,9 @@ export class ActionResultManager {
 		if (panelEl) {
 			const cid = panelEl.getAttribute("data-cid");
 			if (cid) {
-				const cachedPanel = this.panelCache.get(cid);
-				if (cachedPanel) {
-					return cachedPanel;
+				const cachedEntry = this.panelCache.get(cid);
+				if (cachedEntry) {
+					return cachedEntry.panel;
 				} else {
 					// Orphaned element, remove it
 					panelEl.remove();
@@ -54,21 +81,30 @@ export class ActionResultManager {
 		// Create new panel
 		const cid = Date.now().toString();
 		const mountEl = targetEl.createDiv();
-
-		const panel = new ActionResultPanel({
-			target: mountEl,
-			props: {
-				visible: false,
-				cid: cid,
-				hasFileOutput: false,
-			},
-		});
-
-		// Register event handlers
-		this.registerPanelEvents(mountEl, panel);
+		const panel = mount<ActionResultPanelProps, ActionResultPanelExports>(
+			ActionResultPanel as unknown as Component<
+				ActionResultPanelProps,
+				ActionResultPanelExports
+			>,
+			{
+				target: mountEl,
+				props: {
+					visible: false,
+					cid: cid,
+					hasFileOutput: false,
+					defaultLocation: Location.REPLACE_CURRENT,
+					onAction: (location: Location) => {
+						void this.handleLocationAction(location);
+					},
+					onCancel: () => {
+						this.handleCancel();
+					},
+				},
+			}
+		);
 
 		// Cache the panel
-		this.panelCache.set(cid, panel);
+		this.panelCache.set(cid, { panel, mountEl });
 
 		return panel;
 	}
@@ -101,7 +137,7 @@ export class ActionResultManager {
 		const panel = this.getResultPanel();
 
 		// Update panel props
-		panel.$set({ hasFileOutput, defaultLocation });
+		panel.updateProps({ hasFileOutput, defaultLocation });
 
 		// Position and show the panel
 		this.positionResultPanel();
@@ -112,7 +148,7 @@ export class ActionResultManager {
 	 * Hide all result panels
 	 */
 	hideAllPanels() {
-		this.panelCache.forEach(panel => {
+		this.panelCache.forEach(({ panel }) => {
 			panel.hide();
 		});
 	}
@@ -132,54 +168,46 @@ export class ActionResultManager {
 
 		if (panelEl) {
 			// Set fixed position at top-left (mirrored from reference project)
-			panelEl.style.setProperty("top", "88px");
-			panelEl.style.setProperty("left", "48px");
+			panelEl.setCssProps({
+				top: "88px",
+				left: "48px",
+			});
 		}
 	}
 
 	/**
-	 * Register event handlers for result panel
+	 * Handle action event (location-based actions)
 	 */
-	private registerPanelEvents(
-		mountEl: HTMLElement,
-		panel: ActionResultPanel
-	) {
-		// Handle action event (location-based actions)
-		panel.$on(
-			"action",
-			async (event: CustomEvent<{ location: Location }>) => {
-				const { location } = event.detail;
-				if (this.onLocationActionCallback && this.currentResult) {
-					const formattedResult = this.currentFormat
-						? this.currentFormat(this.currentResult)
-						: this.currentResult;
-					await this.onLocationActionCallback(
-						formattedResult,
-						location
-					);
-				}
-			}
-		);
+	private async handleLocationAction(location: Location): Promise<void> {
+		if (this.onLocationActionCallback && this.currentResult) {
+			const formattedResult = this.currentFormat
+				? this.currentFormat(this.currentResult)
+				: this.currentResult;
+			await this.onLocationActionCallback(formattedResult, location);
+		}
+	}
 
-		// Handle edit event
-		panel.$on("edit", async () => {
-			if (this.onAcceptCallback && this.currentResult) {
-				// For edit, we'll need to implement a text editor modal
-				// For now, just accept the current result
-				const formattedResult = this.currentFormat
-					? this.currentFormat(this.currentResult)
-					: this.currentResult;
-				await this.onAcceptCallback(formattedResult);
-			}
-		});
+	/**
+	 * Handle edit event
+	 */
+	private async handleEdit(): Promise<void> {
+		if (this.onAcceptCallback && this.currentResult) {
+			// For edit, we'll need to implement a text editor modal
+			// For now, just accept the current result
+			const formattedResult = this.currentFormat
+				? this.currentFormat(this.currentResult)
+				: this.currentResult;
+			await this.onAcceptCallback(formattedResult);
+		}
+	}
 
-		// Handle cancel event
-		panel.$on("cancel", () => {
-			panel.hide();
-			if (this.onCancelCallback) {
-				this.onCancelCallback();
-			}
-		});
+	/**
+	 * Handle cancel event
+	 */
+	private handleCancel(): void {
+		if (this.onCancelCallback) {
+			this.onCancelCallback();
+		}
 	}
 
 	/**
@@ -195,8 +223,9 @@ export class ActionResultManager {
 				if (activePanelEl) {
 					const cid = activePanelEl.getAttribute("data-cid");
 					if (cid) {
-						const panel = this.panelCache.get(cid);
-						if (panel) {
+						const entry = this.panelCache.get(cid);
+						if (entry) {
+							const { panel } = entry;
 							e.preventDefault();
 							e.stopPropagation();
 							panel.hide();
@@ -221,15 +250,10 @@ export class ActionResultManager {
 	 * Destroy all result panels
 	 */
 	destroy() {
-		this.panelCache.forEach((panel, cid) => {
-			if (panel) {
-				// Find and remove the DOM element
-				const element = document.querySelector(`[data-cid="${cid}"]`);
-				if (element) {
-					element.remove();
-				}
-				// Destroy the Svelte component
-				panel.$destroy();
+		this.panelCache.forEach(({ panel, mountEl }) => {
+			void unmount(panel);
+			if (mountEl.isConnected) {
+				mountEl.remove();
 			}
 		});
 		this.panelCache.clear();
