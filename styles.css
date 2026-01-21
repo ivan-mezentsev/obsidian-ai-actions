@@ -434,6 +434,11 @@
 	text-align: center;
 }
 
+.ai-actions-no-models-text {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
 /* Modal styles for model selection */
 .modal.ai-actions-model-selection-modal {
 	width: 300px !important;

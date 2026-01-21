@@ -15,7 +15,7 @@ import type { FilterableDropdownOption } from "../components/FilterableDropdown"
 export class ActionEditModal extends Modal {
 	action: UserAction;
 	plugin: AIEditor;
-	onSave: (userAction: UserAction) => void;
+	onSave: (userAction: UserAction) => Promise<void>;
 	onDelete?: () => void;
 	private modelDropdown?: FilterableDropdown;
 
@@ -23,16 +23,20 @@ export class ActionEditModal extends Modal {
 		app: App,
 		plugin: AIEditor,
 		user_action: UserAction,
-		onSave: (userAction: UserAction) => void,
+		onSave: (userAction: UserAction) => Promise<void>,
 		onDelete?: () => void
 	) {
 		super(app);
 		this.plugin = plugin;
-		this.action = user_action;
+		this.action = JSON.parse(JSON.stringify(user_action)) as UserAction;
 		this.onSave = onSave;
 		this.onDelete = onDelete;
 	}
-	async onOpen() {
+	onOpen() {
+		void this.renderContent();
+	}
+
+	private async renderContent(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
 
@@ -70,10 +74,10 @@ export class ActionEditModal extends Modal {
 			this.plugin.settings
 		);
 		if (availableModels.length === 0) {
-			const noModelsText = modelSettingControl.createDiv();
+			const noModelsText = modelSettingControl.createDiv({
+				cls: "ai-actions-no-models-text",
+			});
 			noModelsText.textContent = "No models configured";
-			noModelsText.style.color = "var(--text-muted)";
-			noModelsText.style.fontStyle = "italic";
 		} else {
 			// Create options for the filterable dropdown
 			const options: FilterableDropdownOption[] = availableModels.map(
@@ -205,7 +209,7 @@ export class ActionEditModal extends Modal {
 
 		new Setting(contentEl)
 			.setName("Input selection")
-			.setDesc("What input would be sent to LLM?")
+			.setDesc("What input should be sent to LLM?")
 			.addDropdown(dropdown => {
 				if (this.action.sel == undefined) {
 					this.action.sel = Selection.ALL;
@@ -231,7 +235,7 @@ export class ActionEditModal extends Modal {
 					.setValue(this.action.loc)
 					.onChange(value => {
 						this.action.loc = value as Location;
-						this.onOpen();
+						void this.renderContent();
 					});
 			});
 		if (this.action.loc == Location.APPEND_TO_FILE) {
