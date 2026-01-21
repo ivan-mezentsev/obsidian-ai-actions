@@ -1,7 +1,7 @@
 {
 	"id": "ai-actions",
 	"name": "AI Actions",
-	"version": "0.7.7",
+	"version": "0.7.8",
 	"minAppVersion": "0.15.0",
 	"description": "Integrates AI actions into your note-taking workflow.",
 	"author": "Ivan Mezentsev",
