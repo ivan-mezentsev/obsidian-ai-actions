@@ -472,6 +472,19 @@ export class AIEditorSettingTab extends PluginSettingTab {
 				text: "AI Providers plugin is not available or not loaded.",
 				cls: "setting-item-description",
 			});
+
+			setTimeout(() => {
+				void (async () => {
+					if (
+						!this.plugin.settings.aiProviders.usePluginAIProviders
+					) {
+						return;
+					}
+					this.plugin.settings.aiProviders.usePluginAIProviders = false;
+					await this.plugin.saveSettings();
+					await this.renderSettings();
+				})();
+			}, 1000);
 		}
 	}
 }
