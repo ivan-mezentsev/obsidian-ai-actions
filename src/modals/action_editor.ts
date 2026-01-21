@@ -209,7 +209,7 @@ export class ActionEditModal extends Modal {
 
 		new Setting(contentEl)
 			.setName("Input selection")
-			.setDesc("What input should be sent to LLM?")
+			.setDesc("What input should be sent to the model?")
 			.addDropdown(dropdown => {
 				if (this.action.sel == undefined) {
 					this.action.sel = Selection.ALL;
