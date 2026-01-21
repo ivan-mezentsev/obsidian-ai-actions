@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.7 - 2026-01-21
+
+- fix(settings): disable AI Providers plugin after a timeout
+- refactor(settings): simplify display and rendering methods
+- fix(action-editor): update input selection description for obsidianmd/ui/sentence-case
+- refactor(action-editor): update onSave to return a Promise
+- refactor(jest-wrapper): simplify Jest execution by using run method
+
 ## 0.7.6 - 2026-01-20
 
 - feat(tests): add Svelte mock and enhance Jest configuration
