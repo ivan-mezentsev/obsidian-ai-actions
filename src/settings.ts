@@ -29,7 +29,11 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		this.plugin = plugin;
 	}
 
-	async display(): Promise<void> {
+	display(): void {
+		void this.renderSettings();
+	}
+
+	private async renderSettings(): Promise<void> {
 		const { containerEl } = this;
 
 		containerEl.empty();
@@ -73,7 +77,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
+			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			.setName('Enable plugin "AI Providers" integration')
+			// eslint-disable-next-line obsidianmd/ui/sentence-case
 			.setDesc("Show models from the AI Providers plugin")
 			.addToggle(toggle =>
 				toggle
@@ -85,7 +91,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 						this.plugin.settings.aiProviders.usePluginAIProviders =
 							value;
 						await this.plugin.saveSettings();
-						await this.display();
+						await this.renderSettings();
 					})
 			);
 
@@ -136,7 +142,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 						this.plugin.settings.developmentMode = value;
 						await this.plugin.saveSettings();
 						// Refresh the display to show/hide development options
-						await this.display();
+						await this.renderSettings();
 					})
 			);
 
@@ -151,6 +157,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		new Setting(devOptionsContainer)
 			.setName("Use native fetch")
 			.setDesc(
+				// eslint-disable-next-line obsidianmd/ui/sentence-case
 				"Use Obsidian's native fetch to bypass CORS restrictions. Enable this if you encounter CORS errors with AI providers."
 			)
 			.addToggle(toggle =>
@@ -256,8 +263,8 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			async (action: UserAction) => {
 				await this.saveUserActionAndRefresh(index, action);
 			},
-			async () => {
-				await this.deleteUserActionAndRefresh(index);
+			() => {
+				void this.deleteUserActionAndRefresh(index);
 			}
 		).open();
 	}
@@ -278,7 +285,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 	private async saveSettingsAndRefresh() {
 		await this.plugin.saveSettings();
 		this.plugin.registerActions();
-		await this.display();
+		await this.renderSettings();
 	}
 
 	// Provider management methods
@@ -308,9 +315,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			this.app,
 			this.plugin,
 			newProvider,
-			async (provider: AIProvider) => {
+			(provider: AIProvider) => {
 				this.plugin.settings.aiProviders.providers.push(provider);
-				await this.saveSettingsAndRefresh();
+				void this.saveSettingsAndRefresh();
 			},
 			undefined,
 			true
@@ -325,19 +332,19 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			this.app,
 			this.plugin,
 			provider,
-			async (updatedProvider: AIProvider) => {
+			(updatedProvider: AIProvider) => {
 				this.plugin.settings.aiProviders.providers[index] =
 					updatedProvider;
-				await this.saveSettingsAndRefresh();
+				void this.saveSettingsAndRefresh();
 			},
-			async () => {
+			() => {
 				this.plugin.settings.aiProviders.providers.splice(index, 1);
 				// Remove models that use this provider
 				this.plugin.settings.aiProviders.models =
 					this.plugin.settings.aiProviders.models.filter(
 						m => m.providerId !== provider.id
 					);
-				await this.saveSettingsAndRefresh();
+				void this.saveSettingsAndRefresh();
 			}
 		).open();
 	}
@@ -378,9 +385,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			this.plugin,
 			newModel,
 			this.plugin.settings.aiProviders.providers,
-			async (model: AIModel) => {
+			(model: AIModel) => {
 				this.plugin.settings.aiProviders.models.push(model);
-				await this.saveSettingsAndRefresh();
+				void this.saveSettingsAndRefresh();
 			},
 			undefined,
 			true
@@ -393,13 +400,13 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			this.plugin,
 			model,
 			this.plugin.settings.aiProviders.providers,
-			async (updatedModel: AIModel) => {
+			(updatedModel: AIModel) => {
 				this.plugin.settings.aiProviders.models[index] = updatedModel;
-				await this.saveSettingsAndRefresh();
+				void this.saveSettingsAndRefresh();
 			},
-			async () => {
+			() => {
 				this.plugin.settings.aiProviders.models.splice(index, 1);
-				await this.saveSettingsAndRefresh();
+				void this.saveSettingsAndRefresh();
 			}
 		).open();
 	}
@@ -409,10 +416,10 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			this.app,
 			this.plugin,
 			this.plugin.settings.quickPrompt,
-			async updatedAction => {
+			updatedAction => {
 				this.plugin.settings.quickPrompt = updatedAction;
-				await this.plugin.saveSettings();
-				await this.display();
+				void this.plugin.saveSettings();
+				void this.renderSettings();
 			}
 		);
 		modal.open();
@@ -441,6 +448,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 				aiProviders.providers.length === 0
 			) {
 				containerEl.createEl("p", {
+					// eslint-disable-next-line obsidianmd/ui/sentence-case
 					text: "No AI providers available. Please configure providers in the AI Providers plugin.",
 					cls: "setting-item-description",
 				});
@@ -460,6 +468,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			});
 		} catch {
 			containerEl.createEl("p", {
+				// eslint-disable-next-line obsidianmd/ui/sentence-case
 				text: "AI Providers plugin is not available or not loaded.",
 				cls: "setting-item-description",
 			});
