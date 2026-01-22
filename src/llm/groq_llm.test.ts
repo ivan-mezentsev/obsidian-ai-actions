@@ -31,9 +31,7 @@ type MockReader = {
 };
 
 const mockNativeFetch = nativeFetch as jest.MockedFunction<typeof nativeFetch>;
-const mockStandardFetch = standardFetch as jest.MockedFunction<
-	typeof standardFetch
->;
+const mockStandardFetch = standardFetch;
 
 describe("GroqLLM", () => {
 	let groqLLM: GroqLLM;

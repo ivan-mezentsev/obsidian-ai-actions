@@ -22,9 +22,7 @@ Object.assign(globalThis, {
 });
 
 const mockNativeFetch = nativeFetch as jest.MockedFunction<typeof nativeFetch>;
-const mockStandardFetch = standardFetch as jest.MockedFunction<
-	typeof standardFetch
->;
+const mockStandardFetch = standardFetch;
 
 describe("OllamaLLM", () => {
 	let ollamaLLM: OllamaLLM;
