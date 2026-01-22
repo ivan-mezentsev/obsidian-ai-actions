@@ -33,7 +33,11 @@ class ModelSelectionModal extends Modal {
 		this.modalEl.addClass("ai-actions-model-selection-modal");
 	}
 
-	async onOpen() {
+	onOpen(): void {
+		void this.onOpenAsync();
+	}
+
+	private async onOpenAsync(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
 
