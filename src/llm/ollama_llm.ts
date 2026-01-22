@@ -1,6 +1,21 @@
 import { BaseProviderLLM } from "./base_provider_llm";
 import type { AIProvider } from "../types";
 
+function getRecordProp(obj: unknown, key: string): unknown {
+	if (typeof obj !== "object" || obj === null) return undefined;
+	return (obj as Record<string, unknown>)[key];
+}
+
+function getStringProp(obj: unknown, key: string): string | undefined {
+	const value = getRecordProp(obj, key);
+	return typeof value === "string" ? value : undefined;
+}
+
+function getBooleanProp(obj: unknown, key: string): boolean | undefined {
+	const value = getRecordProp(obj, key);
+	return typeof value === "boolean" ? value : undefined;
+}
+
 export class OllamaLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
@@ -101,11 +116,14 @@ export class OllamaLLM extends BaseProviderLLM {
 					for (const line of lines) {
 						if (line.trim()) {
 							try {
-								const data = JSON.parse(line);
-								if (data.response) {
-									callback(data.response);
+								const data: unknown = JSON.parse(
+									line
+								) as unknown;
+								const chunk = getStringProp(data, "response");
+								if (chunk !== undefined) {
+									callback(chunk);
 								}
-								if (data.done) {
+								if (getBooleanProp(data, "done")) {
 									return;
 								}
 							} catch {
@@ -120,8 +138,8 @@ export class OllamaLLM extends BaseProviderLLM {
 			return;
 		} else {
 			// Non-streaming mode
-			const data = await response.json();
-			const result = data.response || "";
+			const data = (await response.json()) as unknown;
+			const result = getStringProp(data, "response") ?? "";
 
 			// Call callback with the full result if provided
 			if (callback && result) {
