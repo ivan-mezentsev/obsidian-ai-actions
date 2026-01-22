@@ -275,7 +275,9 @@ export class StreamingProcessor {
 				return null;
 			}
 
-			const editorView = activeView.editor.cm as EditorView;
+			const editorView = (
+				activeView.editor as unknown as { cm: EditorView }
+			).cm;
 
 			const spinner: SpinnerPlugin | null =
 				editorView.plugin(spinnerPlugin);
@@ -538,7 +540,9 @@ export class StreamingProcessor {
 					const activeView =
 						this.app?.workspace.getActiveViewOfType(MarkdownView);
 					if (activeView) {
-						const editorView = activeView.editor.cm as EditorView;
+						const editorView = (
+							activeView.editor as unknown as { cm: EditorView }
+						).cm;
 						const spinner: SpinnerPlugin | null =
 							editorView.plugin(spinnerPlugin);
 						if (spinner) {

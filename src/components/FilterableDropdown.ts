@@ -71,9 +71,11 @@ export class FilterableDropdown {
 		this.optionsEl = document.body.createDiv(
 			"ai-actions-filterable-dropdown-options"
 		);
-		this.optionsEl.style.position = "fixed";
-		this.optionsEl.style.display = "none";
-		this.optionsEl.style.zIndex = "10000";
+		this.optionsEl.setCssProps({
+			position: "fixed",
+			display: "none",
+			"z-index": "10000",
+		});
 
 		// Set initial value
 		this.updateInputValue();
@@ -297,7 +299,7 @@ export class FilterableDropdown {
 		this.positionDropdown();
 
 		// Show dropdown
-		this.optionsEl.style.display = "block";
+		this.optionsEl.setCssProps({ display: "block" });
 
 		// Start position monitoring for mobile devices
 		this.startPositionMonitoring();
@@ -316,17 +318,21 @@ export class FilterableDropdown {
 		);
 
 		// Set position and size
-		this.optionsEl.style.left = rect.left + "px";
-		this.optionsEl.style.width = rect.width + "px";
-		this.optionsEl.style.maxHeight = "200px";
-		this.optionsEl.style.overflowY = "auto";
+		this.optionsEl.setCssProps({
+			left: rect.left + "px",
+			width: rect.width + "px",
+			"max-height": "200px",
+			"overflow-y": "auto",
+		});
 
 		// Determine direction
 		if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
 			// Open upward
 			this.dropdownDirection = "up";
-			this.optionsEl.style.bottom = viewportHeight - rect.top + 2 + "px";
-			this.optionsEl.style.top = "auto";
+			this.optionsEl.setCssProps({
+				bottom: viewportHeight - rect.top + 2 + "px",
+				top: "auto",
+			});
 			this.optionsEl.addClass(
 				"ai-actions-filterable-dropdown-options--up"
 			);
@@ -336,8 +342,10 @@ export class FilterableDropdown {
 		} else {
 			// Open downward
 			this.dropdownDirection = "down";
-			this.optionsEl.style.top = rect.bottom + 2 + "px";
-			this.optionsEl.style.bottom = "auto";
+			this.optionsEl.setCssProps({
+				top: rect.bottom + 2 + "px",
+				bottom: "auto",
+			});
 			this.optionsEl.addClass(
 				"ai-actions-filterable-dropdown-options--down"
 			);
@@ -350,7 +358,7 @@ export class FilterableDropdown {
 	private closeDropdown() {
 		this.isOpen = false;
 		this.dropdownEl.removeClass("is-open");
-		this.optionsEl.style.display = "none";
+		this.optionsEl.setCssProps({ display: "none" });
 
 		// Stop position monitoring
 		this.stopPositionMonitoring();
