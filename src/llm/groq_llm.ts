@@ -1,6 +1,46 @@
 import { BaseProviderLLM } from "./base_provider_llm";
 import type { AIProvider } from "../types";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+	return Array.isArray(value);
+}
+
+function getFirstDeltaContent(value: unknown): string | null {
+	if (!isRecord(value)) return null;
+
+	const choicesValue = value["choices"];
+	if (!isUnknownArray(choicesValue) || choicesValue.length === 0) return null;
+
+	const firstChoice = choicesValue[0];
+	if (!isRecord(firstChoice)) return null;
+
+	const delta = firstChoice["delta"];
+	if (!isRecord(delta)) return null;
+
+	const content = delta["content"];
+	return typeof content === "string" ? content : null;
+}
+
+function getFirstMessageContent(value: unknown): string | null {
+	if (!isRecord(value)) return null;
+
+	const choicesValue = value["choices"];
+	if (!isUnknownArray(choicesValue) || choicesValue.length === 0) return null;
+
+	const firstChoice = choicesValue[0];
+	if (!isRecord(firstChoice)) return null;
+
+	const message = firstChoice["message"];
+	if (!isRecord(message)) return null;
+
+	const content = message["content"];
+	return typeof content === "string" ? content : null;
+}
+
 export class GroqLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
@@ -94,17 +134,11 @@ export class GroqLLM extends BaseProviderLLM {
 							if (jsonStr.trim() === "[DONE]") break;
 
 							try {
-								const data = JSON.parse(jsonStr);
-								if (
-									data.choices &&
-									data.choices[0] &&
-									data.choices[0].delta
-								) {
-									const content =
-										data.choices[0].delta.content;
-									if (content) {
-										callback(content);
-									}
+								const parsed = JSON.parse(jsonStr) as unknown;
+								const deltaContent =
+									getFirstDeltaContent(parsed);
+								if (deltaContent && deltaContent.length > 0) {
+									callback(deltaContent);
 								}
 							} catch {
 								// Skip invalid JSON lines
@@ -118,12 +152,9 @@ export class GroqLLM extends BaseProviderLLM {
 			return;
 		} else {
 			// Non-streaming mode
-			const data = await response.json();
-
-			let result = "";
-			if (data.choices && data.choices[0] && data.choices[0].message) {
-				result = data.choices[0].message.content || "";
-			}
+			const data = (await response.json()) as unknown;
+			const messageContent = getFirstMessageContent(data);
+			const result = messageContent ?? "";
 
 			// Call callback with the full result if provided
 			if (callback && result) {
