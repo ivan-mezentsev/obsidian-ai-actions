@@ -1,6 +1,46 @@
 import { BaseProviderLLM } from "./base_provider_llm";
 import type { AIProvider } from "../types";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+	return Array.isArray(value);
+}
+
+function getOpenRouterDeltaContent(payload: unknown): string | undefined {
+	if (!isRecord(payload)) return undefined;
+
+	const choices = payload["choices"];
+	if (!isUnknownArray(choices) || choices.length === 0) return undefined;
+
+	const firstChoice = choices[0];
+	if (!isRecord(firstChoice)) return undefined;
+
+	const delta = firstChoice["delta"];
+	if (!isRecord(delta)) return undefined;
+
+	const content = delta["content"];
+	return typeof content === "string" ? content : undefined;
+}
+
+function getOpenRouterMessageContent(payload: unknown): string | undefined {
+	if (!isRecord(payload)) return undefined;
+
+	const choices = payload["choices"];
+	if (!isUnknownArray(choices) || choices.length === 0) return undefined;
+
+	const firstChoice = choices[0];
+	if (!isRecord(firstChoice)) return undefined;
+
+	const message = firstChoice["message"];
+	if (!isRecord(message)) return undefined;
+
+	const content = message["content"];
+	return typeof content === "string" ? content : undefined;
+}
+
 export class OpenRouterLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
@@ -98,17 +138,11 @@ export class OpenRouterLLM extends BaseProviderLLM {
 							if (jsonStr.trim() === "[DONE]") break;
 
 							try {
-								const data = JSON.parse(jsonStr);
-								if (
-									data.choices &&
-									data.choices[0] &&
-									data.choices[0].delta
-								) {
-									const content =
-										data.choices[0].delta.content;
-									if (content) {
-										callback(content);
-									}
+								const data = JSON.parse(jsonStr) as unknown;
+								const deltaContent =
+									getOpenRouterDeltaContent(data);
+								if (deltaContent) {
+									callback(deltaContent);
 								}
 							} catch {
 								// Skip invalid JSON lines
@@ -122,12 +156,10 @@ export class OpenRouterLLM extends BaseProviderLLM {
 			return;
 		} else {
 			// Non-streaming mode
-			const data = await response.json();
+			const data = (await response.json()) as unknown;
 
 			let result = "";
-			if (data.choices && data.choices[0] && data.choices[0].message) {
-				result = data.choices[0].message.content || "";
-			}
+			result = getOpenRouterMessageContent(data) ?? "";
 
 			// Call callback with the full result if provided
 			if (callback && result) {
