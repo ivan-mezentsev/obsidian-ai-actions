@@ -1,6 +1,40 @@
 import { BaseProviderLLM } from "./base_provider_llm";
 import type { AIProvider } from "../types";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+	return Array.isArray(value);
+}
+
+function getFirstDeltaContent(data: unknown): string | undefined {
+	if (!isRecord(data)) return;
+	const choices = (data as { choices?: unknown }).choices;
+	if (!isUnknownArray(choices) || choices.length === 0) return;
+	const firstChoice = choices[0];
+	if (!isRecord(firstChoice)) return;
+	const delta = (firstChoice as { delta?: unknown }).delta;
+	if (!isRecord(delta)) return;
+	const content = (delta as { content?: unknown }).content;
+	if (typeof content !== "string") return;
+	return content;
+}
+
+function getFirstMessageContent(data: unknown): string | undefined {
+	if (!isRecord(data)) return;
+	const choices = (data as { choices?: unknown }).choices;
+	if (!isUnknownArray(choices) || choices.length === 0) return;
+	const firstChoice = choices[0];
+	if (!isRecord(firstChoice)) return;
+	const message = (firstChoice as { message?: unknown }).message;
+	if (!isRecord(message)) return;
+	const content = (message as { content?: unknown }).content;
+	if (typeof content !== "string") return;
+	return content;
+}
+
 export class LMStudioLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
@@ -109,17 +143,10 @@ export class LMStudioLLM extends BaseProviderLLM {
 							if (jsonStr.trim() === "[DONE]") break;
 
 							try {
-								const data = JSON.parse(jsonStr);
-								if (
-									data.choices &&
-									data.choices[0] &&
-									data.choices[0].delta
-								) {
-									const content =
-										data.choices[0].delta.content;
-									if (content) {
-										callback(content);
-									}
+								const data: unknown = JSON.parse(jsonStr);
+								const deltaContent = getFirstDeltaContent(data);
+								if (deltaContent) {
+									callback(deltaContent);
 								}
 							} catch {
 								// Skip invalid JSON lines
@@ -133,12 +160,11 @@ export class LMStudioLLM extends BaseProviderLLM {
 			return;
 		} else {
 			// Non-streaming mode
-			const data = await response.json();
+			const data: unknown = await response.json();
 
 			let result = "";
-			if (data.choices && data.choices[0] && data.choices[0].message) {
-				result = data.choices[0].message.content || "";
-			}
+			const messageContent = getFirstMessageContent(data);
+			result = messageContent ?? "";
 
 			// Call callback with the full result if provided
 			if (callback && result) {
