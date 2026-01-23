@@ -112,7 +112,7 @@ export class ActionResultManager {
 	/**
 	 * Show the result panel after streaming is complete
 	 */
-	async showResultPanel(
+	showResultPanel(
 		result: string,
 		format: ((text: string) => string) | null,
 		onAccept: (result: string) => Promise<void>,
@@ -123,7 +123,7 @@ export class ActionResultManager {
 		hasFileOutput: boolean = false,
 		onCancel?: () => void,
 		defaultLocation: Location = Location.REPLACE_CURRENT
-	) {
+	): void {
 		// Hide any existing panels first
 		this.hideAllPanels();
 

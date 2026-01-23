@@ -48,8 +48,8 @@ export default class AIEditor extends Plugin {
 				// Use index as id to avoid creating duplicates
 				id: `user-action-${i}`,
 				name: action.name,
-				editorCallback: async (editor: Editor, view: MarkdownView) => {
-					await handler.process(
+				editorCallback: (editor: Editor, view: MarkdownView) => {
+					void handler.process(
 						this.app,
 						this.settings,
 						action,
@@ -64,13 +64,13 @@ export default class AIEditor extends Plugin {
 		this.addCommand({
 			id: "quick-prompt",
 			name: this.settings.quickPrompt.name,
-			editorCallback: async (editor: Editor, view: MarkdownView) => {
-				await this.quickPromptManager.showQuickPrompt(editor, view);
+			editorCallback: (editor: Editor, view: MarkdownView) => {
+				void this.quickPromptManager.showQuickPrompt(editor, view);
 			},
 		});
 	}
 
-	async onload() {
+	onload() {
 		void initAI(
 			this.app,
 			this,

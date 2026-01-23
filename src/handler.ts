@@ -683,7 +683,7 @@ export class PromptProcessor {
 
 				// Show ActionResultManager panel, keep result visible until user action
 				// Do NOT hide spinner or clear results here - they remain visible until user chooses action
-				await this.handleModalResult(
+				this.handleModalResult(
 					accumulatedResult,
 					config,
 					cursorPositionFrom,
@@ -719,12 +719,12 @@ export class PromptProcessor {
 	/**
 	 * Handle modal result display and user interaction
 	 */
-	private async handleModalResult(
+	private handleModalResult(
 		result: string,
 		config: PromptConfig,
 		cursorPositionFrom: { line: number; ch: number },
 		cursorPositionTo: { line: number; ch: number }
-	): Promise<void> {
+	): void {
 		const { action, editor, view } = config;
 
 		try {
@@ -817,7 +817,7 @@ export class PromptProcessor {
 
 			// Show result panel - result remains visible in spinner until user action
 			try {
-				await resultManager.showResultPanel(
+				resultManager.showResultPanel(
 					result.trim(),
 					null, // format function (we handle formatting in callbacks)
 					onAccept,
