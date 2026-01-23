@@ -84,8 +84,7 @@ export class ProviderEditModal extends Modal {
 			.setName("API key")
 			.setDesc("Enter your API key (if required)")
 			.addText(text => {
-				// eslint-disable-next-line obsidianmd/ui/sentence-case -- API keys commonly start with the literal prefix `sk-`
-				text.setPlaceholder("sk-...")
+				text.setPlaceholder("")
 					.setValue(this.provider.apiKey || "")
 					.onChange(value => {
 						this.provider.apiKey = value;
