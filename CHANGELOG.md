@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.9 - 2026-01-23
+
+- refactor(prompt-processor): simplify result handling in modal
+- refactor(action-result-manager, prompt-processor, main): simplify async handling
+- refactor(action-result-manager, prompt-processor, main): simplify async handling
+- refactor(quick_prompt_editor, quick_prompt_manager): simplify async handlers
+- refactor(action_editor): simplify onChange handlers in ActionEditModal
+- build(eslint): enhance ESLint configuration and add new plugins
+
 ## 0.7.8 - 2026-01-23
 
 - refactor(fetch): improve standardFetch definition for clarity

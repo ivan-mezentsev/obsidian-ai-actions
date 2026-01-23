@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-ai-actions",
-	"version": "0.7.8",
+	"version": "0.7.9",
 	"description": "Integrates AI actions into your note-taking workflow.",
 	"main": "main.js",
 	"scripts": {
