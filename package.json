@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-ai-actions",
-	"version": "0.7.8",
+	"version": "0.7.9",
 	"description": "Integrates AI actions into your note-taking workflow.",
 	"main": "main.js",
 	"scripts": {
@@ -8,10 +8,10 @@
 		"build": "tsc -noEmit && node esbuild.config.mjs production",
 		"test": "node jest-wrapper.js",
 		"test:watch": "node jest-wrapper.js --watch",
-		"lint": "eslint . --ignore-pattern \"**/*.test.*\" --ignore-pattern \"__mocks__/**\" && tsc --noEmit",
+		"lint": "eslint . --ext .ts,.tsx,.js,.jsx,.cjs,.mjs --ignore-pattern \"**/*.test.*\" --ignore-pattern \"__mocks__/**\" && tsc --noEmit",
 		"lint:tests": "eslint \"src/**/*.test.*\" \"__mocks__/**/*.*\"",
-		"check": "eslint . && tsc --noEmit",
-		"lint:fix": "eslint . --fix",
+		"check": "eslint . --ext .ts,.tsx,.js,.jsx,.cjs,.mjs && tsc --noEmit",
+		"lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx,.cjs,.mjs --fix",
 		"cs": "prettier --check .",
 		"cs:fix": "prettier --write .",
 		"format": "npm run lint:fix && npm run cs:fix",
@@ -28,6 +28,7 @@
 		"@tsconfig/svelte": "^5.0.4",
 		"@types/jest": "^30.0.0",
 		"@types/node": "^24.1.0",
+		"@eslint-community/eslint-plugin-eslint-comments": "^4.6.0",
 		"@typescript-eslint/eslint-plugin": "^8.38.0",
 		"@typescript-eslint/parser": "^8.38.0",
 		"esbuild": "^0.25.0",
@@ -50,9 +51,9 @@
 		"typescript": "^5.6.2"
 	},
 	"dependencies": {
+		"@anthropic-ai/sdk": "^0.57.0",
 		"@codemirror/state": "6.5.3",
 		"@codemirror/view": "6.39.9",
-		"@anthropic-ai/sdk": "^0.57.0",
 		"@google/genai": "^1.11.0",
 		"@obsidian-ai-providers/sdk": "^1.2.0",
 		"openai": "^5.10.2"

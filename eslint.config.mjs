@@ -1,6 +1,8 @@
 import obsidianmd from "eslint-plugin-obsidianmd";
 import eslintConfigPrettier from "eslint-config-prettier";
+import eslintComments from "@eslint-community/eslint-plugin-eslint-comments";
 import eslintPluginPrettier from "eslint-plugin-prettier";
+import tsEslintPlugin from "@typescript-eslint/eslint-plugin";
 import globals from "globals";
 
 function flattenObsidianRecommendedConfig(configs) {
@@ -35,6 +37,30 @@ const obsidianRecommended = flattenObsidianRecommendedConfig([
 export default [
 	// Obsidian's official lint ruleset (mirrors the community-plugin bot checks)
 	...obsidianRecommended,
+	// Additional bot-aligned checks not enabled by default in obsidianmd recommended config.
+	{
+		files: ["**/*.ts", "**/*.tsx"],
+		plugins: {
+			"@typescript-eslint": tsEslintPlugin,
+		},
+		rules: {
+			// Match ObsidianReviewBot: async functions should contain at least one await.
+			"@typescript-eslint/require-await": "error",
+		},
+	},
+	{
+		files: ["src/**/*.{ts,tsx,js,jsx}"],
+		plugins: {
+			"@eslint-community/eslint-comments": eslintComments,
+		},
+		rules: {
+			// Match ObsidianReviewBot: do not allow disabling UI casing enforcement.
+			"@eslint-community/eslint-comments/no-restricted-disable": [
+				"error",
+				"obsidianmd/ui/sentence-case",
+			],
+		},
+	},
 	// The obsidianmd recommended ruleset enables type-aware @typescript-eslint rules.
 	// Provide parserOptions so those rules can access TypeScript type information.
 	{

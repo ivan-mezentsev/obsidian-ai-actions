@@ -77,10 +77,8 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
-			// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve product name casing in UI label.
-			.setName('Enable plugin "AI Providers" integration')
-			// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve product name casing in UI description.
-			.setDesc("Show models from the AI Providers plugin")
+			.setName("Enable AI providers plugin integration")
+			.setDesc("Show models from the AI providers plugin")
 			.addToggle(toggle =>
 				toggle
 					.setValue(
@@ -157,8 +155,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		new Setting(devOptionsContainer)
 			.setName("Use native fetch")
 			.setDesc(
-				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve product name casing in UI description.
-				"Use Obsidian's native fetch to bypass CORS restrictions. Enable this if you encounter CORS errors with AI providers."
+				"Use Obsidian's native fetch to bypass cross-origin restrictions. Enable this if you encounter cross-origin errors with AI providers."
 			)
 			.addToggle(toggle =>
 				toggle
@@ -448,8 +445,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 				aiProviders.providers.length === 0
 			) {
 				containerEl.createEl("p", {
-					// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve acronym casing in user-facing message.
-					text: "No AI providers available. Please configure providers in the AI Providers plugin.",
+					text: "No AI providers available. Please configure providers in the AI providers plugin.",
 					cls: "setting-item-description",
 				});
 				return;
@@ -468,8 +464,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			});
 		} catch {
 			containerEl.createEl("p", {
-				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve acronym casing in user-facing message.
-				text: "AI Providers plugin is not available or not loaded.",
+				text: "AI providers plugin is not available or not loaded.",
 				cls: "setting-item-description",
 			});
 

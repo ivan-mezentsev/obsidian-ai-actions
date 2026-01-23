@@ -52,8 +52,7 @@ export class ModelEditModal extends Modal {
 			.setName("Model name")
 			.setDesc("Enter a display name for this model")
 			.addText(text => {
-				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Model IDs/names can be case-sensitive identifiers
-				text.setPlaceholder("gpt-4.1")
+				text.setPlaceholder("")
 					.setValue(this.model.name)
 					.onChange(value => {
 						this.model.name = value;
@@ -85,8 +84,7 @@ export class ModelEditModal extends Modal {
 			.setName("Model name (API)")
 			.setDesc("Enter the exact model name as used by the API")
 			.addText(text => {
-				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Model IDs are case-sensitive identifiers
-				text.setPlaceholder("gpt-4.1")
+				text.setPlaceholder("")
 					.setValue(this.model.modelName)
 					.onChange(value => {
 						this.model.modelName = value;

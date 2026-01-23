@@ -38,7 +38,7 @@ export class QuickPromptEditModal extends Modal {
 			"Action name",
 			"",
 			this.action.name,
-			async value => {
+			value => {
 				this.action.name = value;
 			}
 		);
@@ -118,7 +118,7 @@ export class QuickPromptEditModal extends Modal {
 			"Prompt",
 			"Prompt for LLM to process your input",
 			this.action.prompt,
-			async value => {
+			value => {
 				this.action.prompt = value;
 			}
 		);
@@ -210,7 +210,7 @@ export class QuickPromptEditModal extends Modal {
 		name: string,
 		desc: string,
 		value: string,
-		onSave: (newValue: string) => Promise<void>
+		onSave: (newValue: string) => void | Promise<void>
 	): void {
 		new Setting(containerEl)
 			.setName(name)
