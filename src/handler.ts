@@ -683,7 +683,7 @@ export class PromptProcessor {
 
 				// Show ActionResultManager panel, keep result visible until user action
 				// Do NOT hide spinner or clear results here - they remain visible until user chooses action
-				this.handleModalResult(
+				void this.handleModalResult(
 					accumulatedResult,
 					config,
 					cursorPositionFrom,
@@ -817,7 +817,7 @@ export class PromptProcessor {
 
 			// Show result panel - result remains visible in spinner until user action
 			try {
-				resultManager.showResultPanel(
+				void resultManager.showResultPanel(
 					result.trim(),
 					null, // format function (we handle formatting in callbacks)
 					onAccept,
