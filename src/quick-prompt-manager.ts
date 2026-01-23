@@ -123,7 +123,7 @@ export class QuickPromptManager {
 	/**
 	 * Show quick prompt at cursor position
 	 */
-	async showQuickPrompt(editor: Editor, view: MarkdownView) {
+	showQuickPrompt(editor: Editor, view: MarkdownView) {
 		// Hide any existing prompt boxes first
 		this.hideAllPromptBoxes();
 
