@@ -47,8 +47,9 @@ export class ActionEditModal extends Modal {
 			"Action name",
 			"",
 			this.action.name,
-			async value => {
+			value => {
 				this.action.name = value;
+				return Promise.resolve();
 			}
 		);
 
@@ -128,8 +129,9 @@ export class ActionEditModal extends Modal {
 			"Prompt",
 			"Prompt for LLM to process your input",
 			this.action.prompt,
-			async value => {
+			value => {
 				this.action.prompt = value;
+				return Promise.resolve();
 			}
 		);
 		this.createTextSetting(
@@ -137,8 +139,9 @@ export class ActionEditModal extends Modal {
 			"Output format",
 			"Format your LLM output. Use {{result}} as placeholder.",
 			this.action.format,
-			async value => {
+			value => {
 				this.action.format = value;
+				return Promise.resolve();
 			}
 		);
 
@@ -245,7 +248,7 @@ export class ActionEditModal extends Modal {
 				.addText(text => {
 					text.setPlaceholder("Enter file name")
 						.setValue(this.action.locationExtra?.fileName || "")
-						.onChange(async value => {
+						.onChange(value => {
 							this.action.locationExtra = {
 								fileName: value,
 							};
@@ -260,7 +263,7 @@ export class ActionEditModal extends Modal {
 					button
 						.setButtonText("Delete")
 						.setWarning()
-						.onClick(async () => {
+						.onClick(() => {
 							new DeletionModal(this.app, () => {
 								onDelete();
 								this.close();
