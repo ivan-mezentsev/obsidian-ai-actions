@@ -8,14 +8,14 @@ import type { FilterableDropdownOption } from "../components/FilterableDropdown"
 export class QuickPromptEditModal extends Modal {
 	action: UserAction;
 	plugin: AIEditor;
-	onSave: (userAction: UserAction) => void;
+	onSave: (userAction: UserAction) => void | Promise<void>;
 	private modelDropdown?: FilterableDropdown;
 
 	constructor(
 		app: App,
 		plugin: AIEditor,
 		user_action: UserAction,
-		onSave: (userAction: UserAction) => void
+		onSave: (userAction: UserAction) => void | Promise<void>
 	) {
 		super(app);
 		this.plugin = plugin;
@@ -23,15 +23,19 @@ export class QuickPromptEditModal extends Modal {
 		this.onSave = onSave;
 	}
 
-	async onOpen() {
+	onOpen(): void {
+		void this.onOpenAsync().catch(() => undefined);
+	}
+
+	private async onOpenAsync(): Promise<void> {
 		const { contentEl } = this;
 		contentEl.empty();
 
-		contentEl.createEl("h1", { text: 'Edit "Quick Prompt"' });
+		contentEl.createEl("h1", { text: 'Edit "quick prompt"' });
 
 		this.createTextSetting(
 			contentEl,
-			"Action Name",
+			"Action name",
 			"",
 			this.action.name,
 			async value => {
@@ -56,11 +60,14 @@ export class QuickPromptEditModal extends Modal {
 		const availableModels = await getAvailableModelsWithPluginAIProviders(
 			this.plugin.settings
 		);
+
+		// The modal might have been closed while awaiting.
+		if (!this.contentEl.isConnected) return;
+
 		if (availableModels.length === 0) {
 			const noModelsText = modelSettingControl.createDiv();
 			noModelsText.textContent = "No models configured";
-			noModelsText.style.color = "var(--text-muted)";
-			noModelsText.style.fontStyle = "italic";
+			noModelsText.addClass("ai-actions-no-models-text");
 		} else {
 			// Create options for the filterable dropdown
 			const options: FilterableDropdownOption[] = availableModels.map(
@@ -181,7 +188,7 @@ export class QuickPromptEditModal extends Modal {
 					.setButtonText("Save")
 					.setCta()
 					.onClick(async () => {
-						await this.onSave(this.action);
+						await Promise.resolve(this.onSave(this.action));
 						this.close();
 					});
 			});

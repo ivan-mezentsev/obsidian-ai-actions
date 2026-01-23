@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-ai-actions",
-	"version": "0.7.7",
+	"version": "0.7.8",
 	"description": "Integrates AI actions into your note-taking workflow.",
 	"main": "main.js",
 	"scripts": {
@@ -30,7 +30,6 @@
 		"@types/node": "^24.1.0",
 		"@typescript-eslint/eslint-plugin": "^8.38.0",
 		"@typescript-eslint/parser": "^8.38.0",
-		"builtin-modules": "^4.0.0",
 		"esbuild": "^0.25.0",
 		"esbuild-sass-plugin": "^3.3.1",
 		"esbuild-svelte": "^0.9.3",

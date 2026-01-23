@@ -77,9 +77,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		}
 
 		new Setting(containerEl)
-			// eslint-disable-next-line obsidianmd/ui/sentence-case
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve product name casing in UI label.
 			.setName('Enable plugin "AI Providers" integration')
-			// eslint-disable-next-line obsidianmd/ui/sentence-case
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve product name casing in UI description.
 			.setDesc("Show models from the AI Providers plugin")
 			.addToggle(toggle =>
 				toggle
@@ -157,7 +157,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		new Setting(devOptionsContainer)
 			.setName("Use native fetch")
 			.setDesc(
-				// eslint-disable-next-line obsidianmd/ui/sentence-case
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve product name casing in UI description.
 				"Use Obsidian's native fetch to bypass CORS restrictions. Enable this if you encounter CORS errors with AI providers."
 			)
 			.addToggle(toggle =>
@@ -448,7 +448,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 				aiProviders.providers.length === 0
 			) {
 				containerEl.createEl("p", {
-					// eslint-disable-next-line obsidianmd/ui/sentence-case
+					// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve acronym casing in user-facing message.
 					text: "No AI providers available. Please configure providers in the AI Providers plugin.",
 					cls: "setting-item-description",
 				});
@@ -468,7 +468,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			});
 		} catch {
 			containerEl.createEl("p", {
-				// eslint-disable-next-line obsidianmd/ui/sentence-case
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Preserve acronym casing in user-facing message.
 				text: "AI Providers plugin is not available or not loaded.",
 				cls: "setting-item-description",
 			});

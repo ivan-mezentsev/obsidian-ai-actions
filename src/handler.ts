@@ -1,9 +1,10 @@
 import { App, Editor, MarkdownView, Notice, TFile, Vault } from "obsidian";
+import type { EditorView } from "@codemirror/view";
 import { LLMFactory } from "./llm/factory";
 import type { AIEditorSettings } from "src/settings";
 import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
-import { spinnerPlugin } from "./spinnerPlugin";
+import { spinnerPlugin, type SpinnerPlugin } from "./spinnerPlugin";
 import type { ActionResultManager } from "./action-result-manager";
 import { stripThinkingTags } from "./utils/thinking-tags";
 
@@ -260,7 +261,9 @@ export class StreamingProcessor {
 	/**
 	 * Setup spinner at cursor position with error handling
 	 */
-	private setupSpinner(cursorPosition: number) {
+	private setupSpinner(
+		cursorPosition: number
+	): { hideSpinner: () => void; onUpdate: (text: string) => void } | null {
 		try {
 			if (!this.app) {
 				return null;
@@ -272,13 +275,12 @@ export class StreamingProcessor {
 				return null;
 			}
 
-			// @ts-expect-error, not typed
-			const editorView = activeView.editor.cm;
-			if (!editorView) {
-				return null;
-			}
+			const editorView = (
+				activeView.editor as unknown as { cm: EditorView }
+			).cm;
 
-			const spinner = editorView.plugin(spinnerPlugin);
+			const spinner: SpinnerPlugin | null =
+				editorView.plugin(spinnerPlugin);
 			if (!spinner) {
 				return null;
 			}
@@ -538,18 +540,18 @@ export class StreamingProcessor {
 					const activeView =
 						this.app?.workspace.getActiveViewOfType(MarkdownView);
 					if (activeView) {
-						// @ts-expect-error, not typed
-						const editorView = activeView.editor.cm;
-						if (editorView) {
-							const spinner = editorView.plugin(spinnerPlugin);
-							if (spinner) {
-								spinner.processText(
-									displayResult,
-									(text: string) => text
-								);
-								if (this.app) {
-									this.app.workspace.updateOptions();
-								}
+						const editorView = (
+							activeView.editor as unknown as { cm: EditorView }
+						).cm;
+						const spinner: SpinnerPlugin | null =
+							editorView.plugin(spinnerPlugin);
+						if (spinner) {
+							spinner.processText(
+								displayResult,
+								(text: string) => text
+							);
+							if (this.app) {
+								this.app.workspace.updateOptions();
 							}
 						}
 					}
@@ -644,7 +646,7 @@ export class PromptProcessor {
 
 			// Check if streaming had an error
 			if (streamingError) {
-				throw streamingError;
+				throw new Error(String(streamingError));
 			}
 
 			if (!accumulatedResult.trim()) {
@@ -984,16 +986,19 @@ export class ActionHandler {
 							"Clipboard is empty or contains only whitespace.",
 							10000
 						);
-						throw "Clipboard is empty or contains only whitespace.";
+						throw new Error(
+							"Clipboard is empty or contains only whitespace."
+						);
 					}
 					return clipboardContent;
 				} catch (error) {
 					console.error("Failed to read clipboard:", error);
-					throw "Failed to read clipboard. Please ensure clipboard permissions are granted.";
+					throw new Error(
+						"Failed to read clipboard. Please ensure clipboard permissions are granted."
+					);
 				}
 			default:
-				console.log(`Selection ${sel}`);
-				throw "Selection not implemented";
+				throw new Error("Selection not implemented");
 		}
 	}
 
@@ -1078,7 +1083,7 @@ export class ActionHandler {
 				break;
 			}
 			default:
-				throw "Location not implemented";
+				throw new Error("Location not implemented");
 		}
 	}
 
@@ -1087,8 +1092,8 @@ export class ActionHandler {
 		fileName: string,
 		text: string
 	) {
-		let file: TFile = await getFile(vault, fileName);
-		vault.append(file, text);
+		const file = await getFile(vault, fileName);
+		await vault.append(file, text);
 	}
 
 	async process(
@@ -1124,13 +1129,13 @@ export class ActionHandler {
 	}
 }
 
-async function getFile(vault: Vault, fileName: string) {
-	let file = vault.getAbstractFileByPath(fileName);
+async function getFile(vault: Vault, fileName: string): Promise<TFile> {
+	const file = vault.getAbstractFileByPath(fileName);
 	if (file == null) {
 		return await vault.create(fileName, "");
 	} else if (file instanceof TFile) {
 		return file;
 	} else {
-		throw "Not a file path";
+		throw new Error(`Not a file path: ${fileName}`);
 	}
 }

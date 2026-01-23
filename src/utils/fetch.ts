@@ -32,4 +32,7 @@ export async function nativeFetch(
 }
 
 // Standard fetch for environments that support it
-export const standardFetch = globalThis.fetch?.bind(globalThis) || fetch;
+export const standardFetch: typeof globalThis.fetch = (
+	input: RequestInfo | URL,
+	init?: RequestInit
+) => globalThis.fetch(input, init);

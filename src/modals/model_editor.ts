@@ -6,6 +6,7 @@ import {
 	TextComponent,
 	DropdownComponent,
 	ToggleComponent,
+	requestUrl,
 } from "obsidian";
 import type { AIModel, AIProvider } from "../types";
 import AIEditor from "../main";
@@ -51,7 +52,8 @@ export class ModelEditModal extends Modal {
 			.setName("Model name")
 			.setDesc("Enter a display name for this model")
 			.addText(text => {
-				text.setPlaceholder("GPT-4")
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Model IDs/names can be case-sensitive identifiers
+				text.setPlaceholder("gpt-4.1")
 					.setValue(this.model.name)
 					.onChange(value => {
 						this.model.name = value;
@@ -83,7 +85,8 @@ export class ModelEditModal extends Modal {
 			.setName("Model name (API)")
 			.setDesc("Enter the exact model name as used by the API")
 			.addText(text => {
-				text.setPlaceholder("gpt-4")
+				// eslint-disable-next-line obsidianmd/ui/sentence-case -- Model IDs are case-sensitive identifiers
+				text.setPlaceholder("gpt-4.1")
 					.setValue(this.model.modelName)
 					.onChange(value => {
 						this.model.modelName = value;
@@ -285,27 +288,25 @@ export class ModelEditModal extends Modal {
 			};
 		}
 
-		const response = await fetch(url, {
-			headers: headers,
+		const response = await requestUrl({
+			url,
+			method: "GET",
+			headers,
+			throw: false,
 		});
 
-		if (!response.ok) {
-			throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+		if (response.status < 200 || response.status >= 300) {
+			const snippet = response.text.slice(0, 500);
+			throw new Error(`HTTP ${response.status}: ${snippet}`);
 		}
 
-		const data = await response.json();
+		const parsed = parseJsonOrThrow(response.text, "Models list response");
 
 		if (provider.type === "gemini") {
-			// Gemini API returns models in a different format
-			return (
-				data.models?.map((model: { name: string }) =>
-					model.name.replace("models/", "")
-				) || []
-			);
-		} else {
-			// OpenAI-compatible format
-			return data.data?.map((model: { id: string }) => model.id) || [];
+			return extractGeminiModelNames(parsed);
 		}
+
+		return extractOpenAICompatibleModelIds(parsed);
 	}
 
 	private validateModel(): boolean {
@@ -377,4 +378,50 @@ export class ModelEditModal extends Modal {
 		const { contentEl } = this;
 		contentEl.empty();
 	}
+}
+
+function parseJsonOrThrow(text: string, context: string): unknown {
+	try {
+		return JSON.parse(text) as unknown;
+	} catch {
+		throw new Error(`${context}: invalid JSON`);
+	}
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function extractGeminiModelNames(payload: unknown): string[] {
+	if (!isRecord(payload)) return [];
+
+	const models = payload.models;
+	if (!Array.isArray(models)) return [];
+
+	const names: string[] = [];
+	for (const model of models) {
+		if (!isRecord(model)) continue;
+		const name = model.name;
+		if (typeof name !== "string") continue;
+		names.push(name.replace("models/", ""));
+	}
+
+	return names;
+}
+
+function extractOpenAICompatibleModelIds(payload: unknown): string[] {
+	if (!isRecord(payload)) return [];
+
+	const data = payload.data;
+	if (!Array.isArray(data)) return [];
+
+	const ids: string[] = [];
+	for (const model of data) {
+		if (!isRecord(model)) continue;
+		const id = model.id;
+		if (typeof id !== "string") continue;
+		ids.push(id);
+	}
+
+	return ids;
 }
