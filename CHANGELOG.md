@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.8 - 2026-01-23
+
+- refactor(fetch): improve standardFetch definition for clarity
+- refactor(model_editor): improve model fetching and validation logic
+- chore(dependencies): remove builtin-modules package
+- refactor(modal-box-manager): improve onOpen method structure
+- fix(provider_editor): update API key placeholder comment for clarity
+- refactor(quick_prompt_editor): improve async handling and code clarity
+- refactor(ollama_llm): enhance property retrieval functions
+- refactor(llm): simplify content extraction in LMStudioLLM
+- refactor(llm): simplify content extraction in GroqLLM
+- refactor(FilterableDropdown): streamline option styling with setCssProps
+- refactor(handler): improve error handling and type definitions
+- refactor(test): simplify mock standardFetch declaration in tests
+- refactor(llm): simplify payload handling in OpenRouterLLM
+- style(settings): preserve casing in UI labels and descriptions
+
 ## 0.7.7 - 2026-01-21
 
 - fix(settings): disable AI Providers plugin after a timeout
