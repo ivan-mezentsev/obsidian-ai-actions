@@ -164,16 +164,20 @@ export class ModelEditModal extends Modal {
 		const selectedProvider = this.availableProviders.find(
 			p => p.id === this.model.providerId
 		);
-		if (
-			selectedProvider?.availableModels &&
-			selectedProvider.availableModels.length > 0
-		) {
-			// Replace text input with FilterableDropdown
-			this.modelNameSetting.clear();
 
+		// Always rebuild the control when provider changes.
+		// Otherwise the UI may keep showing the previous provider's cached list.
+		if (this.filterableDropdown) {
+			this.filterableDropdown.destroy();
+			this.filterableDropdown = null;
+		}
+		this.modelNameSetting.clear();
+
+		const availableModels = selectedProvider?.availableModels ?? [];
+		if (availableModels.length > 0 && selectedProvider) {
 			// Prepare options for FilterableDropdown
-			const options: FilterableDropdownOption[] =
-				selectedProvider.availableModels.map(modelName => ({
+			const options: FilterableDropdownOption[] = availableModels.map(
+				modelName => ({
 					value: modelName,
 					label: modelName,
 					model: {
@@ -182,7 +186,8 @@ export class ModelEditModal extends Modal {
 						providerId: selectedProvider.id,
 						modelName: modelName,
 					},
-				}));
+				})
+			);
 
 			// Create FilterableDropdown
 			this.filterableDropdown = new FilterableDropdown(
@@ -195,7 +200,19 @@ export class ModelEditModal extends Modal {
 					this.updateDisplayNameFromModel(value);
 				}
 			);
+			this.modelNameText = null;
+			return;
 		}
+
+		// Plain text input until the user refreshes models.
+		this.modelNameSetting.addText(text => {
+			text.setPlaceholder("")
+				.setValue(this.model.modelName)
+				.onChange(value => {
+					this.model.modelName = value;
+				});
+			this.modelNameText = text;
+		});
 	}
 
 	private updateDisplayNameFromModel(modelName: string) {
