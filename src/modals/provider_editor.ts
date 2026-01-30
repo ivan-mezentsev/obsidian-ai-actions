@@ -50,7 +50,7 @@ export class ProviderEditModal extends Modal {
 			.setDesc("Select the type of AI provider")
 			.addDropdown(dropdown => {
 				const providerTypes: Record<AIProviderType, string> = {
-					openai: "OpenAI",
+					openai: "OpenAI Completions",
 					anthropic: "Anthropic",
 					ollama: "Ollama",
 					gemini: "Google Gemini",
@@ -172,7 +172,7 @@ export class ProviderEditModal extends Modal {
 
 	private updateNameForProviderType(providerType: AIProviderType) {
 		const providerTypeNames: Record<AIProviderType, string> = {
-			openai: "OpenAI",
+			openai: "OpenAI Completions",
 			anthropic: "Anthropic",
 			ollama: "Ollama",
 			gemini: "Google Gemini",

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.10 - 2026-01-31
+
+- refactor(provider-editor): update OpenAI provider label
+- refactor(model-editor): improve provider model handling in dropdown
+
 ## 0.7.9 - 2026-01-23
 
 - refactor(prompt-processor): simplify result handling in modal
