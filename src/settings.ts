@@ -4,7 +4,12 @@ import type { UserAction } from "src/action";
 import AIEditor from "src/main";
 import { ActionEditModal } from "./modals/action_editor";
 import { QuickPromptEditModal } from "./modals/quick_prompt_editor";
-import type { AIProvider, AIModel, AIProvidersSettings } from "./types";
+import type {
+	AIProvider,
+	AIModel,
+	AIProvidersSettings,
+	AIProviderType,
+} from "./types";
 import { ProviderEditModal } from "./modals/provider_editor";
 import { ModelEditModal } from "./modals/model_editor";
 import { waitForAI } from "@obsidian-ai-providers/sdk";
@@ -203,6 +208,20 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		});
 	}
 
+	private getProviderTypeLabel(type: AIProviderType): string {
+		const providerTypeNames: Record<AIProviderType, string> = {
+			openai: "OpenAI Completions",
+			anthropic: "Anthropic",
+			ollama: "Ollama",
+			gemini: "Google Gemini",
+			openrouter: "OpenRouter",
+			lmstudio: "LM Studio",
+			groq: "Groq",
+		};
+
+		return providerTypeNames[type] || type;
+	}
+
 	private displayActionEditModalForNewAction() {
 		// Get first available model or empty string if none configured
 		const availableModels = this.plugin.settings.aiProviders?.models || [];
@@ -291,7 +310,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 		if (provider != undefined) {
 			this.createButton(
 				containerEl,
-				`${provider.name} (${provider.type})`,
+				`${provider.name} (${this.getProviderTypeLabel(provider.type)})`,
 				"Edit",
 				() => {
 					this.displayProviderEditModalByIndex(provider, index);
