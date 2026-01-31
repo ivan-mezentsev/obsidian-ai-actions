@@ -2,6 +2,7 @@ import { ActionHandler, PromptProcessor, StreamingProcessor } from "./handler";
 import type { StreamingConfig, PromptConfig, PluginInterface } from "./handler";
 import { LLMFactory } from "./llm/factory";
 import type { LLM } from "./llm/base";
+import type { ActionResultManager } from "./action-result-manager";
 import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
 import type { AIEditorSettings } from "./settings";
@@ -92,7 +93,7 @@ describe("StreamingProcessor", () => {
 				listCommands: jest.fn<Command[], []>(() => []),
 				executeCommandById: jest.fn<void, [string]>(),
 			},
-		} as unknown as jest.Mocked<App>;
+		};
 
 		// Mock LLM
 		mockLLM = {
@@ -128,7 +129,7 @@ describe("StreamingProcessor", () => {
 
 		streamingProcessor = new StreamingProcessor(
 			mockSettings,
-			mockApp as jest.Mocked<App>
+			mockApp as unknown as App
 		);
 	});
 
@@ -172,12 +173,12 @@ describe("StreamingProcessor", () => {
 				(
 					prompt: string,
 					input: string,
-					onToken: (token: string) => void
+					onToken?: (token: string) => void
 				) => {
 					// Simulate streaming tokens
-					onToken("Hello");
-					onToken(" world");
-					onToken("!");
+					onToken?.("Hello");
+					onToken?.(" world");
+					onToken?.("!");
 					return Promise.resolve();
 				}
 			);
@@ -240,7 +241,7 @@ describe("StreamingProcessor", () => {
 				(
 					prompt: string,
 					input: string,
-					onToken: (token: string) => void
+					onToken?: (token: string) => void
 				) => {
 					tokenCallback = onToken;
 					// Simulate a long-running operation
@@ -279,10 +280,10 @@ describe("StreamingProcessor", () => {
 				(
 					prompt: string,
 					input: string,
-					onToken: (token: string) => void
+					onToken?: (token: string) => void
 				) => {
 					for (const token of tokens) {
-						onToken(token);
+						onToken?.(token);
 					}
 					return Promise.resolve();
 				}
@@ -686,12 +687,27 @@ describe("StreamingProcessor", () => {
 describe("PromptProcessor", () => {
 	let promptProcessor: PromptProcessor;
 	let mockSettings: AIEditorSettings;
-	let mockPlugin: { app: App; actionResultManager: unknown };
-	let mockStreamingProcessor: jest.Mocked<StreamingProcessor>;
-	let mockActionHandler: {
-		addToNote: jest.Mock<void, [string, string, string | undefined]>;
+	let mockPlugin: PluginInterface;
+	let mockActionResultManager: {
+		showResultPanel: jest.MockedFunction<
+			ActionResultManager["showResultPanel"]
+		>;
 	};
-	let mockEditor: {
+	let mockStreamingProcessor: {
+		processStreaming: jest.Mock<Promise<void>, [StreamingConfig]>;
+		clearResults: jest.Mock<void, []>;
+		hideSpinner: jest.Mock<void, []>;
+		getCurrentResult: jest.Mock<string, []>;
+		isStreaming: jest.Mock<boolean, []>;
+		applyFinalFormatToDisplay: jest.Mock<void, [string?]>;
+	};
+	let mockActionHandler: {
+		addToNote: jest.Mock<
+			ReturnType<ActionHandler["prototype"]["addToNote"]>,
+			Parameters<ActionHandler["prototype"]["addToNote"]>
+		>;
+	};
+	type TestEditor = {
 		getCursor: jest.Mock<EditorPosition, []>;
 		posToOffset: jest.Mock<number, [EditorPosition]>;
 		focus: jest.Mock<void, []>;
@@ -699,38 +715,9 @@ describe("PromptProcessor", () => {
 			void,
 			[string, EditorPosition, EditorPosition?]
 		>;
-		getDoc: jest.Mock<MarkdownView, []>;
-		refresh: jest.Mock<void, []>;
-		getValue: jest.Mock<string, []>;
-		setValue: jest.Mock<void, [string]>;
-		getLine: jest.Mock<string, [number]>;
-		lineCount: jest.Mock<number, []>;
-		getSelection: jest.Mock<string, []>;
-		setSelection: jest.Mock<
-			void,
-			[{ line: number; ch: number }, { line: number; ch: number }]
-		>;
-		getRange: jest.Mock<string, [EditorPosition, EditorPosition]>;
-		replaceSelection: jest.Mock<void, [string]>;
-		setLine: jest.Mock<void, [number, string]>;
-		getScrollInfo: jest.Mock<{ top: number; left: number }, []>;
-		scrollTo: jest.Mock<void, [number, number]>;
-		scrollIntoView: jest.Mock<void, [EditorRange]>;
-		undo: jest.Mock<void, []>;
-		redo: jest.Mock<void, []>;
-		exec: jest.Mock<void, [string]>;
-		transaction: jest.Mock<void, [{ changes: unknown[] }]>;
-		wordAt: jest.Mock<
-			{ from: EditorPosition; to: EditorPosition } | null,
-			[EditorPosition]
-		>;
-		listSelections: jest.Mock<EditorSelection[], []>;
-		setSelections: jest.Mock<void, [EditorSelection[]]>;
-		addHighlights: jest.Mock<string[], [EditorRange[], string]>;
-		removeHighlights: jest.Mock<void, [string[]]>;
-		cm: unknown;
 	};
-	let mockView: { file: { vault: object } };
+	let mockEditor: TestEditor;
+	let mockView: { file: { vault: unknown } };
 	let mockApp: { workspace: { updateOptions: jest.Mock<void, []> } };
 
 	beforeEach(() => {
@@ -757,10 +744,15 @@ describe("PromptProcessor", () => {
 
 		// Mock editor
 		mockEditor = {
-			getCursor: jest.fn(),
-			posToOffset: jest.fn().mockReturnValue(100),
-			focus: jest.fn(),
-			replaceRange: jest.fn(),
+			getCursor: jest.fn<EditorPosition, []>(),
+			posToOffset: jest
+				.fn<number, [EditorPosition]>()
+				.mockReturnValue(100),
+			focus: jest.fn<void, []>(),
+			replaceRange: jest.fn<
+				void,
+				[string, EditorPosition, EditorPosition?]
+			>(),
 		};
 
 		// Mock view
@@ -773,47 +765,56 @@ describe("PromptProcessor", () => {
 		// Mock app
 		mockApp = {
 			workspace: {
-				updateOptions: jest.fn(),
+				updateOptions: jest.fn<void, []>(),
 			},
 		};
 
 		// Mock ActionResultManager
-		const mockActionResultManager = {
-			showResultPanel: jest.fn(),
+		mockActionResultManager = {
+			showResultPanel: jest.fn<
+				ReturnType<ActionResultManager["showResultPanel"]>,
+				Parameters<ActionResultManager["showResultPanel"]>
+			>(),
 		};
 
 		// Mock plugin
 		mockPlugin = {
-			app: mockApp,
-			actionResultManager: mockActionResultManager,
+			app: mockApp as unknown as App,
+			actionResultManager:
+				mockActionResultManager as unknown as ActionResultManager,
 		};
 
 		// Mock StreamingProcessor
-		mockStreamingProcessor = new StreamingProcessor(
-			mockSettings,
-			mockApp as unknown as App
-		) as jest.Mocked<StreamingProcessor>;
 		mockStreamingProcessor = {
-			...mockStreamingProcessor,
-			processStreaming: jest.fn(),
-			clearResults: jest.fn(),
-			hideSpinner: jest.fn(),
-			getCurrentResult: jest.fn().mockReturnValue(""),
-			isStreaming: jest.fn().mockReturnValue(false),
-			applyFinalFormatToDisplay: jest.fn(),
+			processStreaming: jest.fn<Promise<void>, [StreamingConfig]>(),
+			clearResults: jest.fn<void, []>(),
+			hideSpinner: jest.fn<void, []>(),
+			getCurrentResult: jest.fn<string, []>().mockReturnValue(""),
+			isStreaming: jest.fn<boolean, []>().mockReturnValue(false),
+			applyFinalFormatToDisplay: jest.fn<void, [string?]>(),
 		};
 
 		// Mock ActionHandler
 		mockActionHandler = {
-			addToNote: jest.fn(),
+			addToNote: jest.fn<
+				ReturnType<ActionHandler["addToNote"]>,
+				Parameters<ActionHandler["addToNote"]>
+			>(),
 		};
 
 		// Import PromptProcessor and create instance
 		promptProcessor = new PromptProcessor(mockSettings, mockPlugin);
 
 		// Replace internal dependencies with mocks
-		promptProcessor.streamingProcessor = mockStreamingProcessor;
-		promptProcessor.actionHandler = mockActionHandler;
+		(
+			promptProcessor as unknown as {
+				streamingProcessor: StreamingProcessor;
+			}
+		).streamingProcessor =
+			mockStreamingProcessor as unknown as StreamingProcessor;
+		(
+			promptProcessor as unknown as { actionHandler: ActionHandler }
+		).actionHandler = mockActionHandler as unknown as ActionHandler;
 	});
 
 	describe("processPrompt", () => {
@@ -833,8 +834,7 @@ describe("PromptProcessor", () => {
 				showModalWindow: true,
 			};
 
-			mockEditor.getCursor = jest
-				.fn()
+			mockEditor.getCursor
 				.mockReturnValueOnce({ line: 0, ch: 0 }) // from
 				.mockReturnValueOnce({ line: 0, ch: 10 }); // to
 
