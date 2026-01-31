@@ -10,7 +10,7 @@ const mockWaitForAI = waitForAI as jest.MockedFunction<typeof waitForAI>;
 type MockAIProvidersService = {
 	version: number;
 	providers: IAIProvider[];
-	execute: jest.Mock;
+	execute: jest.Mock<Promise<MockChunkHandler>, [ExecuteArgs]>;
 	fetchModels: jest.Mock;
 	embed: jest.Mock;
 	checkCompatibility: jest.Mock;
@@ -18,9 +18,14 @@ type MockAIProvidersService = {
 };
 
 type MockChunkHandler = {
-	onData: jest.Mock;
-	onEnd: jest.Mock;
-	onError: jest.Mock;
+	onData: jest.Mock<void, [(cb: (chunk: string) => void) => void]>;
+	onEnd: jest.Mock<void, [(cb: () => void) => void]>;
+	onError: jest.Mock<void, [(cb: (err: Error) => void) => void]>;
+};
+
+type ExecuteArgs = {
+	provider: IAIProvider;
+	messages: Array<{ role: "user" | "system"; content: string }>;
 };
 
 describe("PluginAIProvidersLLM", () => {
@@ -45,7 +50,7 @@ describe("PluginAIProvidersLLM", () => {
 					model: "gpt-4",
 				},
 			],
-			execute: jest.fn(),
+			execute: jest.fn<Promise<MockChunkHandler>, [ExecuteArgs]>(),
 			fetchModels: jest.fn(),
 			embed: jest.fn(),
 			checkCompatibility: jest.fn(),
@@ -54,9 +59,9 @@ describe("PluginAIProvidersLLM", () => {
 
 		// Create mock chunk handler
 		mockChunkHandler = {
-			onData: jest.fn(),
-			onEnd: jest.fn(),
-			onError: jest.fn(),
+			onData: jest.fn<void, [(cb: (chunk: string) => void) => void]>(),
+			onEnd: jest.fn<void, [(cb: () => void) => void]>(),
+			onError: jest.fn<void, [(cb: (err: Error) => void) => void]>(),
 		};
 
 		// Setup waitForAI mock

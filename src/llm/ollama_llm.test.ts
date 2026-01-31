@@ -1,7 +1,6 @@
 import { OllamaLLM } from "./ollama_llm";
 import type { AIProvider } from "../types";
 import { nativeFetch, standardFetch } from "../utils/fetch";
-import { TextDecoder, TextEncoder } from "util";
 import {
 	MockResponse,
 	createMockResponse,
@@ -9,17 +8,56 @@ import {
 } from "../../__mocks__/response";
 import type { MockReadableStreamReader } from "../../__mocks__/response";
 
+// Ensure TextEncoder/TextDecoder exist in the Jest environment.
+// Obsidian plugins run in a browser-like context where these are typically available.
+const g = globalThis as typeof globalThis & {
+	TextEncoder?: typeof TextEncoder;
+	TextDecoder?: typeof TextDecoder;
+};
+
+if (typeof g.TextEncoder === "undefined") {
+	class FallbackTextEncoder {
+		encode(input = ""): Uint8Array {
+			// ASCII/UTF-8 subset is sufficient for JSON test payloads used here.
+			const bytes = new Uint8Array(input.length);
+			for (let i = 0; i < input.length; i++) {
+				bytes[i] = input.charCodeAt(i) & 0xff;
+			}
+			return bytes;
+		}
+	}
+
+	g.TextEncoder = FallbackTextEncoder as unknown as typeof TextEncoder;
+}
+
+if (typeof g.TextDecoder === "undefined") {
+	class FallbackTextDecoder {
+		decode(input?: ArrayBuffer | ArrayBufferView): string {
+			if (!input) return "";
+			const view =
+				input instanceof ArrayBuffer
+					? new Uint8Array(input)
+					: new Uint8Array(
+							input.buffer,
+							input.byteOffset,
+							input.byteLength
+						);
+			let out = "";
+			for (let i = 0; i < view.length; i++) {
+				out += String.fromCharCode(view[i]);
+			}
+			return out;
+		}
+	}
+
+	g.TextDecoder = FallbackTextDecoder as unknown as typeof TextDecoder;
+}
+
 // Mock the fetch utils
 jest.mock("../utils/fetch", () => ({
 	nativeFetch: jest.fn(),
 	standardFetch: jest.fn(),
 }));
-
-// Setup TextDecoder for Node.js test environment
-Object.assign(globalThis, {
-	TextDecoder,
-	TextEncoder,
-});
 
 const mockNativeFetch = nativeFetch as jest.MockedFunction<typeof nativeFetch>;
 const mockStandardFetch = standardFetch;

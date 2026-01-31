@@ -108,9 +108,16 @@ describe("QuickPromptManager — inputSource wiring", () => {
 			"replace",
 			inputSource
 		);
-		const callArgs = (mockPromptProcessor.processPrompt as jest.Mock).mock
-			.calls[0][0];
-		return callArgs;
+
+		const processPromptMock =
+			mockPromptProcessor.processPrompt as jest.MockedFunction<
+				PromptProcessor["processPrompt"]
+			>;
+		const firstCall = processPromptMock.mock.calls[0];
+		if (!firstCall) {
+			throw new Error("Expected processPrompt to be called");
+		}
+		return firstCall[0];
 	};
 
 	it("maps CURSOR to Selection.CURSOR and calls getTextInput accordingly", async () => {
