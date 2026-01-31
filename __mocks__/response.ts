@@ -4,74 +4,80 @@ export interface MockResponseInit {
 	status?: number;
 	statusText?: string;
 	headers?: Record<string, string>;
-	body?: any;
+	body?: unknown;
 }
 
 export interface MockReadableStreamReader {
-	read: jest.Mock<Promise<{ done: boolean; value?: Uint8Array }>>;
-	releaseLock: jest.Mock<void>;
+	read: jest.Mock<Promise<{ done: boolean; value?: Uint8Array }>, []>;
+	releaseLock: jest.Mock<void, []>;
 }
 
 export class MockResponse implements Response {
 	ok: boolean;
 	status: number;
 	statusText: string;
-	headers: any;
-	body: any;
+	headers: Headers;
+	body: ReadableStream<Uint8Array> | null;
 	redirected: boolean = false;
-	type: any = "basic";
+	type: ResponseType = "basic";
 	url: string = "";
 	bodyUsed: boolean = false;
 
-	private jsonMock: jest.Mock;
-	private textMock: jest.Mock;
-	private arrayBufferMock: jest.Mock;
-	private blobMock: jest.Mock;
-	private formDataMock: jest.Mock;
-	private bytesMock: jest.Mock;
+	private jsonMock: jest.Mock<Promise<unknown>, []>;
+	private textMock: jest.Mock<Promise<string>, []>;
+	private arrayBufferMock: jest.Mock<Promise<ArrayBuffer>, []>;
+	private blobMock: jest.Mock<Promise<Blob>, []>;
+	private formDataMock: jest.Mock<Promise<FormData>, []>;
+	private bytesMock: jest.Mock<Promise<Uint8Array>, []>;
 
 	constructor(init: MockResponseInit = {}) {
 		this.ok = init.ok ?? true;
 		this.status = init.status ?? 200;
 		this.statusText = init.statusText ?? "OK";
-		this.headers = init.headers || {};
-		this.body = init.body ?? null;
+		this.headers = new Headers(init.headers || {});
+		this.body = null;
 
-		this.jsonMock = jest.fn();
-		this.textMock = jest.fn();
-		this.arrayBufferMock = jest.fn();
-		this.blobMock = jest.fn();
-		this.formDataMock = jest.fn();
-		this.bytesMock = jest.fn();
+		this.jsonMock = jest.fn<Promise<unknown>, []>();
+		this.textMock = jest.fn<Promise<string>, []>();
+		this.arrayBufferMock = jest.fn<Promise<ArrayBuffer>, []>();
+		this.blobMock = jest.fn<Promise<Blob>, []>();
+		this.formDataMock = jest.fn<Promise<FormData>, []>();
+		this.bytesMock = jest.fn<Promise<Uint8Array>, []>();
+
+		// If the test provides a body, keep it as the response body.
+		// Many tests use a mocked stream-like object with getReader().
+		if (init.body != null) {
+			this.body = init.body as unknown as ReadableStream<Uint8Array>;
+		}
 	}
 
 	// Body methods
-	async json(): Promise<any> {
+	json(): Promise<unknown> {
 		this.bodyUsed = true;
 		return this.jsonMock();
 	}
 
-	async text(): Promise<string> {
+	text(): Promise<string> {
 		this.bodyUsed = true;
 		return this.textMock();
 	}
 
-	async arrayBuffer(): Promise<ArrayBuffer> {
+	arrayBuffer(): Promise<ArrayBuffer> {
 		this.bodyUsed = true;
 		return this.arrayBufferMock();
 	}
 
-	async blob(): Promise<any> {
+	blob(): Promise<Blob> {
 		this.bodyUsed = true;
 		return this.blobMock();
 	}
 
-	async formData(): Promise<any> {
+	formData(): Promise<FormData> {
 		this.bodyUsed = true;
 		return this.formDataMock();
 	}
 
-	async bytes(): Promise<Uint8Array> {
+	bytes(): Promise<Uint8Array> {
 		this.bodyUsed = true;
 		return this.bytesMock();
 	}
@@ -81,13 +87,13 @@ export class MockResponse implements Response {
 			ok: this.ok,
 			status: this.status,
 			statusText: this.statusText,
-			headers: this.headers,
+			headers: Object.fromEntries(this.headers.entries()),
 			body: this.body,
 		}) as Response;
 	}
 
 	// Mock setters for test control
-	setJsonResponse(data: any): void {
+	setJsonResponse(data: unknown): void {
 		this.jsonMock.mockResolvedValue(data);
 	}
 
@@ -97,8 +103,10 @@ export class MockResponse implements Response {
 
 	setStreamReader(reader: MockReadableStreamReader): void {
 		this.body = {
-			getReader: jest.fn().mockReturnValue(reader),
-		} as any;
+			getReader: jest
+				.fn<MockReadableStreamReader, []>()
+				.mockReturnValue(reader),
+		} as unknown as ReadableStream<Uint8Array>;
 	}
 
 	static createWithReader(
@@ -107,8 +115,10 @@ export class MockResponse implements Response {
 	): MockResponse {
 		const response = new MockResponse(init);
 		response.body = {
-			getReader: jest.fn().mockReturnValue(reader),
-		} as any;
+			getReader: jest
+				.fn<MockReadableStreamReader, []>()
+				.mockReturnValue(reader),
+		} as unknown as ReadableStream<Uint8Array>;
 		return response;
 	}
 }
@@ -119,7 +129,7 @@ export function createMockResponse(init: MockResponseInit = {}): MockResponse {
 
 export function createMockStreamReader(): MockReadableStreamReader {
 	return {
-		read: jest.fn(),
-		releaseLock: jest.fn(),
+		read: jest.fn<Promise<{ done: boolean; value?: Uint8Array }>, []>(),
+		releaseLock: jest.fn<void, []>(),
 	};
 }

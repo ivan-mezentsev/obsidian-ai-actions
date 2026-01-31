@@ -50,6 +50,8 @@ export class GoogleGenAI {
 export const createMockStreamingResponse = (chunks: string[]) => {
 	return {
 		async *[Symbol.asyncIterator]() {
+			// Ensure this async generator contains an await to satisfy lint rules.
+			await Promise.resolve();
 			for (const chunk of chunks) {
 				yield {
 					candidates: [
