@@ -1,6 +1,7 @@
 import { ActionHandler, PromptProcessor, StreamingProcessor } from "./handler";
 import type { StreamingConfig, PromptConfig, PluginInterface } from "./handler";
 import { LLMFactory } from "./llm/factory";
+import type { LLM } from "./llm/base";
 import type { UserAction } from "./action";
 import { Selection, Location } from "./action";
 import type { AIEditorSettings } from "./settings";
@@ -37,7 +38,10 @@ describe("StreamingProcessor", () => {
 	let mockApp: {
 		workspace: {
 			updateOptions: jest.Mock<void, []>;
-			getActiveViewOfType: jest.Mock<MarkdownView | null, []>;
+			getActiveViewOfType: jest.Mock<
+				MarkdownView | null,
+				[typeof MarkdownView]
+			>;
 		};
 		commands: {
 			listCommands: jest.Mock<Command[], []>;
@@ -46,16 +50,8 @@ describe("StreamingProcessor", () => {
 	};
 	let mockLLM: {
 		autocomplete: jest.Mock<
-			Promise<void>,
-			[
-				string,
-				string,
-				(token: string) => void,
-				number,
-				number,
-				string | undefined,
-				boolean,
-			]
+			ReturnType<LLM["autocomplete"]>,
+			Parameters<LLM["autocomplete"]>
 		>;
 	};
 	let mockLLMFactory: jest.Mocked<LLMFactory>;
@@ -86,29 +82,44 @@ describe("StreamingProcessor", () => {
 		// Mock app
 		mockApp = {
 			workspace: {
-				updateOptions: jest.fn(),
-				getActiveViewOfType: jest.fn(),
+				updateOptions: jest.fn<void, []>(),
+				getActiveViewOfType: jest.fn<
+					MarkdownView | null,
+					[typeof MarkdownView]
+				>(),
 			},
 			commands: {
-				listCommands: jest.fn(() => []),
-				executeCommandById: jest.fn(),
+				listCommands: jest.fn<Command[], []>(() => []),
+				executeCommandById: jest.fn<void, [string]>(),
 			},
 		} as unknown as jest.Mocked<App>;
 
 		// Mock LLM
 		mockLLM = {
-			autocomplete: jest.fn(),
+			autocomplete: jest.fn<
+				ReturnType<LLM["autocomplete"]>,
+				Parameters<LLM["autocomplete"]>
+			>(),
 		};
 
 		// Mock LLMFactory
 		mockLLMFactory = new LLMFactory(
 			mockSettings
 		) as jest.Mocked<LLMFactory>;
-		mockLLMFactory.create = jest.fn().mockReturnValue(mockLLM);
+		mockLLMFactory.create = jest
+			.fn<
+				ReturnType<LLMFactory["create"]>,
+				Parameters<LLMFactory["create"]>
+			>()
+			.mockReturnValue(
+				mockLLM as unknown as ReturnType<LLMFactory["create"]>
+			);
 		mockLLMFactory.getProviderNameSync = jest
-			.fn()
+			.fn<string, [string]>()
 			.mockReturnValue("Test Provider");
-		mockLLMFactory.getSystemPromptSupport = jest.fn().mockReturnValue(true);
+		mockLLMFactory.getSystemPromptSupport = jest
+			.fn<boolean, [string]>()
+			.mockReturnValue(true);
 
 		// Replace the constructor to return our mock
 		(LLMFactory as jest.MockedClass<typeof LLMFactory>).mockImplementation(
@@ -158,7 +169,7 @@ describe("StreamingProcessor", () => {
 		it("should process streaming successfully", async () => {
 			// Mock successful streaming
 			mockLLM.autocomplete.mockImplementation(
-				async (
+				(
 					prompt: string,
 					input: string,
 					onToken: (token: string) => void
@@ -167,6 +178,7 @@ describe("StreamingProcessor", () => {
 					onToken("Hello");
 					onToken(" world");
 					onToken("!");
+					return Promise.resolve();
 				}
 			);
 
@@ -225,7 +237,7 @@ describe("StreamingProcessor", () => {
 
 			// Mock streaming that we can control
 			mockLLM.autocomplete.mockImplementation(
-				async (
+				(
 					prompt: string,
 					input: string,
 					onToken: (token: string) => void
@@ -264,7 +276,7 @@ describe("StreamingProcessor", () => {
 			const tokens = ["Hello", " ", "world", "!"];
 
 			mockLLM.autocomplete.mockImplementation(
-				async (
+				(
 					prompt: string,
 					input: string,
 					onToken: (token: string) => void
@@ -272,6 +284,7 @@ describe("StreamingProcessor", () => {
 					for (const token of tokens) {
 						onToken(token);
 					}
+					return Promise.resolve();
 				}
 			);
 
@@ -839,8 +852,9 @@ describe("PromptProcessor", () => {
 
 			// Mock successful streaming
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: StreamingConfig) => {
+				(config: StreamingConfig) => {
 					config.onComplete(testResult);
+					return Promise.resolve();
 				}
 			);
 
@@ -877,9 +891,9 @@ describe("PromptProcessor", () => {
 
 			// Mock streaming error
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: StreamingConfig) => {
+				(config: StreamingConfig) => {
 					config.onError(testError);
-					throw testError;
+					return Promise.reject(testError);
 				}
 			);
 
@@ -899,8 +913,9 @@ describe("PromptProcessor", () => {
 		it("should handle empty streaming result", async () => {
 			// Mock empty result
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: StreamingConfig) => {
+				(config: StreamingConfig) => {
 					config.onComplete("   "); // whitespace only
+					return Promise.resolve();
 				}
 			);
 
@@ -917,9 +932,9 @@ describe("PromptProcessor", () => {
 
 			// Mock successful streaming
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				async (config: any) => {
+				(config: StreamingConfig) => {
 					config.onComplete("result");
+					return Promise.resolve();
 				}
 			);
 
@@ -960,18 +975,23 @@ describe("PromptProcessor", () => {
 			};
 
 			// Mock streaming to capture the modal callbacks
-			// eslint-disable-next-line @typescript-eslint/no-explicit-any
-			let onAcceptCallback: any;
+			let onAcceptCallback:
+				| ((result: string) => Promise<void>)
+				| undefined;
 			mockPlugin.actionResultManager.showResultPanel.mockImplementation(
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				async (result: any, format: any, onAccept: any) => {
+				(
+					result: string,
+					format: ((text: string) => string) | null,
+					onAccept: (result: string) => Promise<void>
+				) => {
 					onAcceptCallback = onAccept;
 				}
 			);
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: StreamingConfig) => {
+				(config: StreamingConfig) => {
 					config.onComplete(testResult);
+					return Promise.resolve();
 				}
 			);
 
@@ -990,7 +1010,7 @@ describe("PromptProcessor", () => {
 
 			// Simulate user accepting the result - this will call the real callback
 			// which should call hideSpinner, replaceRange, and clearResults
-			await onAcceptCallback(testResult);
+			await onAcceptCallback?.(testResult);
 
 			// Verify result was applied correctly
 			expect(mockStreamingProcessor.clearResults).toHaveBeenCalled();
