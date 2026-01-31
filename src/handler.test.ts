@@ -12,6 +12,7 @@ import {
 	MarkdownView,
 	Editor,
 	type EditorPosition,
+	type Vault,
 } from "obsidian";
 
 // Mock dependencies
@@ -566,11 +567,11 @@ describe("StreamingProcessor", () => {
 			mockLLM.autocomplete.mockImplementation(
 				(
 					prompt: string,
-					input: string,
-					onToken: (token: string) => void
+					content: string,
+					onToken?: (token: string) => void
 				) => {
-					onToken("token1");
-					onToken("token2");
+					onToken?.("token1");
+					onToken?.("token2");
 					return Promise.resolve();
 				}
 			);
@@ -591,10 +592,10 @@ describe("StreamingProcessor", () => {
 			mockLLM.autocomplete.mockImplementation(
 				(
 					prompt: string,
-					input: string,
-					onToken: (token: string) => void
+					content: string,
+					onToken?: (token: string) => void
 				) => {
-					onToken("test result");
+					onToken?.("test result");
 					return Promise.resolve();
 				}
 			);
@@ -648,7 +649,9 @@ describe("StreamingProcessor", () => {
 			await streamingProcessor.processStreaming(mockConfig);
 
 			// Verify Notice was called (mocked in beforeEach)
-			const obsidianMock = jest.requireMock("obsidian");
+			const obsidianMock = jest.requireMock("obsidian") as unknown as {
+				Notice: jest.Mock;
+			};
 			expect(obsidianMock.Notice).toHaveBeenCalledWith(
 				expect.stringContaining("Network error"),
 				8000
@@ -706,11 +709,9 @@ describe("PromptProcessor", () => {
 		applyFinalFormatToDisplay: jest.Mock<void, [string?]>;
 	};
 	let mockActionHandler: {
-		addToNote: jest.Mock<
-			ReturnType<ActionHandler["prototype"]["addToNote"]>,
-			Parameters<ActionHandler["prototype"]["addToNote"]>
-		>;
+		addToNote: jest.Mock<ReturnType<AddToNoteFn>, Parameters<AddToNoteFn>>;
 	};
+	type AddToNoteFn = typeof ActionHandler.prototype.addToNote;
 	type TestEditor = {
 		getCursor: jest.Mock<EditorPosition, []>;
 		posToOffset: jest.Mock<number, [EditorPosition]>;
@@ -1053,7 +1054,7 @@ describe("PromptProcessor", () => {
 					result: string,
 					format: ((text: string) => string) | null,
 					onAccept: (result: string) => Promise<void>,
-					onLocationAction: (
+					onLocationAction?: (
 						result: string,
 						location: Location
 					) => Promise<void>
@@ -1127,12 +1128,12 @@ describe("PromptProcessor", () => {
 					result: string,
 					format: ((text: string) => string) | null,
 					onAccept: (result: string) => Promise<void>,
-					onLocationAction: (
+					onLocationAction?: (
 						result: string,
 						location: Location
 					) => Promise<void>,
-					hasFileOutput: boolean,
-					onCancel: () => void
+					hasFileOutput?: boolean,
+					onCancel?: () => void
 				) => {
 					onCancelCallback = onCancel;
 				}
@@ -1208,26 +1209,29 @@ describe("PromptProcessor", () => {
 
 	describe("formatResult", () => {
 		it("should apply format template correctly", () => {
-			const result = promptProcessor.formatResult(
-				"test result",
-				"Formatted: {{result}}"
-			);
+			const result = (
+				promptProcessor as unknown as {
+					formatResult: (result: string, format: string) => string;
+				}
+			).formatResult("test result", "Formatted: {{result}}");
 			expect(result).toBe("Formatted: test result");
 		});
 
 		it("should handle format without template", () => {
-			const result = promptProcessor.formatResult(
-				"test result",
-				"No template"
-			);
+			const result = (
+				promptProcessor as unknown as {
+					formatResult: (result: string, format: string) => string;
+				}
+			).formatResult("test result", "No template");
 			expect(result).toBe("No template");
 		});
 
 		it("should handle empty result", () => {
-			const result = promptProcessor.formatResult(
-				"",
-				"Formatted: {{result}}"
-			);
+			const result = (
+				promptProcessor as unknown as {
+					formatResult: (result: string, format: string) => string;
+				}
+			).formatResult("", "Formatted: {{result}}");
 			expect(result).toBe("Formatted: ");
 		});
 	});
@@ -1237,7 +1241,26 @@ describe("ActionHandler Integration Tests", () => {
 	let actionHandler: ActionHandler;
 	let mockSettings: AIEditorSettings;
 	let mockPlugin: PluginInterface;
-	let mockEditor: Editor;
+	type TestEditor = {
+		getSelection: jest.MockedFunction<() => string>;
+		getValue: jest.MockedFunction<() => string>;
+		getCursor: jest.MockedFunction<() => EditorPosition>;
+		focus: jest.MockedFunction<() => void>;
+		replaceRange: jest.MockedFunction<
+			(
+				replacement: string,
+				from: EditorPosition,
+				to?: EditorPosition
+			) => void
+		>;
+		replaceSelection: jest.MockedFunction<(replacement: string) => void>;
+		setCursor: jest.MockedFunction<
+			(pos: EditorPosition | number, ch?: number) => void
+		>;
+		lastLine: jest.MockedFunction<() => number>;
+		posToOffset: jest.MockedFunction<(pos: EditorPosition) => number>;
+	};
+	let mockEditor: TestEditor;
 	let mockView: MarkdownView;
 	let mockApp: App;
 	let mockModalManager: {
@@ -1268,18 +1291,25 @@ describe("ActionHandler Integration Tests", () => {
 
 		// Mock editor
 		mockEditor = {
-			getSelection: jest.fn().mockReturnValue("selected text"),
-			getValue: jest.fn().mockReturnValue("full text"),
+			getSelection: jest
+				.fn<string, []>()
+				.mockReturnValue("selected text"),
+			getValue: jest.fn<string, []>().mockReturnValue("full text"),
 			getCursor: jest
-				.fn()
+				.fn<EditorPosition, []>()
 				.mockReturnValueOnce({ line: 0, ch: 0 }) // from
 				.mockReturnValueOnce({ line: 0, ch: 10 }), // to
-			focus: jest.fn(),
-			replaceRange: jest.fn(),
-			replaceSelection: jest.fn(),
-			setCursor: jest.fn(),
-			lastLine: jest.fn().mockReturnValue(10),
-			posToOffset: jest.fn().mockReturnValue(100),
+			focus: jest.fn<void, []>(),
+			replaceRange: jest.fn<
+				void,
+				[string, EditorPosition, EditorPosition?]
+			>(),
+			replaceSelection: jest.fn<void, [string]>(),
+			setCursor: jest.fn<void, [EditorPosition | number, number?]>(),
+			lastLine: jest.fn<number, []>().mockReturnValue(10),
+			posToOffset: jest
+				.fn<number, [EditorPosition]>()
+				.mockReturnValue(100),
 		};
 
 		// Mock view
@@ -1291,14 +1321,14 @@ describe("ActionHandler Integration Tests", () => {
 					getAbstractFileByPath: jest.fn(),
 				},
 			},
-		};
+		} as unknown as MarkdownView;
 
 		// Mock app
 		mockApp = {
 			workspace: {
 				updateOptions: jest.fn(),
 			},
-		};
+		} as unknown as App;
 
 		// Mock modal manager
 		mockModalManager = {
@@ -1314,7 +1344,7 @@ describe("ActionHandler Integration Tests", () => {
 			actionResultManager: {
 				showResultPanel: jest.fn(),
 			},
-		};
+		} as unknown as PluginInterface;
 
 		// Import ActionHandler and create instance
 		actionHandler = new ActionHandler(mockSettings, mockPlugin);
@@ -1353,7 +1383,7 @@ describe("ActionHandler Integration Tests", () => {
 				mockApp,
 				mockSettings,
 				mockAction,
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockView
 			);
 
@@ -1369,7 +1399,7 @@ describe("ActionHandler Integration Tests", () => {
 			expect(processPromptMock).toHaveBeenCalledWith({
 				action: mockAction,
 				input: "selected text", // from getTextInput with CURSOR selection
-				editor: mockEditor,
+				editor: mockEditor as unknown as Editor,
 				view: mockView,
 				app: mockApp,
 				plugin: mockPlugin,
@@ -1395,7 +1425,7 @@ describe("ActionHandler Integration Tests", () => {
 				mockApp,
 				mockSettings,
 				mockAction,
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockView
 			);
 
@@ -1427,14 +1457,14 @@ describe("ActionHandler Integration Tests", () => {
 				mockApp,
 				mockSettings,
 				mockAction,
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockView
 			);
 
 			expect(processPromptMock).toHaveBeenCalledWith({
 				action: mockAction,
 				input: "full text", // from getTextInput with ALL selection
-				editor: mockEditor,
+				editor: mockEditor as unknown as Editor,
 				view: mockView,
 				app: mockApp,
 				plugin: mockPlugin,
@@ -1461,8 +1491,13 @@ describe("ActionHandler Integration Tests", () => {
 				},
 			});
 
+			type ProcessPromptFn =
+				typeof PromptProcessor.prototype.processPrompt;
+			const processPromptMock = jest
+				.fn<ReturnType<ProcessPromptFn>, Parameters<ProcessPromptFn>>()
+				.mockResolvedValue(undefined);
 			const mockPromptProcessor = {
-				processPrompt: jest.fn(),
+				processPrompt: processPromptMock,
 			};
 
 			jest.spyOn(
@@ -1476,14 +1511,14 @@ describe("ActionHandler Integration Tests", () => {
 				mockApp,
 				mockSettings,
 				mockAction,
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockView
 			);
 
 			expect(mockPromptProcessor.processPrompt).toHaveBeenCalledWith({
 				action: mockAction,
 				input: mockClipboardContent,
-				editor: mockEditor,
+				editor: mockEditor as unknown as Editor,
 				view: mockView,
 				app: mockApp,
 				plugin: mockPlugin,
@@ -1500,7 +1535,7 @@ describe("ActionHandler Integration Tests", () => {
 			// Test CURSOR selection
 			let result = await actionHandler.getTextInput(
 				Selection.CURSOR,
-				mockEditor
+				mockEditor as unknown as Editor
 			);
 			expect(result).toBe("selected text");
 			expect(mockEditor.getSelection).toHaveBeenCalled();
@@ -1508,7 +1543,7 @@ describe("ActionHandler Integration Tests", () => {
 			// Test ALL selection
 			result = await actionHandler.getTextInput(
 				Selection.ALL,
-				mockEditor
+				mockEditor as unknown as Editor
 			);
 			expect(result).toBe("full text");
 			expect(mockEditor.getValue).toHaveBeenCalled();
@@ -1533,19 +1568,23 @@ describe("ActionHandler Integration Tests", () => {
 
 			const result = await actionHandler.getTextInput(
 				Selection.CLIPBOARD,
-				mockEditor
+				mockEditor as unknown as Editor
 			);
 			expect(result).toBe(mockClipboardContent);
 		});
 
 		it("should preserve addToNote method functionality", async () => {
-			const mockVault = mockView.file.vault;
+			const mockVault = {
+				append: jest.fn(),
+				create: jest.fn(),
+				getAbstractFileByPath: jest.fn(),
+			} as unknown as Vault;
 
 			// Test REPLACE_CURRENT
 			await actionHandler.addToNote(
 				Location.REPLACE_CURRENT,
 				"test text",
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockVault
 			);
 			expect(mockEditor.replaceSelection).toHaveBeenCalledWith(
@@ -1556,7 +1595,7 @@ describe("ActionHandler Integration Tests", () => {
 			await actionHandler.addToNote(
 				Location.INSERT_HEAD,
 				"test text",
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockVault
 			);
 			expect(mockEditor.setCursor).toHaveBeenCalledWith(0, 0);
@@ -1565,7 +1604,7 @@ describe("ActionHandler Integration Tests", () => {
 			await actionHandler.addToNote(
 				Location.APPEND_BOTTOM,
 				"test text",
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockVault
 			);
 			expect(mockEditor.setCursor).toHaveBeenCalledWith(10); // lastLine() returns 10
@@ -1575,7 +1614,7 @@ describe("ActionHandler Integration Tests", () => {
 			await actionHandler.addToNote(
 				Location.APPEND_CURRENT,
 				"test text",
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockVault
 			);
 			expect(mockEditor.replaceSelection).toHaveBeenCalledWith(
@@ -1596,23 +1635,28 @@ describe("ActionHandler Integration Tests", () => {
 			};
 
 			// Mock LLM
+			const autocompleteMock = jest
+				.fn<Promise<string>, unknown[]>()
+				.mockResolvedValue("test result");
 			const mockLLM = {
-				autocomplete: jest.fn().mockResolvedValue("test result"),
+				autocomplete: autocompleteMock,
 			};
-			actionHandler.llmFactory.create = jest
-				.fn()
+			const createMock = jest
+				.fn<unknown, [string]>()
 				.mockReturnValue(mockLLM);
+			const llmFactory = (
+				actionHandler as unknown as { llmFactory: { create: unknown } }
+			).llmFactory;
+			(llmFactory as { create: typeof createMock }).create = createMock;
 
 			const result = await actionHandler.handleAction(
 				mockAction,
 				"test input"
 			);
 
-			expect(actionHandler.llmFactory.create).toHaveBeenCalledWith(
-				"test-model"
-			);
+			expect(createMock).toHaveBeenCalledWith("test-model");
 			// The prompt is processed by replacing {{input}} with the actual input
-			expect(mockLLM.autocomplete).toHaveBeenCalledWith(
+			expect(autocompleteMock).toHaveBeenCalledWith(
 				"Test: test input", // {{input}} is replaced with 'test input'
 				"test input",
 				undefined,
@@ -1646,7 +1690,7 @@ describe("ActionHandler Integration Tests", () => {
 					mockApp,
 					mockSettings,
 					mockAction,
-					mockEditor,
+					mockEditor as unknown as Editor,
 					mockView
 				)
 			).rejects.toThrow("Model validation failed");
@@ -1672,7 +1716,7 @@ describe("ActionHandler Integration Tests", () => {
 					mockApp,
 					mockSettings,
 					mockAction,
-					mockEditor,
+					mockEditor as unknown as Editor,
 					mockView
 				)
 			).rejects.toThrow("Text input failed");
