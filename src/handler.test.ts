@@ -12,8 +12,6 @@ import {
 	MarkdownView,
 	Editor,
 	type EditorPosition,
-	type EditorRange,
-	type EditorSelection,
 } from "obsidian";
 
 // Mock dependencies
@@ -185,7 +183,9 @@ describe("StreamingProcessor", () => {
 
 			await streamingProcessor.processStreaming(mockConfig);
 
-			expect(mockLLMFactory.create).toHaveBeenCalledWith("test-model");
+			expect(
+				mockLLMFactory.create as unknown as jest.Mock
+			).toHaveBeenCalledWith("test-model");
 			expect(mockLLM.autocomplete).toHaveBeenCalledWith(
 				"Test prompt: {{input}}",
 				"test input",
@@ -562,13 +562,14 @@ describe("StreamingProcessor", () => {
 			});
 
 			mockLLM.autocomplete.mockImplementation(
-				async (
+				(
 					prompt: string,
 					input: string,
 					onToken: (token: string) => void
 				) => {
 					onToken("token1");
 					onToken("token2");
+					return Promise.resolve();
 				}
 			);
 
@@ -586,12 +587,13 @@ describe("StreamingProcessor", () => {
 			});
 
 			mockLLM.autocomplete.mockImplementation(
-				async (
+				(
 					prompt: string,
 					input: string,
 					onToken: (token: string) => void
 				) => {
 					onToken("test result");
+					return Promise.resolve();
 				}
 			);
 
@@ -1299,7 +1301,7 @@ describe("ActionHandler Integration Tests", () => {
 		// Mock modal manager
 		mockModalManager = {
 			validateAndSelectModel: jest
-				.fn()
+				.fn<Promise<string | null>, [UserAction]>()
 				.mockResolvedValue("validated-model-id"),
 		};
 
@@ -1343,7 +1345,9 @@ describe("ActionHandler Integration Tests", () => {
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
-			).mockImplementation(mockPromptProcessor.processPrompt);
+			).mockImplementation((...args) =>
+				mockPromptProcessor.processPrompt(...args)
+			);
 
 			await actionHandler.process(
 				mockApp,
@@ -1384,7 +1388,9 @@ describe("ActionHandler Integration Tests", () => {
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
-			).mockImplementation(mockPromptProcessor.processPrompt);
+			).mockImplementation((...args) =>
+				mockPromptProcessor.processPrompt(...args)
+			);
 
 			await actionHandler.process(
 				mockApp,
@@ -1414,7 +1420,9 @@ describe("ActionHandler Integration Tests", () => {
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
-			).mockImplementation(mockPromptProcessor.processPrompt);
+			).mockImplementation((...args) =>
+				mockPromptProcessor.processPrompt(...args)
+			);
 
 			await actionHandler.process(
 				mockApp,
@@ -1461,7 +1469,9 @@ describe("ActionHandler Integration Tests", () => {
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
-			).mockImplementation(mockPromptProcessor.processPrompt);
+			).mockImplementation((...args) =>
+				mockPromptProcessor.processPrompt(...args)
+			);
 
 			await actionHandler.process(
 				mockApp,
