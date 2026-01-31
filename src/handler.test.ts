@@ -841,9 +841,9 @@ describe("PromptProcessor", () => {
 			mockConfig = {
 				action: mockAction,
 				input: "test input",
-				editor: mockEditor,
-				view: mockView,
-				app: mockApp,
+				editor: mockEditor as unknown as Editor,
+				view: mockView as unknown as MarkdownView,
+				app: mockApp as unknown as App,
 			};
 		});
 
@@ -872,7 +872,7 @@ describe("PromptProcessor", () => {
 			);
 
 			expect(
-				mockPlugin.actionResultManager.showResultPanel
+				mockActionResultManager.showResultPanel
 			).toHaveBeenCalledWith(
 				testResult,
 				null,
@@ -906,7 +906,7 @@ describe("PromptProcessor", () => {
 			expect(mockStreamingProcessor.clearResults).toHaveBeenCalled();
 			expect(mockEditor.focus).toHaveBeenCalledTimes(2); // Before streaming and after error
 			expect(
-				mockPlugin.actionResultManager.showResultPanel
+				mockActionResultManager.showResultPanel
 			).not.toHaveBeenCalled();
 		});
 
@@ -922,7 +922,7 @@ describe("PromptProcessor", () => {
 			await promptProcessor.processPrompt(mockConfig);
 
 			expect(
-				mockPlugin.actionResultManager.showResultPanel
+				mockActionResultManager.showResultPanel
 			).not.toHaveBeenCalled();
 			expect(mockEditor.replaceRange).not.toHaveBeenCalled();
 		});
@@ -953,8 +953,7 @@ describe("PromptProcessor", () => {
 	describe("modal result handling", () => {
 		it("should handle modal accept callback correctly", async () => {
 			const testResult = "Test result";
-			mockEditor.getCursor = jest
-				.fn()
+			mockEditor.getCursor
 				.mockReturnValueOnce({ line: 0, ch: 0 })
 				.mockReturnValueOnce({ line: 0, ch: 10 });
 
@@ -969,16 +968,16 @@ describe("PromptProcessor", () => {
 					showModalWindow: true,
 				},
 				input: "test",
-				editor: mockEditor,
-				view: mockView,
-				app: mockApp,
+				editor: mockEditor as unknown as Editor,
+				view: mockView as unknown as MarkdownView,
+				app: mockApp as unknown as App,
 			};
 
 			// Mock streaming to capture the modal callbacks
 			let onAcceptCallback:
 				| ((result: string) => Promise<void>)
 				| undefined;
-			mockPlugin.actionResultManager.showResultPanel.mockImplementation(
+			mockActionResultManager.showResultPanel.mockImplementation(
 				(
 					result: string,
 					format: ((text: string) => string) | null,
@@ -998,9 +997,7 @@ describe("PromptProcessor", () => {
 			await promptProcessor.processPrompt(mockConfig);
 
 			// Verify modal was shown and callback was captured
-			expect(
-				mockPlugin.actionResultManager.showResultPanel
-			).toHaveBeenCalled();
+			expect(mockActionResultManager.showResultPanel).toHaveBeenCalled();
 			expect(onAcceptCallback).toBeDefined();
 
 			// Reset mock call counts before testing callback
@@ -1023,8 +1020,7 @@ describe("PromptProcessor", () => {
 
 		it("should handle modal location action callback correctly", async () => {
 			const testResult = "Test result";
-			mockEditor.getCursor = jest
-				.fn()
+			mockEditor.getCursor
 				.mockReturnValueOnce({ line: 0, ch: 0 })
 				.mockReturnValueOnce({ line: 0, ch: 10 });
 
@@ -1039,20 +1035,19 @@ describe("PromptProcessor", () => {
 					showModalWindow: true,
 				},
 				input: "test",
-				editor: mockEditor,
-				view: mockView,
-				app: mockApp,
+				editor: mockEditor as unknown as Editor,
+				view: mockView as unknown as MarkdownView,
+				app: mockApp as unknown as App,
 			};
 
 			// Mock streaming to capture the modal callbacks
-			let onLocationActionCallback: (
-				result: string,
-				location: Location
-			) => Promise<void>;
-			mockPlugin.actionResultManager.showResultPanel.mockImplementation(
-				async (
+			let onLocationActionCallback:
+				| ((result: string, location: Location) => Promise<void>)
+				| undefined;
+			mockActionResultManager.showResultPanel.mockImplementation(
+				(
 					result: string,
-					format: string | null,
+					format: ((text: string) => string) | null,
 					onAccept: (result: string) => Promise<void>,
 					onLocationAction: (
 						result: string,
@@ -1064,17 +1059,16 @@ describe("PromptProcessor", () => {
 			);
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: StreamingConfig) => {
+				(config: StreamingConfig) => {
 					config.onComplete(testResult);
+					return Promise.resolve();
 				}
 			);
 
 			await promptProcessor.processPrompt(mockConfig);
 
 			// Verify modal was shown and callback was captured
-			expect(
-				mockPlugin.actionResultManager.showResultPanel
-			).toHaveBeenCalled();
+			expect(mockActionResultManager.showResultPanel).toHaveBeenCalled();
 			expect(onLocationActionCallback).toBeDefined();
 
 			// Reset mock call counts before testing callback
@@ -1084,14 +1078,17 @@ describe("PromptProcessor", () => {
 
 			// Simulate user selecting a location action - this will call the real callback
 			// which should call hideSpinner, addToNote, and clearResults
-			await onLocationActionCallback(testResult, Location.APPEND_CURRENT);
+			await onLocationActionCallback?.(
+				testResult,
+				Location.APPEND_CURRENT
+			);
 
 			// Verify result was applied correctly
 			expect(mockStreamingProcessor.clearResults).toHaveBeenCalled();
 			expect(mockActionHandler.addToNote).toHaveBeenCalledWith(
 				Location.APPEND_CURRENT,
 				"Formatted: Test result",
-				mockEditor,
+				mockEditor as unknown as Editor,
 				mockView.file.vault,
 				undefined
 			);
@@ -1099,8 +1096,7 @@ describe("PromptProcessor", () => {
 
 		it("should handle modal cancel callback correctly", async () => {
 			const testResult = "Test result";
-			mockEditor.getCursor = jest
-				.fn()
+			mockEditor.getCursor
 				.mockReturnValueOnce({ line: 0, ch: 0 })
 				.mockReturnValueOnce({ line: 0, ch: 10 });
 
@@ -1115,17 +1111,17 @@ describe("PromptProcessor", () => {
 					showModalWindow: true,
 				},
 				input: "test",
-				editor: mockEditor,
-				view: mockView,
-				app: mockApp,
+				editor: mockEditor as unknown as Editor,
+				view: mockView as unknown as MarkdownView,
+				app: mockApp as unknown as App,
 			};
 
 			// Mock streaming to capture the modal callbacks
-			let onCancelCallback: () => void;
-			mockPlugin.actionResultManager.showResultPanel.mockImplementation(
-				async (
+			let onCancelCallback: (() => void) | undefined;
+			mockActionResultManager.showResultPanel.mockImplementation(
+				(
 					result: string,
-					format: string | null,
+					format: ((text: string) => string) | null,
 					onAccept: (result: string) => Promise<void>,
 					onLocationAction: (
 						result: string,
@@ -1139,17 +1135,16 @@ describe("PromptProcessor", () => {
 			);
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: StreamingConfig) => {
+				(config: StreamingConfig) => {
 					config.onComplete(testResult);
+					return Promise.resolve();
 				}
 			);
 
 			await promptProcessor.processPrompt(mockConfig);
 
 			// Verify modal was shown and callback was captured
-			expect(
-				mockPlugin.actionResultManager.showResultPanel
-			).toHaveBeenCalled();
+			expect(mockActionResultManager.showResultPanel).toHaveBeenCalled();
 			expect(onCancelCallback).toBeDefined();
 
 			// Reset mock call counts before testing callback
@@ -1158,7 +1153,7 @@ describe("PromptProcessor", () => {
 
 			// Simulate user cancelling the modal - this will call the real callback
 			// which should call hideSpinner and clearResults
-			onCancelCallback();
+			onCancelCallback?.();
 
 			// Verify cleanup was performed
 			expect(mockStreamingProcessor.clearResults).toHaveBeenCalled();
@@ -1166,13 +1161,12 @@ describe("PromptProcessor", () => {
 
 		it("should handle missing result manager gracefully", async () => {
 			const testResult = "Test result";
-			mockEditor.getCursor = jest
-				.fn()
+			mockEditor.getCursor
 				.mockReturnValueOnce({ line: 0, ch: 0 })
 				.mockReturnValueOnce({ line: 0, ch: 10 });
 
 			// Remove result manager from plugin
-			mockPlugin.actionResultManager = null;
+			mockPlugin.actionResultManager = undefined;
 
 			const mockConfig = {
 				action: {
@@ -1185,14 +1179,15 @@ describe("PromptProcessor", () => {
 					showModalWindow: true,
 				},
 				input: "test",
-				editor: mockEditor,
-				view: mockView,
-				app: mockApp,
+				editor: mockEditor as unknown as Editor,
+				view: mockView as unknown as MarkdownView,
+				app: mockApp as unknown as App,
 			};
 
 			mockStreamingProcessor.processStreaming.mockImplementation(
-				async (config: StreamingConfig) => {
+				(config: StreamingConfig) => {
 					config.onComplete(testResult);
+					return Promise.resolve();
 				}
 			);
 
