@@ -182,24 +182,26 @@ describe("QuickPromptManager Integration Tests", () => {
 			);
 
 			// Verify PromptProcessor was called with correct configuration
-			expect(processPromptMock).toHaveBeenCalledWith({
-				action: expect.objectContaining({
-					name: "Quick Prompt",
-					prompt: "Test prompt: {{input}}",
-					model: "custom-model", // Should use provided modelId
-					sel: Selection.CURSOR,
-					loc: Location.REPLACE_CURRENT, // outputMode 'replace' maps to REPLACE_CURRENT
-					format: "{{result}}",
-					showModalWindow: false, // Quick prompts never show modal
-				}),
-				input: "test input",
-				editor: mockEditor,
-				view: mockView,
-				app: mockPlugin.app,
-				userPrompt: "Test user prompt",
-				outputMode: "replace",
-				plugin: mockPlugin,
-			});
+			expect(processPromptMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					action: expect.objectContaining({
+						name: "Quick Prompt",
+						prompt: "Test prompt: {{input}}",
+						model: "custom-model", // Should use provided modelId
+						sel: Selection.CURSOR,
+						loc: Location.REPLACE_CURRENT, // outputMode 'replace' maps to REPLACE_CURRENT
+						format: "{{result}}",
+						showModalWindow: false, // Quick prompts never show modal
+					}) as unknown as PromptConfig["action"],
+					input: "test input",
+					editor: mockEditor,
+					view: mockView,
+					app: mockPlugin.app,
+					userPrompt: "Test user prompt",
+					outputMode: "replace",
+					plugin: mockPlugin,
+				})
+			);
 		});
 
 		it("should use default model when no modelId provided", async () => {
@@ -211,7 +213,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						model: "test-model", // Should use default from settings
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -230,7 +232,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						loc: Location.APPEND_CURRENT,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -244,7 +246,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						showModalWindow: false,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -299,16 +301,20 @@ describe("QuickPromptManager Integration Tests", () => {
 			);
 
 			// Verify all required parameters are passed
-			expect(processPromptMock).toHaveBeenCalledWith({
-				action: expect.any(Object),
-				input: "test input",
-				editor: mockEditor,
-				view: mockView,
-				app: mockPlugin.app,
-				userPrompt: "Custom prompt",
-				outputMode: "replace",
-				plugin: mockPlugin,
-			});
+			expect(processPromptMock).toHaveBeenCalledWith(
+				expect.objectContaining({
+					action: expect.any(
+						Object
+					) as unknown as PromptConfig["action"],
+					input: "test input",
+					editor: mockEditor,
+					view: mockView,
+					app: mockPlugin.app,
+					userPrompt: "Custom prompt",
+					outputMode: "replace",
+					plugin: mockPlugin,
+				})
+			);
 		});
 	});
 
@@ -329,7 +335,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						sel: Selection.CLIPBOARD,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -350,7 +356,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						sel: Selection.ALL,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -365,7 +371,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						showModalWindow: false,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -388,7 +394,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						model: "custom-model",
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 
@@ -401,7 +407,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						model: "test-model", // from settings
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -417,7 +423,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						loc: Location.REPLACE_CURRENT,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 
@@ -434,7 +440,7 @@ describe("QuickPromptManager Integration Tests", () => {
 				expect.objectContaining({
 					action: expect.objectContaining({
 						loc: Location.APPEND_CURRENT,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});
@@ -465,7 +471,7 @@ describe("QuickPromptManager Integration Tests", () => {
 						model: "custom-model",
 						loc: Location.APPEND_CURRENT,
 						showModalWindow: false,
-					}),
+					}) as unknown as PromptConfig["action"],
 				})
 			);
 		});

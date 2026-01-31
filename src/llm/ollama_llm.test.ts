@@ -976,8 +976,9 @@ describe("OllamaLLM", () => {
 				url: "http://custom-ollama:11434",
 			};
 			const customOllama = new OllamaLLM(customProvider, "llama2");
-			const baseUrl = customOllama["getBaseUrl"]();
-			expect(baseUrl).toBe("http://custom-ollama:11434");
+			expect(customOllama["getBaseUrl"]()).toBe(
+				"http://custom-ollama:11434"
+			);
 		});
 
 		it("should handle undefined temperature correctly", async () => {
@@ -995,7 +996,9 @@ describe("OllamaLLM", () => {
 			expect(mockStandardFetch).toHaveBeenCalledWith(
 				"http://localhost:11434/api/generate",
 				expect.objectContaining({
-					body: expect.stringContaining('"temperature":0.7'),
+					body: expect.stringContaining(
+						'"temperature":0.7'
+					) as unknown as string,
 				})
 			);
 		});
