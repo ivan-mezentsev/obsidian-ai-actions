@@ -34,6 +34,7 @@ jest.mock("./spinnerPlugin", () => ({
 describe("StreamingProcessor", () => {
 	let streamingProcessor: StreamingProcessor;
 	let mockSettings: AIEditorSettings;
+	let llmFactoryCreateSpy: jest.SpyInstance;
 	let mockApp: {
 		workspace: {
 			updateOptions: jest.Mock<void, []>;
@@ -105,11 +106,8 @@ describe("StreamingProcessor", () => {
 		mockLLMFactory = new LLMFactory(
 			mockSettings
 		) as jest.Mocked<LLMFactory>;
-		mockLLMFactory.create = jest
-			.fn<
-				ReturnType<LLMFactory["create"]>,
-				Parameters<LLMFactory["create"]>
-			>()
+		llmFactoryCreateSpy = jest
+			.spyOn(mockLLMFactory, "create")
 			.mockReturnValue(
 				mockLLM as unknown as ReturnType<LLMFactory["create"]>
 			);
@@ -183,9 +181,7 @@ describe("StreamingProcessor", () => {
 
 			await streamingProcessor.processStreaming(mockConfig);
 
-			expect(
-				mockLLMFactory.create as unknown as jest.Mock
-			).toHaveBeenCalledWith("test-model");
+			expect(llmFactoryCreateSpy).toHaveBeenCalledWith("test-model");
 			expect(mockLLM.autocomplete).toHaveBeenCalledWith(
 				"Test prompt: {{input}}",
 				"test input",
@@ -450,13 +446,19 @@ describe("StreamingProcessor", () => {
 				const mockEvent = new KeyboardEvent("keydown", {
 					key: "Escape",
 				});
-				jest.spyOn(mockEvent, "preventDefault");
-				jest.spyOn(mockEvent, "stopPropagation");
+				const preventDefaultSpy = jest.spyOn(
+					mockEvent,
+					"preventDefault"
+				);
+				const stopPropagationSpy = jest.spyOn(
+					mockEvent,
+					"stopPropagation"
+				);
 
 				escapeHandler(mockEvent);
 
-				expect(mockEvent.preventDefault).toHaveBeenCalled();
-				expect(mockEvent.stopPropagation).toHaveBeenCalled();
+				expect(preventDefaultSpy).toHaveBeenCalled();
+				expect(stopPropagationSpy).toHaveBeenCalled();
 			}
 
 			await streamingPromise;
@@ -646,8 +648,8 @@ describe("StreamingProcessor", () => {
 			await streamingProcessor.processStreaming(mockConfig);
 
 			// Verify Notice was called (mocked in beforeEach)
-			const { Notice } = jest.requireMock("obsidian");
-			expect(Notice).toHaveBeenCalledWith(
+			const obsidianMock = jest.requireMock("obsidian");
+			expect(obsidianMock.Notice).toHaveBeenCalledWith(
 				expect.stringContaining("Network error"),
 				8000
 			);
@@ -1336,18 +1338,16 @@ describe("ActionHandler Integration Tests", () => {
 		});
 
 		it("should validate model and delegate to PromptProcessor", async () => {
-			// Mock PromptProcessor
-			const mockPromptProcessor = {
-				processPrompt: jest.fn(),
-			};
-
-			// Mock PromptProcessor constructor
+			const processPromptMock = jest
+				.fn<
+					ReturnType<PromptProcessor["processPrompt"]>,
+					Parameters<PromptProcessor["processPrompt"]>
+				>()
+				.mockResolvedValue(undefined);
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
-			).mockImplementation((...args) =>
-				mockPromptProcessor.processPrompt(...args)
-			);
+			).mockImplementation(processPromptMock);
 
 			await actionHandler.process(
 				mockApp,
@@ -1366,7 +1366,7 @@ describe("ActionHandler Integration Tests", () => {
 			expect(mockAction.model).toBe("validated-model-id");
 
 			// Verify PromptProcessor was called with correct config
-			expect(mockPromptProcessor.processPrompt).toHaveBeenCalledWith({
+			expect(processPromptMock).toHaveBeenCalledWith({
 				action: mockAction,
 				input: "selected text", // from getTextInput with CURSOR selection
 				editor: mockEditor,
@@ -1380,17 +1380,16 @@ describe("ActionHandler Integration Tests", () => {
 			// Mock cancelled model validation
 			mockModalManager.validateAndSelectModel.mockResolvedValue(null);
 
-			// Mock PromptProcessor
-			const mockPromptProcessor = {
-				processPrompt: jest.fn(),
-			};
-
+			const processPromptMock = jest
+				.fn<
+					ReturnType<PromptProcessor["processPrompt"]>,
+					Parameters<PromptProcessor["processPrompt"]>
+				>()
+				.mockResolvedValue(undefined);
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
-			).mockImplementation((...args) =>
-				mockPromptProcessor.processPrompt(...args)
-			);
+			).mockImplementation(processPromptMock);
 
 			await actionHandler.process(
 				mockApp,
@@ -1406,23 +1405,23 @@ describe("ActionHandler Integration Tests", () => {
 			).toHaveBeenCalledWith(mockAction);
 
 			// Verify PromptProcessor was NOT called
-			expect(mockPromptProcessor.processPrompt).not.toHaveBeenCalled();
+			expect(processPromptMock).not.toHaveBeenCalled();
 		});
 
 		it("should handle different selection types correctly", async () => {
 			// Test ALL selection
 			mockAction.sel = Selection.ALL;
 
-			const mockPromptProcessor = {
-				processPrompt: jest.fn(),
-			};
-
+			const processPromptMock = jest
+				.fn<
+					ReturnType<PromptProcessor["processPrompt"]>,
+					Parameters<PromptProcessor["processPrompt"]>
+				>()
+				.mockResolvedValue(undefined);
 			jest.spyOn(
 				PromptProcessor.prototype,
 				"processPrompt"
-			).mockImplementation((...args) =>
-				mockPromptProcessor.processPrompt(...args)
-			);
+			).mockImplementation(processPromptMock);
 
 			await actionHandler.process(
 				mockApp,
@@ -1432,7 +1431,7 @@ describe("ActionHandler Integration Tests", () => {
 				mockView
 			);
 
-			expect(mockPromptProcessor.processPrompt).toHaveBeenCalledWith({
+			expect(processPromptMock).toHaveBeenCalledWith({
 				action: mockAction,
 				input: "full text", // from getTextInput with ALL selection
 				editor: mockEditor,
