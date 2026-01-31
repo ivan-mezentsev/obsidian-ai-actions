@@ -60,7 +60,9 @@ jest.mock("../utils/fetch", () => ({
 }));
 
 const mockNativeFetch = nativeFetch as jest.MockedFunction<typeof nativeFetch>;
-const mockStandardFetch = standardFetch;
+const mockStandardFetch = standardFetch as jest.MockedFunction<
+	typeof standardFetch
+>;
 
 describe("OllamaLLM", () => {
 	let ollamaLLM: OllamaLLM;

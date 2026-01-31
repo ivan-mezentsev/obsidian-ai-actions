@@ -189,6 +189,7 @@ describe("GeminiLLM", () => {
 
 			const mockStreamingResponse = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					// Simulate streaming the same text in chunks
 					yield {
 						candidates: [
@@ -280,6 +281,7 @@ describe("GeminiLLM", () => {
 		it("should successfully stream completion without userPrompt", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						candidates: [
 							{
@@ -357,6 +359,7 @@ describe("GeminiLLM", () => {
 		it("should handle userPrompt with system instruction for supported models", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						candidates: [
 							{
@@ -427,6 +430,7 @@ describe("GeminiLLM", () => {
 		it("should handle empty streaming chunks gracefully", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						candidates: [
 							{ content: { parts: [{ text: "valid" }] } },
@@ -696,6 +700,7 @@ describe("GeminiLLM", () => {
 		it("should handle systemPromptSupport in streaming mode", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						candidates: [
 							{

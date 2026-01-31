@@ -175,6 +175,7 @@ describe("AnthropicLLM", () => {
 
 			const mockStreamingResponse = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					// Simulate streaming the same text in chunks
 					yield {
 						type: "content_block_delta",
@@ -270,6 +271,7 @@ describe("AnthropicLLM", () => {
 		it("should successfully stream completion without userPrompt", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						type: "content_block_delta",
 						delta: {
@@ -329,6 +331,7 @@ describe("AnthropicLLM", () => {
 		it("should handle userPrompt correctly", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						type: "content_block_delta",
 						delta: {
@@ -394,6 +397,7 @@ describe("AnthropicLLM", () => {
 		it("should handle empty streaming chunks gracefully", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						type: "content_block_delta",
 						delta: {
@@ -622,6 +626,7 @@ describe("AnthropicLLM", () => {
 		it("should use system parameter in streaming mode when systemPromptSupport is true", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						type: "content_block_delta",
 						delta: {
@@ -664,6 +669,7 @@ describe("AnthropicLLM", () => {
 		it("should add prompt as first user message in streaming mode when systemPromptSupport is false", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						type: "content_block_delta",
 						delta: {

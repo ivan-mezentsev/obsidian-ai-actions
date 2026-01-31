@@ -3,7 +3,7 @@ import { Location, getAvailableModelsWithPluginAIProviders } from "./action";
 import type { AIEditorSettings } from "./settings";
 import { Selection } from "./action";
 import type { App, Editor, MarkdownView } from "obsidian";
-import { ActionHandler, PromptProcessor } from "./handler";
+import { ActionHandler, type PromptConfig, PromptProcessor } from "./handler";
 import type AIEditor from "./main";
 import type { InputSource } from "./utils/inputSource";
 
@@ -33,6 +33,9 @@ describe("QuickPromptManager Integration Tests", () => {
 	let mockView: jest.Mocked<MarkdownView>;
 	let mockPromptProcessor: jest.Mocked<PromptProcessor>;
 	let mockActionHandler: jest.Mocked<ActionHandler>;
+	let processPromptMock: jest.MockedFunction<
+		(config: PromptConfig) => Promise<void>
+	>;
 
 	beforeEach(() => {
 		jest.clearAllMocks();
@@ -115,8 +118,11 @@ describe("QuickPromptManager Integration Tests", () => {
 		} as unknown as jest.Mocked<ActionHandler>;
 
 		// Mock PromptProcessor
+		processPromptMock = jest
+			.fn<Promise<void>, [PromptConfig]>()
+			.mockResolvedValue(undefined);
 		mockPromptProcessor = {
-			processPrompt: jest.fn().mockResolvedValue(undefined),
+			processPrompt: processPromptMock,
 		} as unknown as jest.Mocked<PromptProcessor>;
 
 		// Mock the constructors
@@ -309,7 +315,10 @@ describe("QuickPromptManager Integration Tests", () => {
 				mockEditor
 			);
 
-			const callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			const callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.action.sel).toBe(Selection.CLIPBOARD);
 		});
 
@@ -326,7 +335,10 @@ describe("QuickPromptManager Integration Tests", () => {
 				mockEditor
 			);
 
-			const callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			const callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.action.sel).toBe(Selection.ALL);
 		});
 	});
@@ -338,7 +350,10 @@ describe("QuickPromptManager Integration Tests", () => {
 			await quickPromptManager["processPrompt"](userPrompt);
 
 			// Verify showModalWindow is always false
-			const callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			const callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.action.showModalWindow).toBe(false);
 		});
 
@@ -348,22 +363,31 @@ describe("QuickPromptManager Integration Tests", () => {
 			await quickPromptManager["processPrompt"](userPrompt);
 
 			// Verify outputMode is passed to indicate immediate application
-			const callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			const callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.outputMode).toBe("replace"); // default outputMode
 		});
 
 		it("should preserve existing model selection logic", async () => {
 			// Test with custom model
 			await quickPromptManager["processPrompt"]("test", "custom-model");
-			let callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			let callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.action.model).toBe("custom-model");
 
 			// Reset mock
-			mockPromptProcessor.processPrompt.mockClear();
+			processPromptMock.mockClear();
 
 			// Test with default model
 			await quickPromptManager["processPrompt"]("test");
-			callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.action.model).toBe("test-model"); // from settings
 		});
 
@@ -374,11 +398,14 @@ describe("QuickPromptManager Integration Tests", () => {
 				undefined,
 				"replace"
 			);
-			let callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			let callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.action.loc).toBe(Location.REPLACE_CURRENT);
 
 			// Reset mock
-			mockPromptProcessor.processPrompt.mockClear();
+			processPromptMock.mockClear();
 
 			// Test append mode
 			await quickPromptManager["processPrompt"](
@@ -386,7 +413,10 @@ describe("QuickPromptManager Integration Tests", () => {
 				undefined,
 				"append"
 			);
-			callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			expect(callArgs.action.loc).toBe(Location.APPEND_CURRENT);
 		});
 
@@ -401,7 +431,10 @@ describe("QuickPromptManager Integration Tests", () => {
 				outputMode
 			);
 
-			const callArgs = mockPromptProcessor.processPrompt.mock.calls[0][0];
+			const callArgs = processPromptMock.mock.calls[0]?.[0];
+			if (!callArgs) {
+				throw new Error("Expected processPrompt to be called");
+			}
 			const action = callArgs.action;
 
 			// Should preserve original settings

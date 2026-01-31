@@ -350,6 +350,7 @@ describe("OpenAILLM", () => {
 
 			const mockStreamingResponse = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						id: "test-id",
 						object: "chat.completion.chunk",
@@ -475,6 +476,7 @@ describe("OpenAILLM", () => {
 		it("should successfully stream completion without userPrompt", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						id: "test-id",
 						object: "chat.completion.chunk",
@@ -568,6 +570,7 @@ describe("OpenAILLM", () => {
 		it("should handle empty streaming chunks gracefully", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						id: "test-id",
 						object: "chat.completion.chunk",
@@ -624,6 +627,7 @@ describe("OpenAILLM", () => {
 		it("should return void for streaming mode", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						id: "test-id",
 						object: "chat.completion.chunk",
@@ -888,6 +892,7 @@ describe("OpenAILLM", () => {
 		it("should work with streaming mode and systemPromptSupport true", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						id: "test-id",
 						object: "chat.completion.chunk",
@@ -949,6 +954,7 @@ describe("OpenAILLM", () => {
 		it("should work with streaming mode and systemPromptSupport false", async () => {
 			const mockStream = {
 				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
 					yield {
 						id: "test-id",
 						object: "chat.completion.chunk",

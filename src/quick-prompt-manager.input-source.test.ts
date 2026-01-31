@@ -1,7 +1,7 @@
 import { QuickPromptManager } from "./quick-prompt-manager";
 import { Location, Selection } from "./action";
 import type { AIEditorSettings } from "./settings";
-import { ActionHandler, PromptProcessor } from "./handler";
+import { ActionHandler, type PromptConfig, PromptProcessor } from "./handler";
 import type AIEditor from "./main";
 import type { App, Editor, MarkdownView } from "obsidian";
 
@@ -31,6 +31,9 @@ describe("QuickPromptManager — inputSource wiring", () => {
 	let mockView: jest.Mocked<MarkdownView>;
 	let mockPromptProcessor: jest.Mocked<PromptProcessor>;
 	let mockActionHandler: jest.Mocked<ActionHandler>;
+	let processPromptMock: jest.MockedFunction<
+		(config: PromptConfig) => Promise<void>
+	>;
 
 	beforeEach(() => {
 		jest.clearAllMocks();
@@ -74,8 +77,11 @@ describe("QuickPromptManager — inputSource wiring", () => {
 			},
 		} as unknown as jest.Mocked<App>;
 
+		processPromptMock = jest
+			.fn<Promise<void>, [PromptConfig]>()
+			.mockResolvedValue(undefined);
 		mockPromptProcessor = {
-			processPrompt: jest.fn().mockResolvedValue(undefined),
+			processPrompt: processPromptMock,
 		} as unknown as jest.Mocked<PromptProcessor>;
 
 		mockActionHandler = {
@@ -109,10 +115,6 @@ describe("QuickPromptManager — inputSource wiring", () => {
 			inputSource
 		);
 
-		const processPromptMock =
-			mockPromptProcessor.processPrompt as jest.MockedFunction<
-				PromptProcessor["processPrompt"]
-			>;
 		const firstCall = processPromptMock.mock.calls[0];
 		if (!firstCall) {
 			throw new Error("Expected processPrompt to be called");

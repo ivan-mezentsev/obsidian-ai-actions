@@ -69,7 +69,9 @@ type MockReader = {
 };
 
 const mockNativeFetch = nativeFetch as jest.MockedFunction<typeof nativeFetch>;
-const mockStandardFetch = standardFetch;
+const mockStandardFetch = standardFetch as jest.MockedFunction<
+	typeof standardFetch
+>;
 
 describe("GroqLLM", () => {
 	let groqLLM: GroqLLM;
@@ -944,7 +946,7 @@ describe("GroqLLM", () => {
 
 			// Test non-streaming mode
 			mockResponse.json.mockResolvedValue(mockNonStreamingData);
-			const nonStreamingCallback = jest.fn();
+			const nonStreamingCallback = jest.fn<void, [string]>();
 			const nonStreamingResult = await groqLLM.autocomplete(
 				"Test prompt",
 				"Test content",
