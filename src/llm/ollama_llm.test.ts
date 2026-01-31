@@ -318,7 +318,7 @@ describe("OllamaLLM", () => {
 			};
 			mockResponse.setJsonResponse(mockResponseData);
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			const result = await ollamaLLM.autocomplete(
 				"prompt",
 				"content",
@@ -338,7 +338,7 @@ describe("OllamaLLM", () => {
 			const mockResponseData = { response: "", done: true };
 			mockResponse.setJsonResponse(mockResponseData);
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			const result = await ollamaLLM.autocomplete(
 				"prompt",
 				"content",
@@ -417,7 +417,7 @@ describe("OllamaLLM", () => {
 				return Promise.resolve({ done: true });
 			});
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await ollamaLLM.autocomplete(
 				"System prompt",
 				"User input",
@@ -473,7 +473,7 @@ describe("OllamaLLM", () => {
 				return Promise.resolve({ done: true });
 			});
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await ollamaLLM.autocomplete(
 				"prompt",
 				"content",
@@ -507,7 +507,7 @@ describe("OllamaLLM", () => {
 				return Promise.resolve({ done: true });
 			});
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await ollamaLLM.autocomplete(
 				"prompt",
 				"content",
@@ -542,7 +542,7 @@ describe("OllamaLLM", () => {
 				return Promise.resolve({ done: true });
 			});
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await ollamaLLM.autocomplete(
 				"prompt",
 				"content",
@@ -561,7 +561,7 @@ describe("OllamaLLM", () => {
 		it("should throw error when no reader is available", async () => {
 			mockResponse.body = null;
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await expect(
 				ollamaLLM.autocomplete(
 					"prompt",
@@ -578,7 +578,7 @@ describe("OllamaLLM", () => {
 		it("should ensure reader is released on error", async () => {
 			mockReader.read.mockRejectedValue(new Error("Read error"));
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await expect(
 				ollamaLLM.autocomplete(
 					"prompt",
@@ -614,7 +614,7 @@ describe("OllamaLLM", () => {
 				return Promise.resolve({ done: true });
 			});
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await ollamaLLM.autocomplete(
 				"prompt",
 				"content",
@@ -867,7 +867,7 @@ describe("OllamaLLM", () => {
 				return Promise.resolve({ done: true });
 			});
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await ollamaLLM.autocomplete(
 				"System prompt",
 				"User input",
@@ -927,7 +927,7 @@ describe("OllamaLLM", () => {
 				return Promise.resolve({ done: true });
 			});
 
-			const callback = jest.fn();
+			const callback = jest.fn<void, [string]>();
 			await ollamaLLM.autocomplete(
 				"System prompt",
 				"User input",

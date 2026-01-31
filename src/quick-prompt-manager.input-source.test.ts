@@ -31,6 +31,9 @@ describe("QuickPromptManager — inputSource wiring", () => {
 	let mockView: jest.Mocked<MarkdownView>;
 	let mockPromptProcessor: jest.Mocked<PromptProcessor>;
 	let mockActionHandler: jest.Mocked<ActionHandler>;
+	let getTextInputMock: jest.MockedFunction<
+		(selection: Selection, editor: Editor) => Promise<string>
+	>;
 	let processPromptMock: jest.MockedFunction<
 		(config: PromptConfig) => Promise<void>
 	>;
@@ -84,8 +87,10 @@ describe("QuickPromptManager — inputSource wiring", () => {
 			processPrompt: processPromptMock,
 		} as unknown as jest.Mocked<PromptProcessor>;
 
+		getTextInputMock = jest.fn<Promise<string>, [Selection, Editor]>();
+		getTextInputMock.mockResolvedValue("in");
 		mockActionHandler = {
-			getTextInput: jest.fn().mockResolvedValue("in"),
+			getTextInput: getTextInputMock,
 		} as unknown as jest.Mocked<ActionHandler>;
 
 		(mockPromptProcessor.processPrompt as unknown as jest.Mock).mockName(
@@ -124,7 +129,7 @@ describe("QuickPromptManager — inputSource wiring", () => {
 
 	it("maps CURSOR to Selection.CURSOR and calls getTextInput accordingly", async () => {
 		const args = await callProcess("CURSOR");
-		expect(mockActionHandler.getTextInput).toHaveBeenCalledWith(
+		expect(getTextInputMock).toHaveBeenCalledWith(
 			Selection.CURSOR,
 			mockEditor
 		);
@@ -133,7 +138,7 @@ describe("QuickPromptManager — inputSource wiring", () => {
 
 	it("maps CLIPBOARD to Selection.CLIPBOARD and calls getTextInput accordingly", async () => {
 		const args = await callProcess("CLIPBOARD");
-		expect(mockActionHandler.getTextInput).toHaveBeenCalledWith(
+		expect(getTextInputMock).toHaveBeenCalledWith(
 			Selection.CLIPBOARD,
 			mockEditor
 		);
@@ -142,7 +147,7 @@ describe("QuickPromptManager — inputSource wiring", () => {
 
 	it("maps ALL to Selection.ALL and calls getTextInput accordingly", async () => {
 		const args = await callProcess("ALL");
-		expect(mockActionHandler.getTextInput).toHaveBeenCalledWith(
+		expect(getTextInputMock).toHaveBeenCalledWith(
 			Selection.ALL,
 			mockEditor
 		);
