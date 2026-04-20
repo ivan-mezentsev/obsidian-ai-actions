@@ -85,8 +85,27 @@
 
 .ai-actions-thinking-container {
 	display: block;
+	line-height: 1;
 	opacity: 0;
-	animation: ai-actions-fadeIn 0.1s ease-out forwards;
+	animation: ai-actions-fadeIn 0.16s ease-out forwards;
+}
+
+.ai-actions-thinking-panel {
+	width: min(100%, 72ch);
+	box-sizing: border-box;
+	margin: 0.35em 0 0.55em;
+	padding: 0.55em 0.75em 0.65em;
+	border-left: 2px solid var(--interactive-accent);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary-alt);
+}
+
+.ai-actions-thinking-header {
+	display: flex;
+	align-items: center;
+	gap: 0.35em;
+	min-height: 1.4em;
+	margin-bottom: 0.35em;
 }
 
 @keyframes ai-actions-fadeIn {
@@ -101,9 +120,37 @@
 .ai-actions-thinking {
 	position: relative;
 	display: inline-block;
+	width: fit-content;
+	margin-bottom: 0.4em;
 	color: var(--interactive-accent);
+	font-size: 0.9em;
+	font-weight: 600;
+	letter-spacing: 0.02em;
 	font-style: italic;
+	white-space: nowrap;
 	animation: ai-actions-pulse 1.7s ease-in-out infinite;
+}
+
+.ai-actions-thinking-content {
+	display: block;
+	max-height: calc(var(--ai-actions-thinking-lines, 5) * 1.35em);
+	overflow-y: auto;
+	overflow-x: hidden;
+	padding-right: 0.25em;
+	color: var(--text-muted);
+	font-size: 0.95em;
+	line-height: 1.35;
+	white-space: pre-wrap;
+	word-break: break-word;
+	scroll-behavior: smooth;
+	overscroll-behavior: contain;
+	mask-image: linear-gradient(
+		to bottom,
+		transparent 0,
+		black 12px,
+		black calc(100% - 12px),
+		transparent 100%
+	);
 }
 
 .ai-actions-thinking::before {
@@ -132,8 +179,10 @@
 .ai-actions-thinking::after {
 	content: "";
 	display: inline-block;
-	width: 1em;
+	width: 2ch;
 	text-align: left;
+	vertical-align: baseline;
+	white-space: nowrap;
 	animation: ai-actions-dots 1.7s infinite;
 	opacity: 1;
 }

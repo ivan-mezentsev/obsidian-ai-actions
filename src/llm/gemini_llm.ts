@@ -10,6 +10,10 @@ import {
 export class GeminiLLM extends BaseProviderLLM {
 	private client: GoogleGenAI;
 
+	private supportsThoughtSummaries(): boolean {
+		return /gemini-(2\.5|3)/i.test(this.modelName);
+	}
+
 	constructor(
 		provider: AIProvider,
 		modelName: string,
@@ -63,6 +67,9 @@ export class GeminiLLM extends BaseProviderLLM {
 				temperature: number;
 				maxOutputTokens: number;
 				systemInstruction?: string;
+				thinkingConfig?: {
+					includeThoughts: boolean;
+				};
 			} = {
 				temperature: temperature !== undefined ? temperature : 0.7,
 				maxOutputTokens:
@@ -70,6 +77,12 @@ export class GeminiLLM extends BaseProviderLLM {
 						? maxOutputTokens
 						: 1000,
 			};
+
+			if (this.supportsThoughtSummaries()) {
+				config.thinkingConfig = {
+					includeThoughts: true,
+				};
+			}
 
 			// Add system instruction when system prompt support is enabled
 			if (useSystemPrompt) {

@@ -9,20 +9,68 @@ function isUnknownArray(value: unknown): value is unknown[] {
 	return Array.isArray(value);
 }
 
-function getOpenRouterDeltaContent(payload: unknown): string | undefined {
-	if (!isRecord(payload)) return undefined;
+type OpenRouterDeltaParts = {
+	content: string;
+	reasoning: string;
+};
+
+function getOpenRouterDeltaParts(payload: unknown): OpenRouterDeltaParts {
+	if (!isRecord(payload)) {
+		return { content: "", reasoning: "" };
+	}
 
 	const choices = payload["choices"];
-	if (!isUnknownArray(choices) || choices.length === 0) return undefined;
+	if (!isUnknownArray(choices) || choices.length === 0) {
+		return { content: "", reasoning: "" };
+	}
 
 	const firstChoice = choices[0];
-	if (!isRecord(firstChoice)) return undefined;
+	if (!isRecord(firstChoice)) {
+		return { content: "", reasoning: "" };
+	}
 
 	const delta = firstChoice["delta"];
-	if (!isRecord(delta)) return undefined;
+	if (!isRecord(delta)) {
+		return { content: "", reasoning: "" };
+	}
 
 	const content = delta["content"];
-	return typeof content === "string" ? content : undefined;
+	const reasoning = [
+		typeof delta["reasoning"] === "string" ? delta["reasoning"] : "",
+		typeof delta["reasoning_content"] === "string"
+			? delta["reasoning_content"]
+			: "",
+		...extractReasoningDetails(delta["reasoning_details"]),
+	].join("");
+
+	return {
+		content: typeof content === "string" ? content : "",
+		reasoning,
+	};
+}
+
+function extractReasoningDetails(value: unknown): string[] {
+	if (!isUnknownArray(value)) {
+		return [];
+	}
+
+	return value.flatMap(item => {
+		if (!isRecord(item)) {
+			return [];
+		}
+
+		const text = item["text"];
+		if (typeof text === "string") {
+			return [text];
+		}
+
+		const content = item["content"];
+		if (typeof content === "string") {
+			return [content];
+		}
+
+		return [];
+	});
 }
 
 function getOpenRouterMessageContent(payload: unknown): string | undefined {
@@ -122,6 +170,35 @@ export class OpenRouterLLM extends BaseProviderLLM {
 
 			const decoder = new TextDecoder();
 			let buffer = "";
+			let isThinking = false;
+
+			const emitReasoning = (text: string) => {
+				if (!text) {
+					return;
+				}
+
+				if (!isThinking) {
+					callback(`<think>${text}`);
+					isThinking = true;
+					return;
+				}
+
+				callback(text);
+			};
+
+			const emitContent = (text: string) => {
+				if (!text) {
+					return;
+				}
+
+				if (isThinking) {
+					callback(`</think>${text}`);
+					isThinking = false;
+					return;
+				}
+
+				callback(text);
+			};
 
 			try {
 				while (true) {
@@ -139,16 +216,18 @@ export class OpenRouterLLM extends BaseProviderLLM {
 
 							try {
 								const data = JSON.parse(jsonStr) as unknown;
-								const deltaContent =
-									getOpenRouterDeltaContent(data);
-								if (deltaContent) {
-									callback(deltaContent);
-								}
+								const delta = getOpenRouterDeltaParts(data);
+								emitReasoning(delta.reasoning);
+								emitContent(delta.content);
 							} catch {
 								// Skip invalid JSON lines
 							}
 						}
 					}
+				}
+
+				if (isThinking) {
+					callback("</think>");
 				}
 			} finally {
 				reader.releaseLock();

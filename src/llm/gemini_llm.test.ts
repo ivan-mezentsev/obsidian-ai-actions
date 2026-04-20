@@ -8,6 +8,35 @@ type MockGeminiClient = {
 	};
 };
 
+const isMockGeminiClient = (value: unknown): value is MockGeminiClient => {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+
+	const client = value as {
+		models?: {
+			generateContent?: unknown;
+			generateContentStream?: unknown;
+		};
+	};
+
+	return Boolean(
+		client.models &&
+			typeof client.models.generateContent === "function" &&
+			typeof client.models.generateContentStream === "function"
+	);
+};
+
+const getMockGeminiClient = (llm: GeminiLLM): MockGeminiClient => {
+	const client = (llm as unknown as Record<string, unknown>)["client"];
+
+	if (!isMockGeminiClient(client)) {
+		throw new Error("Gemini test client is not available");
+	}
+
+	return client;
+};
+
 const isLegacyGemmaModel = (model?: string) => {
 	const normalizedModel = model?.toLowerCase() || "";
 
@@ -59,7 +88,7 @@ describe("GeminiLLM", () => {
 		geminiLLM = new GeminiLLM(mockProvider, "gemini-1.5-pro", false);
 
 		// Get the mock client
-		mockClient = geminiLLM["client"] as unknown as MockGeminiClient;
+		mockClient = getMockGeminiClient(geminiLLM);
 	});
 
 	afterEach(() => {
@@ -83,6 +112,57 @@ describe("GeminiLLM", () => {
 	});
 
 	describe("autocomplete", () => {
+		it("should enable thought summaries for Gemini 3 streaming models", async () => {
+			const gemini3LLM = new GeminiLLM(
+				mockProvider,
+				"gemini-3.1-pro",
+				false
+			);
+			const gemini3Client = getMockGeminiClient(gemini3LLM);
+
+			gemini3Client.models.generateContentStream.mockResolvedValue({
+				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [{ text: "Visible answer" }],
+								},
+							},
+						],
+					};
+				},
+			});
+
+			await gemini3LLM.autocomplete(
+				"prompt",
+				"content",
+				jest.fn(),
+				undefined,
+				undefined,
+				undefined,
+				true
+			);
+
+			const [firstCall] = gemini3Client.models.generateContentStream.mock
+				.calls as [
+				[
+					{
+						config?: {
+							thinkingConfig?: {
+								includeThoughts?: boolean;
+							};
+						};
+					},
+				],
+			];
+
+			expect(firstCall[0]?.config?.thinkingConfig).toEqual({
+				includeThoughts: true,
+			});
+		});
+
 		it("should successfully generate completion", async () => {
 			const mockResponse = {
 				candidates: [
@@ -930,15 +1010,13 @@ describe("GeminiLLM", () => {
 
 		beforeEach(() => {
 			gemmaLLM = new GeminiLLM(mockProvider, "gemma-7b-it", false);
-			gemmaMockClient = gemmaLLM["client"] as unknown as MockGeminiClient;
+			gemmaMockClient = getMockGeminiClient(gemmaLLM);
 			gemma4LLM = new GeminiLLM(
 				mockProvider,
 				"gemma-4-26b-a4b-it",
 				false
 			);
-			gemma4MockClient = gemma4LLM[
-				"client"
-			] as unknown as MockGeminiClient;
+			gemma4MockClient = getMockGeminiClient(gemma4LLM);
 
 			// Setup mock to throw error only for legacy Gemma models with systemInstruction.
 			gemmaMockClient.models.generateContent.mockImplementation(

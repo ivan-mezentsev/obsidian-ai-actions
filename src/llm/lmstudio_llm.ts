@@ -9,17 +9,47 @@ function isUnknownArray(value: unknown): value is unknown[] {
 	return Array.isArray(value);
 }
 
-function getFirstDeltaContent(data: unknown): string | undefined {
-	if (!isRecord(data)) return;
+function extractReasoningDetails(value: unknown): string[] {
+	if (!isUnknownArray(value)) return [];
+
+	return value.flatMap(item => {
+		if (!isRecord(item)) return [];
+
+		const text = item["text"];
+		if (typeof text === "string") return [text];
+
+		const content = item["content"];
+		if (typeof content === "string") return [content];
+
+		return [];
+	});
+}
+
+function getFirstDeltaParts(data: unknown): {
+	content: string;
+	reasoning: string;
+} {
+	if (!isRecord(data)) return { content: "", reasoning: "" };
 	const choices = (data as { choices?: unknown }).choices;
-	if (!isUnknownArray(choices) || choices.length === 0) return;
+	if (!isUnknownArray(choices) || choices.length === 0) {
+		return { content: "", reasoning: "" };
+	}
 	const firstChoice = choices[0];
-	if (!isRecord(firstChoice)) return;
+	if (!isRecord(firstChoice)) return { content: "", reasoning: "" };
 	const delta = (firstChoice as { delta?: unknown }).delta;
-	if (!isRecord(delta)) return;
+	if (!isRecord(delta)) return { content: "", reasoning: "" };
 	const content = (delta as { content?: unknown }).content;
-	if (typeof content !== "string") return;
-	return content;
+
+	return {
+		content: typeof content === "string" ? content : "",
+		reasoning: [
+			typeof delta["reasoning"] === "string" ? delta["reasoning"] : "",
+			typeof delta["reasoning_content"] === "string"
+				? delta["reasoning_content"]
+				: "",
+			...extractReasoningDetails(delta["reasoning_details"]),
+		].join(""),
+	};
 }
 
 function getFirstMessageContent(data: unknown): string | undefined {
@@ -127,6 +157,35 @@ export class LMStudioLLM extends BaseProviderLLM {
 
 			const decoder = new TextDecoder();
 			let buffer = "";
+			let isThinking = false;
+
+			const emitReasoning = (text: string) => {
+				if (!text) {
+					return;
+				}
+
+				if (!isThinking) {
+					callback(`<think>${text}`);
+					isThinking = true;
+					return;
+				}
+
+				callback(text);
+			};
+
+			const emitContent = (text: string) => {
+				if (!text) {
+					return;
+				}
+
+				if (isThinking) {
+					callback(`</think>${text}`);
+					isThinking = false;
+					return;
+				}
+
+				callback(text);
+			};
 
 			try {
 				while (true) {
@@ -144,15 +203,18 @@ export class LMStudioLLM extends BaseProviderLLM {
 
 							try {
 								const data: unknown = JSON.parse(jsonStr);
-								const deltaContent = getFirstDeltaContent(data);
-								if (deltaContent) {
-									callback(deltaContent);
-								}
+								const delta = getFirstDeltaParts(data);
+								emitReasoning(delta.reasoning);
+								emitContent(delta.content);
 							} catch {
 								// Skip invalid JSON lines
 							}
 						}
 					}
+				}
+
+				if (isThinking) {
+					callback("</think>");
 				}
 			} finally {
 				reader.releaseLock();

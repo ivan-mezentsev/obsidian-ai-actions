@@ -498,6 +498,61 @@ describe("LMStudioLLM", () => {
 			);
 		});
 
+		it("should stream reasoning deltas when LMStudio exposes them", async () => {
+			const mockReader = {
+				read: jest
+					.fn()
+					.mockResolvedValueOnce({
+						done: false,
+						value: new TextEncoder().encode(
+							'data: {"choices":[{"delta":{"reasoning_details":[{"text":"Step 1"}]}}]}\n'
+						),
+					})
+					.mockResolvedValueOnce({
+						done: false,
+						value: new TextEncoder().encode(
+							'data: {"choices":[{"delta":{"reasoning_content":" then step 2"}}]}\n'
+						),
+					})
+					.mockResolvedValueOnce({
+						done: false,
+						value: new TextEncoder().encode(
+							'data: {"choices":[{"delta":{"content":"Final answer"}}]}\n'
+						),
+					})
+					.mockResolvedValueOnce({
+						done: false,
+						value: new TextEncoder().encode("data: [DONE]\n"),
+					})
+					.mockResolvedValueOnce({ done: true, value: undefined }),
+				releaseLock: jest.fn(),
+			};
+
+			const mockResponse = {
+				ok: true,
+				body: {
+					getReader: jest.fn().mockReturnValue(mockReader),
+				},
+			};
+			mockFetch.mockResolvedValue(mockResponse);
+
+			const callback = jest.fn();
+			await lmstudioLLM.autocomplete(
+				"prompt",
+				"content",
+				callback,
+				undefined,
+				undefined,
+				undefined,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "<think>Step 1");
+			expect(callback).toHaveBeenNthCalledWith(2, " then step 2");
+			expect(callback).toHaveBeenNthCalledWith(3, "</think>Final answer");
+		});
+
 		it("should handle streaming errors", async () => {
 			const mockResponse = {
 				ok: false,

@@ -445,6 +445,34 @@ describe("OpenRouterLLM", () => {
 			);
 		});
 
+		it("should stream reasoning details through think tags", async () => {
+			const streamChunks = [
+				'data: {"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.text","text":"Step 1"}]}}]}\n\n',
+				'data: {"choices":[{"delta":{"reasoning_details":[{"type":"reasoning.text","text":" and step 2"}]}}]}\n\n',
+				'data: {"choices":[{"delta":{"content":"Final answer"}}]}\n\n',
+				"data: [DONE]\n\n",
+			];
+
+			const mockResponse = createMockStreamResponse(streamChunks);
+			mockStandardFetch.mockResolvedValue(mockResponse as Response);
+
+			const callback = jest.fn();
+			await openRouterLLM.autocomplete(
+				"prompt",
+				"content",
+				callback,
+				undefined,
+				undefined,
+				undefined,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "<think>Step 1");
+			expect(callback).toHaveBeenNthCalledWith(2, " and step 2");
+			expect(callback).toHaveBeenNthCalledWith(3, "</think>Final answer");
+		});
+
 		it("should handle streaming errors", async () => {
 			const mockResponse = createMockResponse({
 				ok: false,

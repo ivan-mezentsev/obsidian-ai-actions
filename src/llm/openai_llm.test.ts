@@ -548,6 +548,74 @@ describe("OpenAILLM", () => {
 			});
 		});
 
+		it("should stream reasoning deltas when the provider includes them", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: {
+									reasoning_details: [{ text: "Step 1" }],
+								},
+								finish_reason: null,
+							},
+						],
+					};
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: {
+									reasoning_content: " then step 2",
+								},
+								finish_reason: null,
+							},
+						],
+					};
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: { content: "Final answer" },
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockStream);
+
+			const callback = jest.fn();
+			await openaiLLM.autocomplete(
+				"prompt",
+				"content",
+				callback,
+				undefined,
+				undefined,
+				undefined,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "<think>Step 1");
+			expect(callback).toHaveBeenNthCalledWith(2, " then step 2");
+			expect(callback).toHaveBeenNthCalledWith(3, "</think>Final answer");
+		});
+
 		it("should handle streaming errors", async () => {
 			const streamError = new Error("Streaming connection failed");
 			mockClient.chat.completions.create.mockRejectedValue(streamError);

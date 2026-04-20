@@ -7,6 +7,73 @@ type AsyncIterableLike<T> = {
 	};
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null;
+}
+
+function isUnknownArray(value: unknown): value is unknown[] {
+	return Array.isArray(value);
+}
+
+function extractReasoningDetails(value: unknown): string[] {
+	if (!isUnknownArray(value)) {
+		return [];
+	}
+
+	return value.flatMap(item => {
+		if (!isRecord(item)) {
+			return [];
+		}
+
+		const text = item["text"];
+		if (typeof text === "string") {
+			return [text];
+		}
+
+		const content = item["content"];
+		if (typeof content === "string") {
+			return [content];
+		}
+
+		return [];
+	});
+}
+
+function getStreamingDeltaParts(chunk: unknown): {
+	content: string;
+	reasoning: string;
+} {
+	if (!isRecord(chunk)) {
+		return { content: "", reasoning: "" };
+	}
+
+	const choices = chunk["choices"];
+	if (!isUnknownArray(choices) || choices.length === 0) {
+		return { content: "", reasoning: "" };
+	}
+
+	const firstChoice = choices[0];
+	if (!isRecord(firstChoice)) {
+		return { content: "", reasoning: "" };
+	}
+
+	const delta = firstChoice["delta"];
+	if (!isRecord(delta)) {
+		return { content: "", reasoning: "" };
+	}
+
+	return {
+		content: typeof delta["content"] === "string" ? delta["content"] : "",
+		reasoning: [
+			typeof delta["reasoning"] === "string" ? delta["reasoning"] : "",
+			typeof delta["reasoning_content"] === "string"
+				? delta["reasoning_content"]
+				: "",
+			...extractReasoningDetails(delta["reasoning_details"]),
+		].join(""),
+	};
+}
+
 export enum OpenAIModel {
 	GPT_4O_MINI = "gpt-4o-mini",
 }
@@ -83,13 +150,45 @@ export class OpenAILLM extends LLM {
 						typeof this.openai.chat.completions.create
 					>[0]
 				);
+				let isThinking = false;
+
+				const emitReasoning = (text: string) => {
+					if (!text) {
+						return;
+					}
+
+					if (!isThinking) {
+						callback(`<think>${text}`);
+						isThinking = true;
+						return;
+					}
+
+					callback(text);
+				};
+
+				const emitContent = (text: string) => {
+					if (!text) {
+						return;
+					}
+
+					if (isThinking) {
+						callback(`</think>${text}`);
+						isThinking = false;
+						return;
+					}
+
+					callback(text);
+				};
 
 				if ("stream" in requestData && requestData.stream) {
 					for await (const chunk of stream as unknown as AsyncIterableLike<OpenAI.Chat.Completions.ChatCompletionChunk>) {
-						const content = chunk.choices[0]?.delta?.content;
-						if (content) {
-							callback(content);
-						}
+						const delta = getStreamingDeltaParts(chunk);
+						emitReasoning(delta.reasoning);
+						emitContent(delta.content);
+					}
+
+					if (isThinking) {
+						callback("</think>");
 					}
 				}
 				return;

@@ -7,7 +7,7 @@ import { ActionHandler } from "./handler";
 import { QuickPromptManager } from "./quick-prompt-manager";
 import { ActionResultManager } from "./action-result-manager";
 import { ModalBoxManager } from "./modal-box-manager";
-import { spinnerPlugin } from "./spinnerPlugin";
+import { spinnerEditorExtension } from "./spinnerPlugin";
 import { initAI } from "@obsidian-ai-providers/sdk";
 
 const DEFAULT_SETTINGS: AIEditorSettings = {
@@ -96,7 +96,7 @@ export default class AIEditor extends Plugin {
 				this.registerActions();
 
 				// Register the spinner plugin for loading animations
-				this.registerEditorExtension(spinnerPlugin);
+				this.registerEditorExtension(spinnerEditorExtension);
 
 				// This adds a settings tab so the user can configure various aspects of the plugin
 				this.addSettingTab(new AIEditorSettingTab(this.app, this));
