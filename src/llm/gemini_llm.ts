@@ -1,6 +1,11 @@
 import { BaseProviderLLM } from "./base_provider_llm";
 import type { AIProvider } from "../types";
 import { GoogleGenAI } from "@google/genai";
+import {
+	extractGeminiDisplayText,
+	GeminiThinkingStreamFormatter,
+	type GeminiResponseLike,
+} from "../utils/thinking-tags-gemini";
 
 export class GeminiLLM extends BaseProviderLLM {
 	private client: GoogleGenAI;
@@ -73,6 +78,7 @@ export class GeminiLLM extends BaseProviderLLM {
 
 			if (streaming && callback) {
 				// Streaming mode
+				const streamFormatter = new GeminiThinkingStreamFormatter();
 				const stream = await this.client.models.generateContentStream({
 					model: this.modelName,
 					contents,
@@ -80,9 +86,17 @@ export class GeminiLLM extends BaseProviderLLM {
 				});
 
 				for await (const chunk of stream) {
-					if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
-						callback(chunk.candidates[0].content.parts[0].text);
+					const chunkText = streamFormatter.pushResponse(
+						chunk as unknown as GeminiResponseLike
+					);
+					if (chunkText) {
+						callback(chunkText);
 					}
+				}
+
+				const trailingChunkText = streamFormatter.flush();
+				if (trailingChunkText) {
+					callback(trailingChunkText);
 				}
 				return;
 			} else {
@@ -93,9 +107,9 @@ export class GeminiLLM extends BaseProviderLLM {
 					config,
 				});
 
-				// Gemini SDK returns candidates[0].content.parts[0].text
-				const result =
-					response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+				const result = extractGeminiDisplayText(
+					response as unknown as GeminiResponseLike
+				);
 
 				// Call callback with the full result if provided
 				if (callback && result) {

@@ -21,28 +21,6 @@ class LoaderWidget extends WidgetType {
 	}
 }
 
-class ThinkingWidget extends WidgetType {
-	private static createDOMStructure(): HTMLElement {
-		const container = document.createElement("div");
-		container.addClass("ai-actions-thinking-container");
-
-		// Add a line break element
-		container.appendChild(document.createElement("br"));
-
-		const textElement = document.createElement("span");
-		textElement.addClass("ai-actions-thinking");
-		textElement.textContent = "Thinking";
-		textElement.setAttribute("data-text", "Thinking");
-
-		container.appendChild(textElement);
-		return container;
-	}
-
-	toDOM(_view: EditorView): HTMLElement {
-		return ThinkingWidget.createDOMStructure();
-	}
-}
-
 class ContentWidget extends WidgetType {
 	private dom: HTMLElement | null = null;
 
@@ -146,7 +124,7 @@ export class SpinnerPlugin implements PluginValue {
 			isThinking: boolean;
 		}) => {
 			if (enabled && !data.isThinking) {
-				data.widget = new ThinkingWidget();
+				data.widget = new LoaderWidget();
 				data.isThinking = true;
 				updated = true;
 			} else if (!enabled && data.isThinking) {

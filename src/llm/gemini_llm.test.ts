@@ -8,6 +8,25 @@ type MockGeminiClient = {
 	};
 };
 
+const isLegacyGemmaModel = (model?: string) => {
+	const normalizedModel = model?.toLowerCase() || "";
+
+	if (!normalizedModel.includes("gemma")) {
+		return false;
+	}
+
+	if (/^gemma-\d+b(?:-|$)/.test(normalizedModel)) {
+		return true;
+	}
+
+	const versionMatch = normalizedModel.match(/^gemma-(\d+)-/);
+	if (versionMatch) {
+		return Number(versionMatch[1]) <= 3;
+	}
+
+	return false;
+};
+
 // Mock the Google GenAI SDK
 jest.mock("@google/genai", () => ({
 	GoogleGenAI: jest.fn().mockImplementation(() => ({
@@ -148,6 +167,52 @@ describe("GeminiLLM", () => {
 
 			const result = await geminiLLM.autocomplete("prompt", "content");
 			expect(result).toBe("");
+		});
+
+		it("should ignore thought parts and return only visible answer text", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "Internal reasoning",
+									thought: true,
+								},
+								{
+									text: "Final visible answer",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete("prompt", "content");
+
+			expect(result).toBe("Final visible answer");
+		});
+
+		it("should strip Gemma thought channel artifacts from visible text", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "<|channel>thought\nhidden<channel|>Visible answer",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete("prompt", "content");
+
+			expect(result).toBe("Visible answer");
 		});
 
 		it("should propagate API errors with custom message", async () => {
@@ -459,6 +524,76 @@ describe("GeminiLLM", () => {
 			// Should only call callback for valid chunks
 			expect(callback).toHaveBeenCalledTimes(1);
 			expect(callback).toHaveBeenCalledWith("valid");
+		});
+
+		it("should ignore streaming thought parts and emit only visible text", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: "internal thought",
+											thought: true,
+										},
+									],
+								},
+							},
+						],
+					};
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: "Visible",
+										},
+									],
+								},
+							},
+						],
+					};
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: " answer",
+										},
+									],
+								},
+							},
+						],
+					};
+				},
+			};
+			mockClient.models.generateContentStream.mockResolvedValue(
+				mockStream
+			);
+
+			const callback = jest.fn();
+			await geminiLLM.autocomplete(
+				"prompt",
+				"content",
+				callback,
+				undefined,
+				undefined,
+				undefined,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(
+				1,
+				"<think>internal thought"
+			);
+			expect(callback).toHaveBeenNthCalledWith(2, "</think>Visible");
+			expect(callback).toHaveBeenNthCalledWith(3, " answer");
 		});
 	});
 
@@ -790,24 +925,33 @@ describe("GeminiLLM", () => {
 	describe("Gemma model handling with systemPromptSupport", () => {
 		let gemmaLLM: GeminiLLM;
 		let gemmaMockClient: MockGeminiClient;
+		let gemma4LLM: GeminiLLM;
+		let gemma4MockClient: MockGeminiClient;
 
 		beforeEach(() => {
 			gemmaLLM = new GeminiLLM(mockProvider, "gemma-7b-it", false);
 			gemmaMockClient = gemmaLLM["client"] as unknown as MockGeminiClient;
+			gemma4LLM = new GeminiLLM(
+				mockProvider,
+				"gemma-4-26b-a4b-it",
+				false
+			);
+			gemma4MockClient = gemma4LLM[
+				"client"
+			] as unknown as MockGeminiClient;
 
-			// Setup mock to throw error for Gemma models with systemInstruction
+			// Setup mock to throw error only for legacy Gemma models with systemInstruction.
 			gemmaMockClient.models.generateContent.mockImplementation(
 				(request: {
 					model?: string;
 					config?: { systemInstruction?: string };
 				}) => {
 					if (
-						request.model &&
-						request.model.toLowerCase().includes("gemma") &&
+						isLegacyGemmaModel(request.model) &&
 						request.config?.systemInstruction
 					) {
 						throw new Error(
-							"Gemma models do not support system instructions"
+							"Gemma 3 and earlier models do not support system instructions"
 						);
 					}
 					return Promise.resolve({
@@ -825,9 +969,19 @@ describe("GeminiLLM", () => {
 					});
 				}
 			);
+
+			gemma4MockClient.models.generateContent.mockResolvedValue({
+				candidates: [
+					{
+						content: {
+							parts: [{ text: "Gemma 4 response" }],
+						},
+					},
+				],
+			});
 		});
 
-		it("should throw error for Gemma models when systemPromptSupport is true", async () => {
+		it("should throw error for Gemma 3 and earlier models when systemPromptSupport is true", async () => {
 			await expect(
 				gemmaLLM.autocomplete(
 					"You are a helpful assistant",
@@ -840,11 +994,11 @@ describe("GeminiLLM", () => {
 					true
 				)
 			).rejects.toThrow(
-				"Gemini SDK error: Gemma models do not support system instructions"
+				"Gemini SDK error: Gemma 3 and earlier models do not support system instructions"
 			);
 		});
 
-		it("should throw error for Gemma models with userPrompt when systemPromptSupport is true", async () => {
+		it("should throw error for Gemma 3 and earlier models with userPrompt when systemPromptSupport is true", async () => {
 			await expect(
 				gemmaLLM.autocomplete(
 					"You are a helpful assistant",
@@ -857,8 +1011,39 @@ describe("GeminiLLM", () => {
 					true
 				)
 			).rejects.toThrow(
-				"Gemini SDK error: Gemma models do not support system instructions"
+				"Gemini SDK error: Gemma 3 and earlier models do not support system instructions"
 			);
+		});
+
+		it("should allow systemInstruction for Gemma 4 models", async () => {
+			const result = await gemma4LLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				1000,
+				undefined,
+				false,
+				true
+			);
+
+			expect(result).toBe("Gemma 4 response");
+			expect(
+				gemma4MockClient.models.generateContent
+			).toHaveBeenCalledWith({
+				model: "gemma-4-26b-a4b-it",
+				contents: [
+					{
+						role: "user",
+						parts: [{ text: "Write a hello world function" }],
+					},
+				],
+				config: {
+					temperature: 0.7,
+					maxOutputTokens: 1000,
+					systemInstruction: "You are a helpful assistant",
+				},
+			});
 		});
 	});
 });
