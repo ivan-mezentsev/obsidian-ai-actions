@@ -158,8 +158,7 @@ describe("GroqLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -184,7 +183,6 @@ describe("GroqLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				}
@@ -208,7 +206,6 @@ describe("GroqLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -231,7 +228,6 @@ describe("GroqLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -255,7 +251,6 @@ describe("GroqLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -278,14 +273,13 @@ describe("GroqLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
 			);
 		});
 
-		it("should use default temperature and max_tokens when not provided", async () => {
+		it("should use default temperature and provider defaults when not provided", async () => {
 			const mockResponseData = {
 				choices: [
 					{
@@ -309,7 +303,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "User input" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -333,7 +326,6 @@ describe("GroqLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt"
 			);
 
@@ -348,7 +340,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Content text" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -373,7 +364,6 @@ describe("GroqLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				true
@@ -390,7 +380,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Content text" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -414,7 +403,6 @@ describe("GroqLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				false
@@ -431,7 +419,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Content text" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -544,7 +531,6 @@ describe("GroqLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true
 			);
@@ -564,7 +550,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Say hello" },
 						],
 						temperature: 0.8,
-						max_tokens: 500,
 						stream: true,
 					}),
 				})
@@ -596,7 +581,6 @@ describe("GroqLLM", () => {
 				"Content text",
 				callback,
 				0.7,
-				1000,
 				"User custom prompt",
 				true
 			);
@@ -612,7 +596,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Content text" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: true,
 					}),
 				})
@@ -644,7 +627,6 @@ describe("GroqLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				true
@@ -664,7 +646,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Say hello" },
 						],
 						temperature: 0.8,
-						max_tokens: 500,
 						stream: true,
 					}),
 				})
@@ -696,7 +677,6 @@ describe("GroqLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				false
@@ -716,7 +696,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Say hello" },
 						],
 						temperature: 0.8,
-						max_tokens: 500,
 						stream: true,
 					}),
 				})
@@ -748,7 +727,6 @@ describe("GroqLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -788,7 +766,6 @@ describe("GroqLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -807,7 +784,6 @@ describe("GroqLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -840,7 +816,6 @@ describe("GroqLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -857,7 +832,6 @@ describe("GroqLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -893,7 +867,6 @@ describe("GroqLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				"Custom user prompt",
 				true,
 				false
@@ -915,7 +888,6 @@ describe("GroqLLM", () => {
 							{ role: "user", content: "Say hello" },
 						],
 						temperature: 0.8,
-						max_tokens: 500,
 						stream: true,
 					}),
 				})
@@ -952,7 +924,6 @@ describe("GroqLLM", () => {
 				"Test content",
 				nonStreamingCallback,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -996,7 +967,6 @@ describe("GroqLLM", () => {
 				"Test content",
 				mockStreamingCallbackWrapper,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -1112,7 +1082,6 @@ describe("GroqLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -1136,7 +1105,6 @@ describe("GroqLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -1158,7 +1126,6 @@ describe("GroqLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -1182,7 +1149,6 @@ describe("GroqLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -1204,7 +1170,6 @@ describe("GroqLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})

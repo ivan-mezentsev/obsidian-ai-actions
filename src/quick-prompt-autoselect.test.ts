@@ -47,7 +47,6 @@ describe("QuickPrompt autoselection and submit", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.1,
-				maxOutputTokens: 100,
 			},
 			aiProviders: {
 				providers: [{ id: "p1", name: "P1", type: "openai" }],

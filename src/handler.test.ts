@@ -150,7 +150,6 @@ describe("StreamingProcessor", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.7,
-				maxOutputTokens: 1000,
 			};
 
 			mockConfig = {
@@ -188,7 +187,6 @@ describe("StreamingProcessor", () => {
 				"test input",
 				expect.any(Function),
 				0.7,
-				1000,
 				undefined,
 				true,
 				true
@@ -307,7 +305,6 @@ describe("StreamingProcessor", () => {
 				"test input",
 				expect.any(Function),
 				0.7,
-				1000,
 				"Custom user prompt",
 				true,
 				true
@@ -520,7 +517,6 @@ describe("StreamingProcessor", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.7,
-				maxOutputTokens: 1000,
 			};
 
 			mockConfig = {
@@ -835,7 +831,6 @@ describe("PromptProcessor", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.7,
-				maxOutputTokens: 1000,
 				showModalWindow: true,
 			};
 
@@ -1362,7 +1357,6 @@ describe("ActionHandler Integration Tests", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.7,
-				maxOutputTokens: 1000,
 				showModalWindow: true,
 			};
 		});
@@ -1631,7 +1625,6 @@ describe("ActionHandler Integration Tests", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.5,
-				maxOutputTokens: 500,
 			};
 
 			// Mock LLM
@@ -1661,7 +1654,6 @@ describe("ActionHandler Integration Tests", () => {
 				"test input",
 				undefined,
 				0.5,
-				500,
 				undefined,
 				false,
 				true

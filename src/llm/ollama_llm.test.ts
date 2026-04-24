@@ -166,8 +166,7 @@ describe("OllamaLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -184,7 +183,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "You are a helpful assistant",
 					}),
@@ -204,7 +202,6 @@ describe("OllamaLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt"
 			);
 
@@ -221,7 +218,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "System instruction",
 					}),
@@ -229,7 +225,7 @@ describe("OllamaLLM", () => {
 			);
 		});
 
-		it("should use default temperature and maxOutputTokens when not provided", async () => {
+		it("should use default temperature and provider defaults when not provided", async () => {
 			const mockResponseData = {
 				response: "Default response",
 				done: true,
@@ -251,7 +247,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "System prompt",
 					}),
@@ -259,7 +254,7 @@ describe("OllamaLLM", () => {
 			);
 		});
 
-		it("should handle zero maxOutputTokens correctly", async () => {
+		it("should handle zero provider defaults correctly", async () => {
 			const mockResponseData = {
 				response: "Response with default tokens",
 				done: true,
@@ -270,8 +265,7 @@ describe("OllamaLLM", () => {
 				"System prompt",
 				"User input",
 				undefined,
-				0.5,
-				0
+				0.5
 			);
 
 			expect(mockStandardFetch).toHaveBeenCalledWith(
@@ -287,7 +281,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.5,
-							num_predict: 1000,
 						},
 						system: "System prompt",
 					}),
@@ -343,8 +336,6 @@ describe("OllamaLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
-				undefined,
 				undefined,
 				false
 			);
@@ -423,7 +414,6 @@ describe("OllamaLLM", () => {
 				"User input",
 				callback,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -447,7 +437,6 @@ describe("OllamaLLM", () => {
 						stream: true,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "System prompt",
 					}),
@@ -478,7 +467,6 @@ describe("OllamaLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -512,7 +500,6 @@ describe("OllamaLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -549,7 +536,6 @@ describe("OllamaLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -569,7 +555,6 @@ describe("OllamaLLM", () => {
 					callback,
 					undefined,
 					undefined,
-					undefined,
 					true
 				)
 			).rejects.toThrow("No response body reader available");
@@ -584,7 +569,6 @@ describe("OllamaLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -621,7 +605,6 @@ describe("OllamaLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -641,7 +624,6 @@ describe("OllamaLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -667,7 +649,6 @@ describe("OllamaLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -686,7 +667,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "You are a helpful assistant",
 					}),
@@ -706,7 +686,6 @@ describe("OllamaLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -725,7 +704,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 					}),
 				}
@@ -744,7 +722,6 @@ describe("OllamaLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				true
@@ -763,7 +740,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "System instruction",
 					}),
@@ -783,7 +759,6 @@ describe("OllamaLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				false
@@ -802,7 +777,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 					}),
 				}
@@ -820,8 +794,7 @@ describe("OllamaLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(mockStandardFetch).toHaveBeenCalledWith(
@@ -837,7 +810,6 @@ describe("OllamaLLM", () => {
 						stream: false,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "You are a helpful assistant",
 					}),
@@ -873,7 +845,6 @@ describe("OllamaLLM", () => {
 				"User input",
 				callback,
 				0.7,
-				1000,
 				undefined,
 				true,
 				true
@@ -897,7 +868,6 @@ describe("OllamaLLM", () => {
 						stream: true,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 						system: "System prompt",
 					}),
@@ -933,7 +903,6 @@ describe("OllamaLLM", () => {
 				"User input",
 				callback,
 				0.7,
-				1000,
 				undefined,
 				true,
 				false
@@ -957,7 +926,6 @@ describe("OllamaLLM", () => {
 						stream: true,
 						options: {
 							temperature: 0.7,
-							num_predict: 1000,
 						},
 					}),
 				}
@@ -989,8 +957,7 @@ describe("OllamaLLM", () => {
 				"prompt",
 				"content",
 				undefined,
-				undefined,
-				1000
+				undefined
 			);
 
 			expect(mockStandardFetch).toHaveBeenCalledWith(

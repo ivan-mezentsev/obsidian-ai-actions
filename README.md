@@ -51,7 +51,6 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
 - **Output Modes**: Choose different processing modes for prompt results
 - **Custom Formatting**: Define output templates with placeholders
 - **Temperature Control**: Adjust AI creativity and randomness
-- **Token Limits**: Control response length
 
 ### 🛠️ Customization
 - **Custom Actions**: Create unlimited personalized AI workflows
@@ -110,7 +109,6 @@ For detailed changes, see [CHANGELOG.md](CHANGELOG.md).
    - **Location**: Output placement
    - **Format**: Output template with `{{result}}` placeholder
    - **Temperature**: Creativity level (0,25%,50%,75%,100%)
-   - **Max Tokens**: Response length limit
 
 ## 📝 Usage
 

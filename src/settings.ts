@@ -236,7 +236,6 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			format: "{{result}}\n",
 			model: defaultModelId,
 			temperature: undefined,
-			maxOutputTokens: undefined,
 		};
 		new ActionEditModal(
 			this.app,

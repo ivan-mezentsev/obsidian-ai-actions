@@ -57,7 +57,6 @@ describe("QuickPromptManager Integration Tests", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.7,
-				maxOutputTokens: 1000,
 			},
 			aiProviders: {
 				providers: [
@@ -464,8 +463,6 @@ describe("QuickPromptManager Integration Tests", () => {
 						sel: mockSettings.quickPrompt.sel,
 						format: mockSettings.quickPrompt.format,
 						temperature: mockSettings.quickPrompt.temperature,
-						maxOutputTokens:
-							mockSettings.quickPrompt.maxOutputTokens,
 
 						// Should override specific settings
 						model: "custom-model",

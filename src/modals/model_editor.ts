@@ -364,7 +364,6 @@ export class ModelEditModal extends Modal {
 				undefined,
 				undefined,
 				undefined,
-				undefined,
 				false,
 				true
 			);

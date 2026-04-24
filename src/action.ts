@@ -24,7 +24,6 @@ export interface UserAction {
 	loc: Location;
 	format: string;
 	temperature?: number; // Temperature setting for AI model
-	maxOutputTokens?: number; // Maximum output tokens for AI model
 	locationExtra?: { fileName: string };
 	showModalWindow?: boolean; // Show modal window with results
 }

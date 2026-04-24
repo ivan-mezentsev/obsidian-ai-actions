@@ -1,9 +1,18 @@
 import { BaseProviderLLM } from "./base_provider_llm";
 import type { AIProvider } from "../types";
 import { GoogleGenAI } from "@google/genai";
+import {
+	extractGeminiDisplayText,
+	GeminiThinkingStreamFormatter,
+	type GeminiResponseLike,
+} from "../utils/thinking-tags-gemini";
 
 export class GeminiLLM extends BaseProviderLLM {
 	private client: GoogleGenAI;
+
+	private supportsThoughtSummaries(): boolean {
+		return /gemini-(2\.5|3)/i.test(this.modelName);
+	}
 
 	constructor(
 		provider: AIProvider,
@@ -28,7 +37,6 @@ export class GeminiLLM extends BaseProviderLLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming: boolean = false,
 		systemPromptSupport?: boolean
@@ -56,15 +64,19 @@ export class GeminiLLM extends BaseProviderLLM {
 
 			const config: {
 				temperature: number;
-				maxOutputTokens: number;
 				systemInstruction?: string;
+				thinkingConfig?: {
+					includeThoughts: boolean;
+				};
 			} = {
 				temperature: temperature !== undefined ? temperature : 0.7,
-				maxOutputTokens:
-					maxOutputTokens && maxOutputTokens > 0
-						? maxOutputTokens
-						: 1000,
 			};
+
+			if (this.supportsThoughtSummaries()) {
+				config.thinkingConfig = {
+					includeThoughts: true,
+				};
+			}
 
 			// Add system instruction when system prompt support is enabled
 			if (useSystemPrompt) {
@@ -73,6 +85,7 @@ export class GeminiLLM extends BaseProviderLLM {
 
 			if (streaming && callback) {
 				// Streaming mode
+				const streamFormatter = new GeminiThinkingStreamFormatter();
 				const stream = await this.client.models.generateContentStream({
 					model: this.modelName,
 					contents,
@@ -80,9 +93,17 @@ export class GeminiLLM extends BaseProviderLLM {
 				});
 
 				for await (const chunk of stream) {
-					if (chunk?.candidates?.[0]?.content?.parts?.[0]?.text) {
-						callback(chunk.candidates[0].content.parts[0].text);
+					const chunkText = streamFormatter.pushResponse(
+						chunk as unknown as GeminiResponseLike
+					);
+					if (chunkText) {
+						callback(chunkText);
 					}
+				}
+
+				const trailingChunkText = streamFormatter.flush();
+				if (trailingChunkText) {
+					callback(trailingChunkText);
 				}
 				return;
 			} else {
@@ -93,9 +114,9 @@ export class GeminiLLM extends BaseProviderLLM {
 					config,
 				});
 
-				// Gemini SDK returns candidates[0].content.parts[0].text
-				const result =
-					response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+				const result = extractGeminiDisplayText(
+					response as unknown as GeminiResponseLike
+				);
 
 				// Call callback with the full result if provided
 				if (callback && result) {

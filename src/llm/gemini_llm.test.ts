@@ -8,6 +8,54 @@ type MockGeminiClient = {
 	};
 };
 
+const isMockGeminiClient = (value: unknown): value is MockGeminiClient => {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+
+	const client = value as {
+		models?: {
+			generateContent?: unknown;
+			generateContentStream?: unknown;
+		};
+	};
+
+	return Boolean(
+		client.models &&
+			typeof client.models.generateContent === "function" &&
+			typeof client.models.generateContentStream === "function"
+	);
+};
+
+const getMockGeminiClient = (llm: GeminiLLM): MockGeminiClient => {
+	const client = (llm as unknown as Record<string, unknown>)["client"];
+
+	if (!isMockGeminiClient(client)) {
+		throw new Error("Gemini test client is not available");
+	}
+
+	return client;
+};
+
+const isLegacyGemmaModel = (model?: string) => {
+	const normalizedModel = model?.toLowerCase() || "";
+
+	if (!normalizedModel.includes("gemma")) {
+		return false;
+	}
+
+	if (/^gemma-\d+b(?:-|$)/.test(normalizedModel)) {
+		return true;
+	}
+
+	const versionMatch = normalizedModel.match(/^gemma-(\d+)-/);
+	if (versionMatch) {
+		return Number(versionMatch[1]) <= 3;
+	}
+
+	return false;
+};
+
 // Mock the Google GenAI SDK
 jest.mock("@google/genai", () => ({
 	GoogleGenAI: jest.fn().mockImplementation(() => ({
@@ -40,7 +88,7 @@ describe("GeminiLLM", () => {
 		geminiLLM = new GeminiLLM(mockProvider, "gemini-1.5-pro", false);
 
 		// Get the mock client
-		mockClient = geminiLLM["client"] as unknown as MockGeminiClient;
+		mockClient = getMockGeminiClient(geminiLLM);
 	});
 
 	afterEach(() => {
@@ -64,6 +112,56 @@ describe("GeminiLLM", () => {
 	});
 
 	describe("autocomplete", () => {
+		it("should enable thought summaries for Gemini 3 streaming models", async () => {
+			const gemini3LLM = new GeminiLLM(
+				mockProvider,
+				"gemini-3.1-pro",
+				false
+			);
+			const gemini3Client = getMockGeminiClient(gemini3LLM);
+
+			gemini3Client.models.generateContentStream.mockResolvedValue({
+				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [{ text: "Visible answer" }],
+								},
+							},
+						],
+					};
+				},
+			});
+
+			await gemini3LLM.autocomplete(
+				"prompt",
+				"content",
+				jest.fn(),
+				undefined,
+				undefined,
+				true
+			);
+
+			const [firstCall] = gemini3Client.models.generateContentStream.mock
+				.calls as [
+				[
+					{
+						config?: {
+							thinkingConfig?: {
+								includeThoughts?: boolean;
+							};
+						};
+					},
+				],
+			];
+
+			expect(firstCall[0]?.config?.thinkingConfig).toEqual({
+				includeThoughts: true,
+			});
+		});
+
 		it("should successfully generate completion", async () => {
 			const mockResponse = {
 				candidates: [
@@ -84,8 +182,7 @@ describe("GeminiLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -99,13 +196,12 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
 		});
 
-		it("should use default temperature and maxOutputTokens when not provided", async () => {
+		it("should use default temperature and provider defaults when not provided", async () => {
 			const mockResponse = {
 				candidates: [
 					{
@@ -128,7 +224,6 @@ describe("GeminiLLM", () => {
 				contents: [{ role: "user", parts: [{ text: "User input" }] }],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "System prompt",
 				},
 			});
@@ -148,6 +243,52 @@ describe("GeminiLLM", () => {
 
 			const result = await geminiLLM.autocomplete("prompt", "content");
 			expect(result).toBe("");
+		});
+
+		it("should ignore thought parts and return only visible answer text", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "Internal reasoning",
+									thought: true,
+								},
+								{
+									text: "Final visible answer",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete("prompt", "content");
+
+			expect(result).toBe("Final visible answer");
+		});
+
+		it("should strip Gemma thought channel artifacts from visible text", async () => {
+			const mockResponse = {
+				candidates: [
+					{
+						content: {
+							parts: [
+								{
+									text: "<|channel>thought\nhidden<channel|>Visible answer",
+								},
+							],
+						},
+					},
+				],
+			};
+			mockClient.models.generateContent.mockResolvedValue(mockResponse);
+
+			const result = await geminiLLM.autocomplete("prompt", "content");
+
+			expect(result).toBe("Visible answer");
 		});
 
 		it("should propagate API errors with custom message", async () => {
@@ -219,7 +360,6 @@ describe("GeminiLLM", () => {
 				"Test content",
 				nonStreamingCallback,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -240,7 +380,6 @@ describe("GeminiLLM", () => {
 				"Test content",
 				mockStreamingCallbackWrapper,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -268,7 +407,6 @@ describe("GeminiLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				false
@@ -333,7 +471,6 @@ describe("GeminiLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true
 			);
@@ -350,7 +487,6 @@ describe("GeminiLLM", () => {
 				contents: [{ role: "user", parts: [{ text: "Say hello" }] }],
 				config: {
 					temperature: 0.8,
-					maxOutputTokens: 500,
 					systemInstruction: "You are helpful",
 				},
 			});
@@ -385,7 +521,6 @@ describe("GeminiLLM", () => {
 				"Content text",
 				callback,
 				0.7,
-				1000,
 				"User custom prompt",
 				true
 			);
@@ -400,7 +535,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "System instruction",
 				},
 			});
@@ -419,7 +553,6 @@ describe("GeminiLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -452,13 +585,81 @@ describe("GeminiLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
 			// Should only call callback for valid chunks
 			expect(callback).toHaveBeenCalledTimes(1);
 			expect(callback).toHaveBeenCalledWith("valid");
+		});
+
+		it("should ignore streaming thought parts and emit only visible text", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: "internal thought",
+											thought: true,
+										},
+									],
+								},
+							},
+						],
+					};
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: "Visible",
+										},
+									],
+								},
+							},
+						],
+					};
+					yield {
+						candidates: [
+							{
+								content: {
+									parts: [
+										{
+											text: " answer",
+										},
+									],
+								},
+							},
+						],
+					};
+				},
+			};
+			mockClient.models.generateContentStream.mockResolvedValue(
+				mockStream
+			);
+
+			const callback = jest.fn();
+			await geminiLLM.autocomplete(
+				"prompt",
+				"content",
+				callback,
+				undefined,
+				undefined,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(
+				1,
+				"<think>internal thought"
+			);
+			expect(callback).toHaveBeenNthCalledWith(2, "</think>Visible");
+			expect(callback).toHaveBeenNthCalledWith(3, " answer");
 		});
 	});
 
@@ -495,7 +696,6 @@ describe("GeminiLLM", () => {
 					callback,
 					undefined,
 					undefined,
-					undefined,
 					true
 				)
 			).rejects.toThrow("Gemini SDK error: Rate limit exceeded");
@@ -524,7 +724,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -541,7 +740,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
@@ -568,7 +766,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -589,7 +786,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 				},
 			});
 		});
@@ -615,7 +811,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				"Custom user prompt",
 				false,
 				true
@@ -638,7 +833,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
@@ -665,7 +859,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				"Custom user prompt",
 				false,
 				false
@@ -692,7 +885,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 				},
 			});
 		});
@@ -726,7 +918,6 @@ describe("GeminiLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				true
@@ -742,7 +933,6 @@ describe("GeminiLLM", () => {
 				contents: [{ role: "user", parts: [{ text: "Say hello" }] }],
 				config: {
 					temperature: 0.8,
-					maxOutputTokens: 500,
 					systemInstruction: "You are helpful",
 				},
 			});
@@ -780,7 +970,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
@@ -790,24 +979,31 @@ describe("GeminiLLM", () => {
 	describe("Gemma model handling with systemPromptSupport", () => {
 		let gemmaLLM: GeminiLLM;
 		let gemmaMockClient: MockGeminiClient;
+		let gemma4LLM: GeminiLLM;
+		let gemma4MockClient: MockGeminiClient;
 
 		beforeEach(() => {
 			gemmaLLM = new GeminiLLM(mockProvider, "gemma-7b-it", false);
-			gemmaMockClient = gemmaLLM["client"] as unknown as MockGeminiClient;
+			gemmaMockClient = getMockGeminiClient(gemmaLLM);
+			gemma4LLM = new GeminiLLM(
+				mockProvider,
+				"gemma-4-26b-a4b-it",
+				false
+			);
+			gemma4MockClient = getMockGeminiClient(gemma4LLM);
 
-			// Setup mock to throw error for Gemma models with systemInstruction
+			// Setup mock to throw error only for legacy Gemma models with systemInstruction.
 			gemmaMockClient.models.generateContent.mockImplementation(
 				(request: {
 					model?: string;
 					config?: { systemInstruction?: string };
 				}) => {
 					if (
-						request.model &&
-						request.model.toLowerCase().includes("gemma") &&
+						isLegacyGemmaModel(request.model) &&
 						request.config?.systemInstruction
 					) {
 						throw new Error(
-							"Gemma models do not support system instructions"
+							"Gemma 3 and earlier models do not support system instructions"
 						);
 					}
 					return Promise.resolve({
@@ -825,40 +1021,77 @@ describe("GeminiLLM", () => {
 					});
 				}
 			);
+
+			gemma4MockClient.models.generateContent.mockResolvedValue({
+				candidates: [
+					{
+						content: {
+							parts: [{ text: "Gemma 4 response" }],
+						},
+					},
+				],
+			});
 		});
 
-		it("should throw error for Gemma models when systemPromptSupport is true", async () => {
+		it("should throw error for Gemma 3 and earlier models when systemPromptSupport is true", async () => {
 			await expect(
 				gemmaLLM.autocomplete(
 					"You are a helpful assistant",
 					"Write a hello world function",
 					undefined,
 					0.7,
-					1000,
 					undefined,
 					false,
 					true
 				)
 			).rejects.toThrow(
-				"Gemini SDK error: Gemma models do not support system instructions"
+				"Gemini SDK error: Gemma 3 and earlier models do not support system instructions"
 			);
 		});
 
-		it("should throw error for Gemma models with userPrompt when systemPromptSupport is true", async () => {
+		it("should throw error for Gemma 3 and earlier models with userPrompt when systemPromptSupport is true", async () => {
 			await expect(
 				gemmaLLM.autocomplete(
 					"You are a helpful assistant",
 					"Write a hello world function",
 					undefined,
 					0.7,
-					1000,
 					"Custom user prompt",
 					false,
 					true
 				)
 			).rejects.toThrow(
-				"Gemini SDK error: Gemma models do not support system instructions"
+				"Gemini SDK error: Gemma 3 and earlier models do not support system instructions"
 			);
+		});
+
+		it("should allow systemInstruction for Gemma 4 models", async () => {
+			const result = await gemma4LLM.autocomplete(
+				"You are a helpful assistant",
+				"Write a hello world function",
+				undefined,
+				0.7,
+				undefined,
+				false,
+				true
+			);
+
+			expect(result).toBe("Gemma 4 response");
+			expect(
+				gemma4MockClient.models.generateContent
+			).toHaveBeenCalledWith({
+				model: "gemma-4-26b-a4b-it",
+				contents: [
+					{
+						role: "user",
+						parts: [{ text: "Write a hello world function" }],
+					},
+				],
+				config: {
+					temperature: 0.7,
+					systemInstruction: "You are a helpful assistant",
+				},
+			});
 		});
 	});
 });

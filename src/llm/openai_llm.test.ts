@@ -97,8 +97,7 @@ describe("OpenAILLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -114,12 +113,11 @@ describe("OpenAILLM", () => {
 						content: "Write a hello world function",
 					},
 				],
-				max_tokens: 1000,
 				temperature: 0.7,
 			});
 		});
 
-		it("should use default temperature and maxOutputTokens when not provided", async () => {
+		it("should use default temperature and provider defaults when not provided", async () => {
 			const mockResponse: ChatCompletion = {
 				id: "test-id",
 				object: "chat.completion",
@@ -151,7 +149,6 @@ describe("OpenAILLM", () => {
 					{ role: "system", content: "System prompt" },
 					{ role: "user", content: "User input" },
 				],
-				max_tokens: 4000,
 				temperature: 0.7,
 			});
 		});
@@ -241,7 +238,6 @@ describe("OpenAILLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt"
 			);
 
@@ -252,12 +248,11 @@ describe("OpenAILLM", () => {
 					{ role: "user", content: "User custom prompt" },
 					{ role: "user", content: "Content text" },
 				],
-				max_tokens: 1000,
 				temperature: 0.7,
 			});
 		});
 
-		it("should handle zero and negative maxOutputTokens correctly", async () => {
+		it("should handle zero and negative provider defaults correctly", async () => {
 			const mockResponse: ChatCompletion = {
 				id: "test-id",
 				object: "chat.completion",
@@ -281,14 +276,8 @@ describe("OpenAILLM", () => {
 			};
 			mockClient.chat.completions.create.mockResolvedValue(mockResponse);
 
-			// Test with zero maxOutputTokens
-			await openaiLLM.autocomplete(
-				"prompt",
-				"content",
-				undefined,
-				0.7,
-				0
-			);
+			// Test with zero provider defaults
+			await openaiLLM.autocomplete("prompt", "content", undefined, 0.7);
 
 			expect(mockClient.chat.completions.create).toHaveBeenCalledWith({
 				model: OpenAIModel.GPT_4O_MINI,
@@ -296,18 +285,11 @@ describe("OpenAILLM", () => {
 					{ role: "system", content: "prompt" },
 					{ role: "user", content: "content" },
 				],
-				max_tokens: 4000,
 				temperature: 0.7,
 			});
 
-			// Test with negative maxOutputTokens
-			await openaiLLM.autocomplete(
-				"prompt",
-				"content",
-				undefined,
-				0.7,
-				-100
-			);
+			// Test with negative provider defaults
+			await openaiLLM.autocomplete("prompt", "content", undefined, 0.7);
 
 			expect(mockClient.chat.completions.create).toHaveBeenLastCalledWith(
 				{
@@ -316,7 +298,6 @@ describe("OpenAILLM", () => {
 						{ role: "system", content: "prompt" },
 						{ role: "user", content: "content" },
 					],
-					max_tokens: 4000,
 					temperature: 0.7,
 				}
 			);
@@ -403,7 +384,6 @@ describe("OpenAILLM", () => {
 				"Test content",
 				nonStreamingCallback,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -424,7 +404,6 @@ describe("OpenAILLM", () => {
 				"Test content",
 				mockStreamingCallbackWrapper,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -463,7 +442,6 @@ describe("OpenAILLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				false
@@ -526,7 +504,6 @@ describe("OpenAILLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true
 			);
@@ -542,10 +519,76 @@ describe("OpenAILLM", () => {
 					{ role: "system", content: "You are helpful" },
 					{ role: "user", content: "Say hello" },
 				],
-				max_tokens: 500,
 				temperature: 0.8,
 				stream: true,
 			});
+		});
+
+		it("should stream reasoning deltas when the provider includes them", async () => {
+			const mockStream = {
+				async *[Symbol.asyncIterator]() {
+					await Promise.resolve();
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: {
+									reasoning_details: [{ text: "Step 1" }],
+								},
+								finish_reason: null,
+							},
+						],
+					};
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: {
+									reasoning_content: " then step 2",
+								},
+								finish_reason: null,
+							},
+						],
+					};
+					yield {
+						id: "test-id",
+						object: "chat.completion.chunk",
+						created: Date.now(),
+						model: OpenAIModel.GPT_4O_MINI,
+						choices: [
+							{
+								index: 0,
+								delta: { content: "Final answer" },
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			};
+			mockClient.chat.completions.create.mockResolvedValue(mockStream);
+
+			const callback = jest.fn();
+			await openaiLLM.autocomplete(
+				"prompt",
+				"content",
+				callback,
+				undefined,
+				undefined,
+				true
+			);
+
+			expect(callback).toHaveBeenCalledTimes(3);
+			expect(callback).toHaveBeenNthCalledWith(1, "<think>Step 1");
+			expect(callback).toHaveBeenNthCalledWith(2, " then step 2");
+			expect(callback).toHaveBeenNthCalledWith(3, "</think>Final answer");
 		});
 
 		it("should handle streaming errors", async () => {
@@ -559,7 +602,6 @@ describe("OpenAILLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -615,7 +657,6 @@ describe("OpenAILLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -650,7 +691,6 @@ describe("OpenAILLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -690,7 +730,6 @@ describe("OpenAILLM", () => {
 				"Write code",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -702,7 +741,6 @@ describe("OpenAILLM", () => {
 					{ role: "system", content: "You are a helpful assistant" },
 					{ role: "user", content: "Write code" },
 				],
-				max_tokens: 1000,
 				temperature: 0.7,
 			});
 		});
@@ -736,7 +774,6 @@ describe("OpenAILLM", () => {
 				"Write code",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -748,7 +785,6 @@ describe("OpenAILLM", () => {
 					{ role: "user", content: "You are a helpful assistant" },
 					{ role: "user", content: "Write code" },
 				],
-				max_tokens: 1000,
 				temperature: 0.7,
 			});
 		});
@@ -788,7 +824,6 @@ describe("OpenAILLM", () => {
 					{ role: "system", content: "You are a helpful assistant" },
 					{ role: "user", content: "Write code" },
 				],
-				max_tokens: 4000,
 				temperature: 0.7,
 			});
 		});
@@ -823,7 +858,6 @@ describe("OpenAILLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				true
@@ -836,7 +870,6 @@ describe("OpenAILLM", () => {
 					{ role: "user", content: "User custom prompt" },
 					{ role: "user", content: "Content text" },
 				],
-				max_tokens: 1000,
 				temperature: 0.7,
 			});
 		});
@@ -871,7 +904,6 @@ describe("OpenAILLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				false
@@ -884,7 +916,6 @@ describe("OpenAILLM", () => {
 					{ role: "user", content: "User custom prompt" },
 					{ role: "user", content: "Content text" },
 				],
-				max_tokens: 1000,
 				temperature: 0.7,
 			});
 		});
@@ -929,7 +960,6 @@ describe("OpenAILLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				true
@@ -945,7 +975,6 @@ describe("OpenAILLM", () => {
 					{ role: "system", content: "You are helpful" },
 					{ role: "user", content: "Say hello" },
 				],
-				max_tokens: 500,
 				temperature: 0.8,
 				stream: true,
 			});
@@ -991,7 +1020,6 @@ describe("OpenAILLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				false
@@ -1007,7 +1035,6 @@ describe("OpenAILLM", () => {
 					{ role: "user", content: "You are helpful" },
 					{ role: "user", content: "Say hello" },
 				],
-				max_tokens: 500,
 				temperature: 0.8,
 				stream: true,
 			});
@@ -1045,8 +1072,6 @@ describe("OpenAILLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
-					undefined,
 					undefined,
 					true
 				)

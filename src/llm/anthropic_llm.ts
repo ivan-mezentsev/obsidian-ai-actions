@@ -41,7 +41,6 @@ export class AnthropicLLM extends BaseProviderLLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming: boolean = false,
 		systemPromptSupport: boolean = true
@@ -104,10 +103,7 @@ export class AnthropicLLM extends BaseProviderLLM {
 				// Streaming mode
 				const requestParams: Anthropic.MessageCreateParams = {
 					model: this.modelName,
-					max_tokens:
-						maxOutputTokens && maxOutputTokens > 0
-							? maxOutputTokens
-							: 1000,
+					max_tokens: 64000,
 					temperature: temperature !== undefined ? temperature : 0.7,
 					messages: messages,
 					stream: true,
@@ -132,10 +128,7 @@ export class AnthropicLLM extends BaseProviderLLM {
 				// Non-streaming mode
 				const requestParams: Anthropic.MessageCreateParams = {
 					model: this.modelName,
-					max_tokens:
-						maxOutputTokens && maxOutputTokens > 0
-							? maxOutputTokens
-							: 1000,
+					max_tokens: 64000,
 					temperature: temperature !== undefined ? temperature : 0.7,
 					messages: messages,
 				};

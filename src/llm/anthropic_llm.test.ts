@@ -81,14 +81,13 @@ describe("AnthropicLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 1000,
+				max_tokens: 64000,
 				temperature: 0.7,
 				system: "You are a helpful assistant",
 				messages: [
@@ -100,7 +99,7 @@ describe("AnthropicLLM", () => {
 			});
 		});
 
-		it("should use default temperature and maxOutputTokens when not provided", async () => {
+		it("should use default temperature and fixed Anthropic limit when not provided", async () => {
 			const mockResponse = {
 				content: [
 					{
@@ -115,7 +114,7 @@ describe("AnthropicLLM", () => {
 
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 1000,
+				max_tokens: 64000,
 				temperature: 0.7,
 				system: "System prompt",
 				messages: [
@@ -211,7 +210,6 @@ describe("AnthropicLLM", () => {
 				"Test content",
 				nonStreamingCallback,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -230,7 +228,6 @@ describe("AnthropicLLM", () => {
 				"Test content",
 				mockStreamingCallbackWrapper,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -258,7 +255,6 @@ describe("AnthropicLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				false
@@ -303,7 +299,6 @@ describe("AnthropicLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true
 			);
@@ -315,7 +310,7 @@ describe("AnthropicLLM", () => {
 
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 500,
+				max_tokens: 64000,
 				temperature: 0.8,
 				system: "You are helpful",
 				messages: [
@@ -349,14 +344,13 @@ describe("AnthropicLLM", () => {
 				"Content text",
 				callback,
 				0.7,
-				1000,
 				"User custom prompt",
 				true
 			);
 
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 1000,
+				max_tokens: 64000,
 				temperature: 0.7,
 				system: "System instruction",
 				messages: [
@@ -384,7 +378,6 @@ describe("AnthropicLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -419,7 +412,6 @@ describe("AnthropicLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -518,7 +510,6 @@ describe("AnthropicLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -527,7 +518,7 @@ describe("AnthropicLLM", () => {
 			expect(result).toBe("Response with system prompt");
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 1000,
+				max_tokens: 64000,
 				temperature: 0.7,
 				system: "You are a helpful assistant",
 				messages: [
@@ -555,7 +546,6 @@ describe("AnthropicLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -564,7 +554,7 @@ describe("AnthropicLLM", () => {
 			expect(result).toBe("Response without system prompt");
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 1000,
+				max_tokens: 64000,
 				temperature: 0.7,
 				messages: [
 					{
@@ -595,7 +585,6 @@ describe("AnthropicLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				false
@@ -604,7 +593,7 @@ describe("AnthropicLLM", () => {
 			expect(result).toBe("Response with user prompt and no system");
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 1000,
+				max_tokens: 64000,
 				temperature: 0.7,
 				messages: [
 					{
@@ -644,7 +633,6 @@ describe("AnthropicLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				true
@@ -653,7 +641,7 @@ describe("AnthropicLLM", () => {
 			expect(callback).toHaveBeenCalledWith("Streaming with system");
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 500,
+				max_tokens: 64000,
 				temperature: 0.8,
 				system: "You are helpful",
 				messages: [
@@ -687,7 +675,6 @@ describe("AnthropicLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				false
@@ -696,7 +683,7 @@ describe("AnthropicLLM", () => {
 			expect(callback).toHaveBeenCalledWith("Streaming without system");
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 500,
+				max_tokens: 64000,
 				temperature: 0.8,
 				messages: [
 					{
@@ -731,7 +718,7 @@ describe("AnthropicLLM", () => {
 			expect(result).toBe("Default behavior response");
 			expect(mockClient.messages.create).toHaveBeenCalledWith({
 				model: "claude-3-sonnet-20240229",
-				max_tokens: 1000,
+				max_tokens: 64000,
 				temperature: 0.7,
 				system: "Default system prompt",
 				messages: [

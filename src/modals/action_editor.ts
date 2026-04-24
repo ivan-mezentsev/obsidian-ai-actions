@@ -180,26 +180,6 @@ export class ActionEditModal extends Modal {
 			});
 
 		new Setting(contentEl)
-			.setName("Max output tokens")
-			.setDesc(
-				"Maximum number of tokens to generate (leave empty or 0 for default)"
-			)
-			.addText(text => {
-				text.setPlaceholder("10000")
-					.setValue(
-						this.action.maxOutputTokens?.toString() || "10000"
-					)
-					.onChange(value => {
-						const numValue = parseInt(value);
-						if (isNaN(numValue) || numValue <= 0) {
-							this.action.maxOutputTokens = undefined;
-						} else {
-							this.action.maxOutputTokens = numValue;
-						}
-					});
-			});
-
-		new Setting(contentEl)
 			.setName("Show modal window")
 			.setDesc("Display window with results")
 			.addToggle(toggle => {

@@ -1,4 +1,23 @@
 // Mock for Google Gemini SDK
+const isLegacyGemmaModel = (model?: string) => {
+	const normalizedModel = model?.toLowerCase() || "";
+
+	if (!normalizedModel.includes("gemma")) {
+		return false;
+	}
+
+	if (/^gemma-\d+b(?:-|$)/.test(normalizedModel)) {
+		return true;
+	}
+
+	const versionMatch = normalizedModel.match(/^gemma-(\d+)-/);
+	if (versionMatch) {
+		return Number(versionMatch[1]) <= 3;
+	}
+
+	return false;
+};
+
 export class GoogleGenAI {
 	private apiKey: string;
 	private apiVersion: string;
@@ -16,14 +35,13 @@ export class GoogleGenAI {
 					model?: string;
 					config?: { systemInstruction?: string };
 				}) => {
-					// Check if this is a Gemma model trying to use systemInstruction
+					// Legacy Gemma models (3 and below) do not support systemInstruction.
 					if (
-						request.model &&
-						request.model.toLowerCase().includes("gemma") &&
+						isLegacyGemmaModel(request.model) &&
 						request.config?.systemInstruction
 					) {
 						throw new Error(
-							"Gemma models do not support system instructions"
+							"Gemma 3 and earlier models do not support system instructions"
 						);
 					}
 					// Default behavior for other cases

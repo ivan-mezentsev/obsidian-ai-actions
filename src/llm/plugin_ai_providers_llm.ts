@@ -14,7 +14,6 @@ export class PluginAIProvidersLLM extends LLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming: boolean = false,
 		_systemPromptSupport?: boolean

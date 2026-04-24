@@ -6,6 +6,8 @@ export interface ProcessedThinkingResult {
 	isThinking: boolean;
 	/** The text to display (without thinking content) */
 	displayText: string;
+	/** Current streaming thinking text from an unclosed <think> block */
+	thinkingText: string;
 }
 
 /**
@@ -20,26 +22,36 @@ export interface ProcessedThinkingResult {
  * @returns Object with parsed thinking state and display text
  */
 export function processThinkingTags(text: string): ProcessedThinkingResult {
-	let displayText = text;
-	let isThinking = false;
-	let start = displayText.indexOf("<think>");
+	let displayText = "";
+	let cursor = 0;
 
-	while (start !== -1) {
-		const end = displayText.indexOf("</think>", start + 7);
-		if (end === -1) {
-			// Unclosed <think> tag - we're in thinking mode
-			displayText = displayText.slice(0, start).trim();
-			isThinking = true;
+	while (cursor < text.length) {
+		const start = text.indexOf("<think>", cursor);
+
+		if (start === -1) {
+			displayText += text.slice(cursor);
 			break;
-		} else {
-			// Complete <think>...</think> block - remove it
-			displayText =
-				displayText.slice(0, start) + displayText.slice(end + 8);
 		}
-		start = displayText.indexOf("<think>", start);
+
+		displayText += text.slice(cursor, start);
+
+		const end = text.indexOf("</think>", start + 7);
+		if (end === -1) {
+			return {
+				isThinking: true,
+				displayText,
+				thinkingText: text.slice(start + 7),
+			};
+		}
+
+		cursor = end + 8;
 	}
 
-	return { isThinking, displayText };
+	return {
+		isThinking: false,
+		displayText,
+		thinkingText: "",
+	};
 }
 
 /**

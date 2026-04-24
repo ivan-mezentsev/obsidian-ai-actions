@@ -111,8 +111,7 @@ describe("PluginAIProvidersLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -141,7 +140,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt"
 			);
 
@@ -175,7 +173,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Test content",
 				callback,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -204,7 +201,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Test content",
 				callback,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -334,7 +330,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Test content",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -518,7 +513,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true // systemPromptSupport = true
@@ -550,7 +544,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false // systemPromptSupport = false
@@ -582,7 +575,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				true // systemPromptSupport = true
@@ -621,7 +613,6 @@ describe("PluginAIProvidersLLM", () => {
 				"Test content",
 				callback,
 				0.7,
-				1000,
 				undefined,
 				true, // streaming = true
 				true // systemPromptSupport = true

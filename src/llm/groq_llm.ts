@@ -59,7 +59,6 @@ export class GroqLLM extends BaseProviderLLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming: boolean = false,
 		systemPromptSupport: boolean = true
@@ -96,8 +95,6 @@ export class GroqLLM extends BaseProviderLLM {
 			model: this.modelName,
 			messages: messages,
 			temperature: temperature !== undefined ? temperature : 0.7,
-			max_tokens:
-				maxOutputTokens && maxOutputTokens > 0 ? maxOutputTokens : 1000,
 			stream: streaming,
 		};
 
