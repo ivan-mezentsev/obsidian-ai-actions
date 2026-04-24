@@ -145,8 +145,7 @@ describe("OpenRouterLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -173,14 +172,13 @@ describe("OpenRouterLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				}
 			);
 		});
 
-		it("should use default temperature and max_tokens when not provided", async () => {
+		it("should use default temperature and provider defaults when not provided", async () => {
 			const mockResponse = createMockResponse({
 				ok: true,
 			});
@@ -213,7 +211,6 @@ describe("OpenRouterLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -292,7 +289,6 @@ describe("OpenRouterLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt"
 			);
 
@@ -316,7 +312,6 @@ describe("OpenRouterLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -412,7 +407,6 @@ describe("OpenRouterLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true
 			);
@@ -438,7 +432,6 @@ describe("OpenRouterLLM", () => {
 							},
 						],
 						temperature: 0.8,
-						max_tokens: 500,
 						stream: true,
 					}),
 				})
@@ -461,7 +454,6 @@ describe("OpenRouterLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -490,7 +482,6 @@ describe("OpenRouterLLM", () => {
 					callback,
 					undefined,
 					undefined,
-					undefined,
 					true
 				)
 			).rejects.toThrow(
@@ -514,7 +505,6 @@ describe("OpenRouterLLM", () => {
 					callback,
 					undefined,
 					undefined,
-					undefined,
 					true
 				)
 			).rejects.toThrow("No response body reader available");
@@ -536,7 +526,6 @@ describe("OpenRouterLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -565,7 +554,6 @@ describe("OpenRouterLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -613,7 +601,6 @@ describe("OpenRouterLLM", () => {
 				"Test content",
 				nonStreamingCallback,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -634,7 +621,6 @@ describe("OpenRouterLLM", () => {
 				"Test content",
 				mockStreamingCallbackWrapper,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -726,7 +712,6 @@ describe("OpenRouterLLM", () => {
 				undefined,
 				undefined,
 				undefined,
-				undefined,
 				false,
 				true
 			);
@@ -747,7 +732,6 @@ describe("OpenRouterLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -775,7 +759,6 @@ describe("OpenRouterLLM", () => {
 				undefined,
 				undefined,
 				undefined,
-				undefined,
 				false,
 				false
 			);
@@ -796,7 +779,6 @@ describe("OpenRouterLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -821,7 +803,6 @@ describe("OpenRouterLLM", () => {
 			await openRouterLLM.autocomplete(
 				"You are a helpful assistant",
 				"Write a hello world function",
-				undefined,
 				undefined,
 				undefined,
 				"Additional user context",
@@ -849,7 +830,6 @@ describe("OpenRouterLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})

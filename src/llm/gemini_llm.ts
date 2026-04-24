@@ -37,7 +37,6 @@ export class GeminiLLM extends BaseProviderLLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming: boolean = false,
 		systemPromptSupport?: boolean
@@ -65,17 +64,12 @@ export class GeminiLLM extends BaseProviderLLM {
 
 			const config: {
 				temperature: number;
-				maxOutputTokens: number;
 				systemInstruction?: string;
 				thinkingConfig?: {
 					includeThoughts: boolean;
 				};
 			} = {
 				temperature: temperature !== undefined ? temperature : 0.7,
-				maxOutputTokens:
-					maxOutputTokens && maxOutputTokens > 0
-						? maxOutputTokens
-						: 1000,
 			};
 
 			if (this.supportsThoughtSummaries()) {

@@ -51,7 +51,6 @@ describe("QuickPromptManager — inputSource wiring", () => {
 				loc: Location.REPLACE_CURRENT,
 				format: "{{result}}",
 				temperature: 0.1,
-				maxOutputTokens: 100,
 			},
 			aiProviders: { providers: [], models: [] },
 			useNativeFetch: true,

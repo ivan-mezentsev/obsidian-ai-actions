@@ -159,8 +159,7 @@ describe("LMStudioLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -185,14 +184,13 @@ describe("LMStudioLLM", () => {
 							},
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				}
 			);
 		});
 
-		it("should use default temperature and maxOutputTokens when not provided", async () => {
+		it("should use default temperature and provider defaults when not provided", async () => {
 			const mockResponse = {
 				ok: true,
 				json: jest.fn().mockResolvedValue({
@@ -219,7 +217,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "User input" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -283,7 +280,6 @@ describe("LMStudioLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt"
 			);
 
@@ -298,14 +294,13 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "Content text" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
 			);
 		});
 
-		it("should handle zero and negative maxOutputTokens correctly", async () => {
+		it("should handle zero and negative provider defaults correctly", async () => {
 			const mockResponse = {
 				ok: true,
 				json: jest.fn().mockResolvedValue({
@@ -320,14 +315,8 @@ describe("LMStudioLLM", () => {
 			};
 			mockFetch.mockResolvedValue(mockResponse);
 
-			// Test with zero maxOutputTokens
-			await lmstudioLLM.autocomplete(
-				"prompt",
-				"content",
-				undefined,
-				0.7,
-				0
-			);
+			// Test with zero provider defaults
+			await lmstudioLLM.autocomplete("prompt", "content", undefined, 0.7);
 
 			expect(mockFetch).toHaveBeenCalledWith(
 				"http://localhost:1234/v1/chat/completions",
@@ -339,20 +328,13 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "content" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
 			);
 
-			// Test with negative maxOutputTokens
-			await lmstudioLLM.autocomplete(
-				"prompt",
-				"content",
-				undefined,
-				0.7,
-				-100
-			);
+			// Test with negative provider defaults
+			await lmstudioLLM.autocomplete("prompt", "content", undefined, 0.7);
 
 			expect(mockFetch).toHaveBeenLastCalledWith(
 				"http://localhost:1234/v1/chat/completions",
@@ -364,7 +346,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "content" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -383,8 +364,6 @@ describe("LMStudioLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
-				undefined,
 				undefined,
 				false
 			);
@@ -413,8 +392,6 @@ describe("LMStudioLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
-				undefined,
 				undefined,
 				false
 			);
@@ -470,7 +447,6 @@ describe("LMStudioLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true
 			);
@@ -491,7 +467,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "Say hello" },
 						],
 						temperature: 0.8,
-						max_tokens: 500,
 						stream: true,
 					}),
 				})
@@ -543,7 +518,6 @@ describe("LMStudioLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -570,7 +544,6 @@ describe("LMStudioLLM", () => {
 					callback,
 					undefined,
 					undefined,
-					undefined,
 					true
 				)
 			).rejects.toThrow("LMStudio API error: 500 Internal Server Error");
@@ -590,7 +563,6 @@ describe("LMStudioLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -645,7 +617,6 @@ describe("LMStudioLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -675,7 +646,6 @@ describe("LMStudioLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -716,7 +686,6 @@ describe("LMStudioLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -840,7 +809,6 @@ describe("LMStudioLLM", () => {
 				"User content",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -856,7 +824,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "User content" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -883,7 +850,6 @@ describe("LMStudioLLM", () => {
 				"User content",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -899,7 +865,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "User content" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -926,7 +891,6 @@ describe("LMStudioLLM", () => {
 				"User content",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				undefined
@@ -942,7 +906,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "User content" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -970,7 +933,6 @@ describe("LMStudioLLM", () => {
 				"Content text",
 				undefined,
 				0.7,
-				1000,
 				"User custom prompt",
 				false,
 				false
@@ -987,7 +949,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "Content text" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: false,
 					}),
 				})
@@ -1033,7 +994,6 @@ describe("LMStudioLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true,
 				false
 			);
@@ -1048,7 +1008,6 @@ describe("LMStudioLLM", () => {
 							{ role: "user", content: "User content" },
 						],
 						temperature: 0.7,
-						max_tokens: 1000,
 						stream: true,
 					}),
 				})

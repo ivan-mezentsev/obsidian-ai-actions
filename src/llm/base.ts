@@ -8,7 +8,6 @@ export abstract class LLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming?: boolean,
 		systemPromptSupport?: boolean
@@ -19,7 +18,6 @@ export abstract class LLM {
 		content: string,
 		callback: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string
 	): Promise<void> {
 		let last_tick = new Date().getTime();
@@ -41,7 +39,6 @@ export abstract class LLM {
 			content,
 			callback_wrapper,
 			temperature,
-			maxOutputTokens,
 			userPrompt,
 			true,
 			undefined

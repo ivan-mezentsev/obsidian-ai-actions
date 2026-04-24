@@ -3,6 +3,7 @@ import { AIEditorSettingTab } from "src/settings";
 import type { AIEditorSettings } from "src/settings";
 import { DEFAULT_ACTIONS } from "src/preset";
 import { Selection, Location } from "./action";
+import type { UserAction } from "./action";
 import { ActionHandler } from "./handler";
 import { QuickPromptManager } from "./quick-prompt-manager";
 import { ActionResultManager } from "./action-result-manager";
@@ -20,7 +21,6 @@ const DEFAULT_SETTINGS: AIEditorSettings = {
 		format: "{{result}}",
 		model: "",
 		temperature: undefined,
-		maxOutputTokens: 10000,
 		showModalWindow: true,
 	},
 	// New provider-based settings
@@ -141,9 +141,20 @@ export default class AIEditor extends Plugin {
 			this.settings.aiProviders.usePluginAIProviders = false;
 		}
 
+		let migrationNeeded = false;
+
+		if (removeLegacyMaxOutputTokens(this.settings.quickPrompt)) {
+			migrationNeeded = true;
+		}
+
+		this.settings.customActions.forEach(action => {
+			if (removeLegacyMaxOutputTokens(action)) {
+				migrationNeeded = true;
+			}
+		});
+
 		// Migrate existing models to add systemPromptSupport
 		if (this.settings.aiProviders.models) {
-			let migrationNeeded = false;
 			this.settings.aiProviders.models.forEach(model => {
 				if (model.systemPromptSupport === undefined) {
 					model.systemPromptSupport = true;
@@ -186,4 +197,19 @@ export default class AIEditor extends Plugin {
 			this.settings.quickPrompt.model = defaultModelId;
 		}
 	}
+}
+
+function removeLegacyMaxOutputTokens(action: UserAction): boolean {
+	const legacyAction = action as UserAction & {
+		maxOutputTokens?: number;
+	};
+
+	if (
+		!Object.prototype.hasOwnProperty.call(legacyAction, "maxOutputTokens")
+	) {
+		return false;
+	}
+
+	delete legacyAction.maxOutputTokens;
+	return true;
 }

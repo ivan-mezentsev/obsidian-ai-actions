@@ -104,7 +104,6 @@ export class OpenAILLM extends LLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming: boolean = false,
 		systemPromptSupport: boolean = true
@@ -135,10 +134,6 @@ export class OpenAILLM extends LLM {
 			const baseRequestData = {
 				model: this.model,
 				messages: messages,
-				max_tokens:
-					maxOutputTokens && maxOutputTokens > 0
-						? maxOutputTokens
-						: 4000,
 				temperature: temperature !== undefined ? temperature : 0.7,
 			};
 

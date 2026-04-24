@@ -148,7 +148,6 @@ export class StreamingProcessor {
 					}
 				},
 				config.action.temperature,
-				config.action.maxOutputTokens,
 				config.userPrompt,
 				true, // streaming enabled
 				systemPromptSupport
@@ -941,7 +940,6 @@ export class ActionHandler {
 			input,
 			undefined,
 			userAction.temperature,
-			userAction.maxOutputTokens,
 			undefined,
 			false,
 			systemPromptSupport
@@ -964,7 +962,6 @@ export class ActionHandler {
 			input,
 			onToken,
 			userAction.temperature,
-			userAction.maxOutputTokens,
 			userPrompt,
 			true,
 			systemPromptSupport

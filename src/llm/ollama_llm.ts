@@ -41,7 +41,6 @@ export class OllamaLLM extends BaseProviderLLM {
 		content: string,
 		callback?: (text: string) => void,
 		temperature?: number,
-		maxOutputTokens?: number,
 		userPrompt?: string,
 		streaming: boolean = false,
 		systemPromptSupport: boolean = true
@@ -67,7 +66,6 @@ export class OllamaLLM extends BaseProviderLLM {
 			stream: boolean;
 			options: {
 				temperature: number;
-				num_predict: number;
 			};
 			system?: string;
 		} = {
@@ -76,9 +74,6 @@ export class OllamaLLM extends BaseProviderLLM {
 			stream: streaming,
 			options: {
 				temperature: temperature !== undefined ? temperature : 0.7,
-				...(maxOutputTokens && maxOutputTokens > 0
-					? { num_predict: maxOutputTokens }
-					: { num_predict: 1000 }),
 			},
 		};
 

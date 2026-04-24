@@ -141,7 +141,6 @@ describe("GeminiLLM", () => {
 				jest.fn(),
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -183,8 +182,7 @@ describe("GeminiLLM", () => {
 				"You are a helpful assistant",
 				"Write a hello world function",
 				undefined,
-				0.7,
-				1000
+				0.7
 			);
 
 			expect(result).toBe("Generated completion text");
@@ -198,13 +196,12 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
 		});
 
-		it("should use default temperature and maxOutputTokens when not provided", async () => {
+		it("should use default temperature and provider defaults when not provided", async () => {
 			const mockResponse = {
 				candidates: [
 					{
@@ -227,7 +224,6 @@ describe("GeminiLLM", () => {
 				contents: [{ role: "user", parts: [{ text: "User input" }] }],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "System prompt",
 				},
 			});
@@ -364,7 +360,6 @@ describe("GeminiLLM", () => {
 				"Test content",
 				nonStreamingCallback,
 				0.7,
-				1000,
 				undefined,
 				false
 			);
@@ -385,7 +380,6 @@ describe("GeminiLLM", () => {
 				"Test content",
 				mockStreamingCallbackWrapper,
 				0.7,
-				1000,
 				undefined,
 				true
 			);
@@ -413,7 +407,6 @@ describe("GeminiLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				false
@@ -478,7 +471,6 @@ describe("GeminiLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true
 			);
@@ -495,7 +487,6 @@ describe("GeminiLLM", () => {
 				contents: [{ role: "user", parts: [{ text: "Say hello" }] }],
 				config: {
 					temperature: 0.8,
-					maxOutputTokens: 500,
 					systemInstruction: "You are helpful",
 				},
 			});
@@ -530,7 +521,6 @@ describe("GeminiLLM", () => {
 				"Content text",
 				callback,
 				0.7,
-				1000,
 				"User custom prompt",
 				true
 			);
@@ -545,7 +535,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "System instruction",
 				},
 			});
@@ -564,7 +553,6 @@ describe("GeminiLLM", () => {
 					"prompt",
 					"content",
 					callback,
-					undefined,
 					undefined,
 					undefined,
 					true
@@ -595,7 +583,6 @@ describe("GeminiLLM", () => {
 				"prompt",
 				"content",
 				callback,
-				undefined,
 				undefined,
 				undefined,
 				true
@@ -663,7 +650,6 @@ describe("GeminiLLM", () => {
 				callback,
 				undefined,
 				undefined,
-				undefined,
 				true
 			);
 
@@ -710,7 +696,6 @@ describe("GeminiLLM", () => {
 					callback,
 					undefined,
 					undefined,
-					undefined,
 					true
 				)
 			).rejects.toThrow("Gemini SDK error: Rate limit exceeded");
@@ -739,7 +724,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -756,7 +740,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
@@ -783,7 +766,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				false
@@ -804,7 +786,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 				},
 			});
 		});
@@ -830,7 +811,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				"Custom user prompt",
 				false,
 				true
@@ -853,7 +833,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
@@ -880,7 +859,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				"Custom user prompt",
 				false,
 				false
@@ -907,7 +885,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 				},
 			});
 		});
@@ -941,7 +918,6 @@ describe("GeminiLLM", () => {
 				"Say hello",
 				callback,
 				0.8,
-				500,
 				undefined,
 				true,
 				true
@@ -957,7 +933,6 @@ describe("GeminiLLM", () => {
 				contents: [{ role: "user", parts: [{ text: "Say hello" }] }],
 				config: {
 					temperature: 0.8,
-					maxOutputTokens: 500,
 					systemInstruction: "You are helpful",
 				},
 			});
@@ -995,7 +970,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
@@ -1066,7 +1040,6 @@ describe("GeminiLLM", () => {
 					"Write a hello world function",
 					undefined,
 					0.7,
-					1000,
 					undefined,
 					false,
 					true
@@ -1083,7 +1056,6 @@ describe("GeminiLLM", () => {
 					"Write a hello world function",
 					undefined,
 					0.7,
-					1000,
 					"Custom user prompt",
 					false,
 					true
@@ -1099,7 +1071,6 @@ describe("GeminiLLM", () => {
 				"Write a hello world function",
 				undefined,
 				0.7,
-				1000,
 				undefined,
 				false,
 				true
@@ -1118,7 +1089,6 @@ describe("GeminiLLM", () => {
 				],
 				config: {
 					temperature: 0.7,
-					maxOutputTokens: 1000,
 					systemInstruction: "You are a helpful assistant",
 				},
 			});
