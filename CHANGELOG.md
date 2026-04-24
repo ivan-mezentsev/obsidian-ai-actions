@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0 - 2026-4-24
+
+- feat(llm): enhance Gemma model handling and response formatting
+- feat: enhance reasoning streaming and thinking tag handling
+- refactor: remove maxOutputTokens from various components
+
 ## 0.7.10 - 2026-01-31
 
 - refactor(provider-editor): update OpenAI provider label
