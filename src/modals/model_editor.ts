@@ -9,6 +9,7 @@ import {
 	requestUrl,
 } from "obsidian";
 import type { AIModel, AIProvider } from "../types";
+import type { OpenAIRequestMode } from "../types";
 import AIEditor from "../main";
 import Anthropic from "@anthropic-ai/sdk";
 import { FilterableDropdown } from "../components/FilterableDropdown";
@@ -120,6 +121,37 @@ export class ModelEditModal extends Modal {
 				});
 			});
 
+		new Setting(contentEl)
+			.setName("Request mode")
+			.setDesc("Select completions or responses")
+			.addDropdown(dropdown => {
+				dropdown.addOption("completions", "Completions");
+				dropdown.addOption("responses", "Responses");
+
+				dropdown.setValue(
+					this.model.openAIRequestMode ?? "completions"
+				);
+				this.requestModeDropdown = dropdown;
+				this.updateRequestModeAvailability();
+
+				dropdown.onChange(value => {
+					this.model.openAIRequestMode = value as OpenAIRequestMode;
+				});
+			});
+
+		new Setting(contentEl)
+			.setName("Supports temperature")
+			.setDesc(
+				"If disabled, temperature will never be sent to the API for this model, including system prompt test requests"
+			)
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.model.temperatureSupported ?? true)
+					.onChange(value => {
+						this.model.temperatureSupported = value;
+					});
+			});
+
 		// Buttons
 		new Setting(contentEl)
 			.addButton(button => {
@@ -159,11 +191,17 @@ export class ModelEditModal extends Modal {
 	private displayNameText: TextComponent | null = null;
 	private filterableDropdown: FilterableDropdown | null = null;
 	private systemPromptToggle: ToggleComponent | null = null;
+	private requestModeDropdown: DropdownComponent | null = null;
 
 	private updateAvailableModels() {
 		const selectedProvider = this.availableProviders.find(
 			p => p.id === this.model.providerId
 		);
+
+		if (!selectedProvider || selectedProvider.type !== "openai") {
+			this.model.openAIRequestMode = "completions";
+		}
+		this.updateRequestModeAvailability();
 
 		// Always rebuild the control when provider changes.
 		// Otherwise the UI may keep showing the previous provider's cached list.
@@ -302,7 +340,6 @@ export class ModelEditModal extends Modal {
 				"Content-Type": "application/json",
 			};
 		}
-
 		const response = await requestUrl({
 			url,
 			method: "GET",
@@ -340,6 +377,14 @@ export class ModelEditModal extends Modal {
 			return false;
 		}
 
+		if (this.model.openAIRequestMode === undefined) {
+			this.model.openAIRequestMode = "completions";
+		}
+
+		if (this.model.temperatureSupported === undefined) {
+			this.model.temperatureSupported = true;
+		}
+
 		return true;
 	}
 
@@ -355,14 +400,15 @@ export class ModelEditModal extends Modal {
 			const llm = factory.create(
 				"fake_test_model",
 				this.model.modelName,
-				this.model.providerId
+				this.model.providerId,
+				this.model
 			);
 
 			await llm.autocomplete(
 				"You are a helpful assistant.Answer EXACTLY in one word.",
 				"Say Hi! - just one word",
 				undefined,
-				undefined,
+				this.model.temperatureSupported === false ? undefined : 0.7,
 				undefined,
 				false,
 				true
@@ -380,6 +426,26 @@ export class ModelEditModal extends Modal {
 			}
 			new Notice("System prompt is not supported ✗");
 		}
+	}
+
+	private isOpenAIProviderSelected(): boolean {
+		const selectedProvider = this.availableProviders.find(
+			p => p.id === this.model.providerId
+		);
+
+		return selectedProvider?.type === "openai";
+	}
+
+	private updateRequestModeAvailability(): void {
+		if (!this.requestModeDropdown) {
+			return;
+		}
+
+		const isOpenAIProvider = this.isOpenAIProviderSelected();
+		this.requestModeDropdown.setDisabled(!isOpenAIProvider);
+		this.requestModeDropdown.setValue(
+			this.model.openAIRequestMode ?? "completions"
+		);
 	}
 
 	onClose() {

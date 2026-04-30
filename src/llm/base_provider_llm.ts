@@ -15,9 +15,10 @@ export abstract class BaseProviderLLM extends LLM {
 	constructor(
 		provider: AIProvider,
 		modelName: string,
-		useNativeFetch: boolean = false
+		useNativeFetch: boolean = false,
+		temperatureSupported: boolean = true
 	) {
-		super();
+		super(temperatureSupported);
 		this.provider = provider;
 		this.modelName = modelName;
 		this.useNativeFetch = useNativeFetch;

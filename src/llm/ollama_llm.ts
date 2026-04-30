@@ -20,9 +20,10 @@ export class OllamaLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
 		modelName: string,
-		useNativeFetch: boolean = false
+		useNativeFetch: boolean = false,
+		temperatureSupported: boolean = true
 	) {
-		super(provider, modelName, useNativeFetch);
+		super(provider, modelName, useNativeFetch, temperatureSupported);
 	}
 
 	protected getDefaultBaseUrl(): string {
@@ -64,18 +65,19 @@ export class OllamaLLM extends BaseProviderLLM {
 			model: string;
 			prompt: string;
 			stream: boolean;
-			options: {
-				temperature: number;
+			options?: {
+				temperature?: number;
 			};
 			system?: string;
 		} = {
 			model: this.modelName,
 			prompt: requestPrompt,
 			stream: streaming,
-			options: {
-				temperature: temperature !== undefined ? temperature : 0.7,
-			},
 		};
+		const temperatureParam = this.getTemperatureParam(temperature);
+		if (temperatureParam.temperature !== undefined) {
+			body.options = temperatureParam;
+		}
 
 		if (systemPrompt) {
 			body.system = systemPrompt;

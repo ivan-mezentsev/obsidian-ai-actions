@@ -17,9 +17,10 @@ export class GeminiLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
 		modelName: string,
-		useNativeFetch: boolean = false
+		useNativeFetch: boolean = false,
+		temperatureSupported: boolean = true
 	) {
-		super(provider, modelName, useNativeFetch);
+		super(provider, modelName, useNativeFetch, temperatureSupported);
 
 		this.client = new GoogleGenAI({
 			apiKey: provider.apiKey,
@@ -63,13 +64,13 @@ export class GeminiLLM extends BaseProviderLLM {
 						];
 
 			const config: {
-				temperature: number;
+				temperature?: number;
 				systemInstruction?: string;
 				thinkingConfig?: {
 					includeThoughts: boolean;
 				};
 			} = {
-				temperature: temperature !== undefined ? temperature : 0.7,
+				...this.getTemperatureParam(temperature),
 			};
 
 			if (this.supportsThoughtSummaries()) {

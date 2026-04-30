@@ -93,9 +93,10 @@ export class OpenRouterLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
 		modelName: string,
-		useNativeFetch: boolean = false
+		useNativeFetch: boolean = false,
+		temperatureSupported: boolean = true
 	) {
-		super(provider, modelName, useNativeFetch);
+		super(provider, modelName, useNativeFetch, temperatureSupported);
 	}
 
 	protected getDefaultBaseUrl(): string {
@@ -146,7 +147,7 @@ export class OpenRouterLLM extends BaseProviderLLM {
 		const body = {
 			model: this.modelName,
 			messages: messages,
-			temperature: temperature !== undefined ? temperature : 0.7,
+			...this.getTemperatureParam(temperature),
 			stream: streaming,
 		};
 

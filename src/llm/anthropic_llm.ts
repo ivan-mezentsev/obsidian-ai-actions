@@ -8,9 +8,10 @@ export class AnthropicLLM extends BaseProviderLLM {
 	constructor(
 		provider: AIProvider,
 		modelName: string,
-		useNativeFetch: boolean = false
+		useNativeFetch: boolean = false,
+		temperatureSupported: boolean = true
 	) {
-		super(provider, modelName, useNativeFetch);
+		super(provider, modelName, useNativeFetch, temperatureSupported);
 
 		this.client = new Anthropic({
 			apiKey: provider.apiKey,
@@ -104,7 +105,7 @@ export class AnthropicLLM extends BaseProviderLLM {
 				const requestParams: Anthropic.MessageCreateParams = {
 					model: this.modelName,
 					max_tokens: 64000,
-					temperature: temperature !== undefined ? temperature : 0.7,
+					...this.getTemperatureParam(temperature),
 					messages: messages,
 					stream: true,
 				};
@@ -129,7 +130,7 @@ export class AnthropicLLM extends BaseProviderLLM {
 				const requestParams: Anthropic.MessageCreateParams = {
 					model: this.modelName,
 					max_tokens: 64000,
-					temperature: temperature !== undefined ? temperature : 0.7,
+					...this.getTemperatureParam(temperature),
 					messages: messages,
 				};
 

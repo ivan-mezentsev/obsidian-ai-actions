@@ -1,5 +1,6 @@
 import { LLM } from "./base";
 import { OpenAILLM } from "./openai_llm";
+import { OpenAIResponsesLLM } from "./openai_responses_llm";
 import { GeminiLLM } from "./gemini_llm";
 import { OllamaLLM } from "./ollama_llm";
 import { GroqLLM } from "./groq_llm";
@@ -9,7 +10,7 @@ import { AnthropicLLM } from "./anthropic_llm";
 import { PluginAIProvidersLLM } from "./plugin_ai_providers_llm";
 import { OpenAIModel } from "./openai_llm";
 import type { AIEditorSettings } from "../settings";
-import type { AIProvider } from "../types";
+import type { AIModel, AIProvider } from "../types";
 
 export class LLMFactory {
 	private settings: AIEditorSettings;
@@ -102,7 +103,11 @@ export class LLMFactory {
 		return model.systemPromptSupport ?? true;
 	}
 
-	private createLLMInstance(provider: AIProvider, modelName: string): LLM {
+	private createLLMInstance(
+		provider: AIProvider,
+		modelName: string,
+		modelSettings?: AIModel
+	): LLM {
 		if (!provider.apiKey) {
 			throw new Error(
 				`API key not configured for provider: ${provider.name}`
@@ -110,26 +115,73 @@ export class LLMFactory {
 		}
 
 		const useNativeFetch = this.settings.useNativeFetch || false;
+		const resolvedModelSettings =
+			modelSettings ||
+			this.settings.aiProviders?.models.find(
+				m => m.providerId === provider.id && m.modelName === modelName
+			);
+		const temperatureSupported =
+			resolvedModelSettings?.temperatureSupported ?? true;
 
 		switch (provider.type) {
 			case "openai":
+				if (resolvedModelSettings?.openAIRequestMode === "responses") {
+					return new OpenAIResponsesLLM(
+						modelName as OpenAIModel,
+						provider.apiKey,
+						provider.url,
+						temperatureSupported
+					);
+				}
+
 				return new OpenAILLM(
 					modelName as OpenAIModel,
 					provider.apiKey,
-					provider.url
+					provider.url,
+					temperatureSupported
 				);
 			case "anthropic":
-				return new AnthropicLLM(provider, modelName, useNativeFetch);
+				return new AnthropicLLM(
+					provider,
+					modelName,
+					useNativeFetch,
+					temperatureSupported
+				);
 			case "gemini":
-				return new GeminiLLM(provider, modelName, useNativeFetch);
+				return new GeminiLLM(
+					provider,
+					modelName,
+					useNativeFetch,
+					temperatureSupported
+				);
 			case "ollama":
-				return new OllamaLLM(provider, modelName, useNativeFetch);
+				return new OllamaLLM(
+					provider,
+					modelName,
+					useNativeFetch,
+					temperatureSupported
+				);
 			case "groq":
-				return new GroqLLM(provider, modelName, useNativeFetch);
+				return new GroqLLM(
+					provider,
+					modelName,
+					useNativeFetch,
+					temperatureSupported
+				);
 			case "openrouter":
-				return new OpenRouterLLM(provider, modelName, useNativeFetch);
+				return new OpenRouterLLM(
+					provider,
+					modelName,
+					useNativeFetch,
+					temperatureSupported
+				);
 			case "lmstudio":
-				return new LMStudioLLM(provider, modelName, useNativeFetch);
+				return new LMStudioLLM(
+					provider,
+					modelName,
+					useNativeFetch,
+					temperatureSupported
+				);
 			default: {
 				const providerType = (provider as unknown as { type: string })
 					.type;
@@ -141,7 +193,8 @@ export class LLMFactory {
 	create(
 		modelId: string,
 		overrideModelName?: string,
-		providerId?: string
+		providerId?: string,
+		modelOverride?: AIModel
 	): LLM {
 		// Handle plugin AI providers
 		if (modelId.startsWith("plugin_ai_providers_")) {
@@ -154,6 +207,7 @@ export class LLMFactory {
 
 		// Find or determine provider
 		let provider;
+		let modelSettings = modelOverride;
 		if (providerId) {
 			// Use provided provider ID
 			provider = this.settings.aiProviders?.providers.find(
@@ -170,6 +224,7 @@ export class LLMFactory {
 			if (!model) {
 				throw new Error(`Model not found: ${modelId}`);
 			}
+			modelSettings = model;
 
 			provider = this.settings.aiProviders?.providers.find(
 				p => p.id === model.providerId
@@ -196,6 +251,6 @@ export class LLMFactory {
 			throw new Error(`Model name not found for model: ${modelId}`);
 		}
 
-		return this.createLLMInstance(provider, modelName);
+		return this.createLLMInstance(provider, modelName, modelSettings);
 	}
 }
