@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.0 - 2026-4-30
+
+- feat: add support OpenAIResponsesLLM class and temperature configuration in LLMs
+- feat: add reasoning summary support to OpenAIResponsesLLM
+- feat(handler): enhance notice message with model name during querying
+
 ## 0.8.0 - 2026-4-24
 
 - feat(llm): enhance Gemma model handling and response formatting
