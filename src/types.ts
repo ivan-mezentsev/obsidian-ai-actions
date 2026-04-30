@@ -28,6 +28,7 @@ export interface AIModel {
 	systemPromptSupport?: boolean;
 	openAIRequestMode?: OpenAIRequestMode;
 	temperatureSupported?: boolean;
+	reasoningSummarySupported?: boolean;
 }
 
 export interface AIProvidersSettings {

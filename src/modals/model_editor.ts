@@ -152,6 +152,17 @@ export class ModelEditModal extends Modal {
 					});
 			});
 
+		new Setting(contentEl)
+			.setName("Supports reasoning summary")
+			.setDesc("Ask reasoning summary output")
+			.addToggle(toggle => {
+				toggle
+					.setValue(this.model.reasoningSummarySupported ?? true)
+					.onChange(value => {
+						this.model.reasoningSummarySupported = value;
+					});
+			});
+
 		// Buttons
 		new Setting(contentEl)
 			.addButton(button => {
@@ -383,6 +394,10 @@ export class ModelEditModal extends Modal {
 
 		if (this.model.temperatureSupported === undefined) {
 			this.model.temperatureSupported = true;
+		}
+
+		if (this.model.reasoningSummarySupported === undefined) {
+			this.model.reasoningSummarySupported = true;
 		}
 
 		return true;

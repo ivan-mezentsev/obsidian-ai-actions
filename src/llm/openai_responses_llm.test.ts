@@ -88,6 +88,9 @@ describe("OpenAIResponsesLLM", () => {
 					},
 				],
 				temperature: 0.7,
+				reasoning: {
+					summary: "auto",
+				},
 				instructions: "You are a helpful assistant",
 			});
 		});
@@ -103,6 +106,65 @@ describe("OpenAIResponsesLLM", () => {
 			);
 
 			expect(mockClient.responses.create).toHaveBeenCalledWith({
+				model: OpenAIModel.GPT_4O_MINI,
+				input: [{ role: "user", content: "User input" }],
+				temperature: 0.7,
+				reasoning: {
+					summary: "auto",
+				},
+				instructions: "System prompt",
+			});
+		});
+
+		it("should request reasoning summary when enabled for the model", async () => {
+			const reasoningModel = OpenAIModel.GPT_4O_MINI;
+			const reasoningLLM = new OpenAIResponsesLLM(
+				reasoningModel,
+				"test-api-key",
+				"https://api.openai.com/v1",
+				true,
+				true
+			);
+			const reasoningClient = reasoningLLM[
+				"openai"
+			] as unknown as MockOpenAIClient;
+
+			reasoningClient.responses.create.mockResolvedValue({
+				output_text: "Reasoned response",
+			});
+
+			await reasoningLLM.autocomplete("System prompt", "User input");
+
+			expect(reasoningClient.responses.create).toHaveBeenCalledWith({
+				model: reasoningModel,
+				input: [{ role: "user", content: "User input" }],
+				temperature: 0.7,
+				reasoning: {
+					summary: "auto",
+				},
+				instructions: "System prompt",
+			});
+		});
+
+		it("should not request reasoning summary when disabled for the model", async () => {
+			const responsesLLM = new OpenAIResponsesLLM(
+				OpenAIModel.GPT_4O_MINI,
+				"test-api-key",
+				"https://api.openai.com/v1",
+				true,
+				false
+			);
+			const responsesClient = responsesLLM[
+				"openai"
+			] as unknown as MockOpenAIClient;
+
+			responsesClient.responses.create.mockResolvedValue({
+				output_text: "Plain response",
+			});
+
+			await responsesLLM.autocomplete("System prompt", "User input");
+
+			expect(responsesClient.responses.create).toHaveBeenCalledWith({
 				model: OpenAIModel.GPT_4O_MINI,
 				input: [{ role: "user", content: "User input" }],
 				temperature: 0.7,
@@ -167,6 +229,9 @@ describe("OpenAIResponsesLLM", () => {
 					{ role: "user", content: "Content text" },
 				],
 				temperature: 0.7,
+				reasoning: {
+					summary: "auto",
+				},
 				instructions: "System instruction",
 			});
 		});
@@ -194,6 +259,9 @@ describe("OpenAIResponsesLLM", () => {
 					{ role: "user", content: "Content text" },
 				],
 				temperature: 0.7,
+				reasoning: {
+					summary: "auto",
+				},
 			});
 		});
 
@@ -234,6 +302,9 @@ describe("OpenAIResponsesLLM", () => {
 				model: OpenAIModel.GPT_4O_MINI,
 				input: [{ role: "user", content: "Say hello" }],
 				temperature: 0.8,
+				reasoning: {
+					summary: "auto",
+				},
 				instructions: "You are helpful",
 				stream: true,
 			});
@@ -317,6 +388,7 @@ describe("LLMFactory with OpenAI Responses", () => {
 						modelName: OpenAIModel.GPT_4O_MINI,
 						openAIRequestMode: "responses",
 						temperatureSupported: true,
+						reasoningSummarySupported: true,
 					},
 				],
 				usePluginAIProviders: false,

@@ -396,6 +396,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			modelName: "",
 			openAIRequestMode: "completions",
 			temperatureSupported: true,
+			reasoningSummarySupported: true,
 		};
 		new ModelEditModal(
 			this.app,

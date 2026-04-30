@@ -106,15 +106,18 @@ function buildResponsesInput(
 export class OpenAIResponsesLLM extends LLM {
 	private openai: OpenAI;
 	private model: OpenAIModel;
+	private reasoningSummarySupported: boolean;
 
 	constructor(
 		model: OpenAIModel,
 		apiKey: string,
 		baseURL?: string,
-		temperatureSupported: boolean = true
+		temperatureSupported: boolean = true,
+		reasoningSummarySupported: boolean = true
 	) {
 		super(temperatureSupported);
 		this.model = model;
+		this.reasoningSummarySupported = reasoningSummarySupported;
 		const config: {
 			apiKey: string;
 			dangerouslyAllowBrowser: boolean;
@@ -139,6 +142,14 @@ export class OpenAIResponsesLLM extends LLM {
 		systemPromptSupport: boolean = true
 	): Promise<string | void> {
 		try {
+			const reasoningConfig = this.reasoningSummarySupported
+				? {
+						reasoning: {
+							summary: "auto" as const,
+						},
+					}
+				: {};
+
 			const baseRequestData = {
 				model: this.model,
 				input: buildResponsesInput(
@@ -148,6 +159,7 @@ export class OpenAIResponsesLLM extends LLM {
 					systemPromptSupport
 				),
 				...this.getTemperatureParam(temperature),
+				...reasoningConfig,
 				...(systemPromptSupport ? { instructions: prompt } : {}),
 			};
 

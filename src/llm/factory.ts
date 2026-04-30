@@ -122,6 +122,8 @@ export class LLMFactory {
 			);
 		const temperatureSupported =
 			resolvedModelSettings?.temperatureSupported ?? true;
+		const reasoningSummarySupported =
+			resolvedModelSettings?.reasoningSummarySupported ?? true;
 
 		switch (provider.type) {
 			case "openai":
@@ -130,7 +132,8 @@ export class LLMFactory {
 						modelName as OpenAIModel,
 						provider.apiKey,
 						provider.url,
-						temperatureSupported
+						temperatureSupported,
+						reasoningSummarySupported
 					);
 				}
 

@@ -204,6 +204,11 @@ export default class AIEditor extends Plugin {
 					model.temperatureSupported = true;
 					migrationNeeded = true;
 				}
+
+				if (model.reasoningSummarySupported === undefined) {
+					model.reasoningSummarySupported = true;
+					migrationNeeded = true;
+				}
 			});
 
 			// Save settings if migration was needed
