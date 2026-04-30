@@ -2,6 +2,21 @@ export abstract class LLM {
 	// For streaming mode, this is the timeout between each callback
 	// For non-streaming mode, this is the timeout for the whole query
 	queryTimeout = 45000;
+	protected temperatureSupported: boolean;
+
+	constructor(temperatureSupported: boolean = true) {
+		this.temperatureSupported = temperatureSupported;
+	}
+
+	protected getTemperatureParam(temperature?: number): {
+		temperature?: number;
+	} {
+		if (!this.temperatureSupported) {
+			return {};
+		}
+
+		return { temperature: temperature !== undefined ? temperature : 0.7 };
+	}
 
 	abstract autocomplete(
 		prompt: string,

@@ -7,6 +7,8 @@ export type AIProviderType =
 	| "groq"
 	| "anthropic";
 
+export type OpenAIRequestMode = "completions" | "responses";
+
 export interface AIProvider {
 	id: string;
 	name: string;
@@ -24,6 +26,9 @@ export interface AIModel {
 	type?: AIProviderType;
 	pluginAIProviderId?: string; // For plugin AI providers, store original provider ID
 	systemPromptSupport?: boolean;
+	openAIRequestMode?: OpenAIRequestMode;
+	temperatureSupported?: boolean;
+	reasoningSummarySupported?: boolean;
 }
 
 export interface AIProvidersSettings {

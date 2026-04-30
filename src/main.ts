@@ -10,6 +10,7 @@ import { ActionResultManager } from "./action-result-manager";
 import { ModalBoxManager } from "./modal-box-manager";
 import { spinnerEditorExtension } from "./spinnerPlugin";
 import { initAI } from "@obsidian-ai-providers/sdk";
+import type { AIProvider, AIProviderType } from "./types";
 
 const DEFAULT_SETTINGS: AIEditorSettings = {
 	customActions: DEFAULT_ACTIONS,
@@ -155,9 +156,57 @@ export default class AIEditor extends Plugin {
 
 		// Migrate existing models to add systemPromptSupport
 		if (this.settings.aiProviders.models) {
+			const legacyOpenAIResponsesProviderIds = new Set<string>();
+
+			this.settings.aiProviders.providers.forEach(provider => {
+				const legacyProvider = provider as Omit<AIProvider, "type"> & {
+					type: AIProviderType | "openai_responses";
+				};
+
+				if (legacyProvider.type === "openai_responses") {
+					legacyOpenAIResponsesProviderIds.add(provider.id);
+					provider.type = "openai";
+					if (provider.name === "OpenAI Responses") {
+						provider.name = "OpenAI";
+					}
+					migrationNeeded = true;
+				}
+
+				if (
+					provider.type === "openai" &&
+					provider.name === "OpenAI Completions"
+				) {
+					provider.name = "OpenAI";
+					migrationNeeded = true;
+				}
+			});
+
 			this.settings.aiProviders.models.forEach(model => {
 				if (model.systemPromptSupport === undefined) {
 					model.systemPromptSupport = true;
+					migrationNeeded = true;
+				}
+
+				if (model.openAIRequestMode === undefined) {
+					model.openAIRequestMode = "completions";
+					migrationNeeded = true;
+				}
+
+				if (
+					legacyOpenAIResponsesProviderIds.has(model.providerId) &&
+					model.openAIRequestMode !== "responses"
+				) {
+					model.openAIRequestMode = "responses";
+					migrationNeeded = true;
+				}
+
+				if (model.temperatureSupported === undefined) {
+					model.temperatureSupported = true;
+					migrationNeeded = true;
+				}
+
+				if (model.reasoningSummarySupported === undefined) {
+					model.reasoningSummarySupported = true;
 					migrationNeeded = true;
 				}
 			});

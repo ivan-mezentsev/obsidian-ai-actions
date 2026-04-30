@@ -210,7 +210,7 @@ export class AIEditorSettingTab extends PluginSettingTab {
 
 	private getProviderTypeLabel(type: AIProviderType): string {
 		const providerTypeNames: Record<AIProviderType, string> = {
-			openai: "OpenAI Completions",
+			openai: "OpenAI",
 			anthropic: "Anthropic",
 			ollama: "Ollama",
 			gemini: "Google Gemini",
@@ -394,6 +394,9 @@ export class AIEditorSettingTab extends PluginSettingTab {
 			name: "New model",
 			providerId: this.plugin.settings.aiProviders.providers[0].id,
 			modelName: "",
+			openAIRequestMode: "completions",
+			temperatureSupported: true,
+			reasoningSummarySupported: true,
 		};
 		new ModelEditModal(
 			this.app,

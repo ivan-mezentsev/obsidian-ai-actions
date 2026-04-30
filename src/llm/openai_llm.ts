@@ -82,8 +82,13 @@ export class OpenAILLM extends LLM {
 	private openai: OpenAI;
 	private model: OpenAIModel;
 
-	constructor(model: OpenAIModel, apiKey: string, baseURL?: string) {
-		super();
+	constructor(
+		model: OpenAIModel,
+		apiKey: string,
+		baseURL?: string,
+		temperatureSupported: boolean = true
+	) {
+		super(temperatureSupported);
 		this.model = model;
 		const config: {
 			apiKey: string;
@@ -134,7 +139,7 @@ export class OpenAILLM extends LLM {
 			const baseRequestData = {
 				model: this.model,
 				messages: messages,
-				temperature: temperature !== undefined ? temperature : 0.7,
+				...this.getTemperatureParam(temperature),
 			};
 
 			if (streaming && callback) {

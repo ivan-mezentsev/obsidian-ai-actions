@@ -91,6 +91,7 @@ export class StreamingProcessor {
 		};
 
 		let providerName = "Unknown provider";
+		let modelName = "";
 		let spinner: {
 			hideSpinner: () => void;
 			onUpdate: (text: string) => void;
@@ -106,7 +107,12 @@ export class StreamingProcessor {
 				providerName = "Provider";
 			}
 
-			new Notice(`Querying ${providerName} API...`);
+			modelName =
+				this.settings.aiProviders?.models.find(
+					model => model.id === config.action.model
+				)?.name || "";
+
+			new Notice(`${providerName}${modelName ? ` ${modelName}` : ""}...`);
 
 			// Hide mobile keyboard with error handling
 			this.hideMobileKeyboard();
